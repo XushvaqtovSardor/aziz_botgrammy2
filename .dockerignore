@@ -1,8 +1,9 @@
 # Dependencies
 node_modules
 .pnpm-store
+pnpm-debug.log*
 
-# Build outputs
+# Build outputs (will be copied from builder stage)
 dist
 build
 .next
@@ -13,10 +14,10 @@ out
 .gitignore
 .gitattributes
 
-# Environment
+# Environment files (except production example)
 .env
 .env.*
-!.env.example
+!.env.production.example
 
 # IDE
 .vscode
@@ -30,13 +31,10 @@ out
 Thumbs.db
 desktop.ini
 
-# Logs
-logs/*.log
-logs/*-audit.json
-!logs/.gitkeep
+# Logs (created at runtime)
+logs
 *.log
 npm-debug.log*
-pnpm-debug.log*
 yarn-debug.log*
 
 # Testing
@@ -45,9 +43,33 @@ coverage
 test
 tests
 __tests__
+*.spec.ts
+*.test.ts
+
+# Documentation (reduce image size)
+*.md
+!README.md
+
+# Docker files
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# Scripts (not needed in container)
+scripts
+*.sh
+!docker-entrypoint.sh
 
 # Misc
-*.md
+tmp
+temp
+*.tmp
+*.bak
+.cache
 !README.md
 .prettierrc
 .eslintrc.js
