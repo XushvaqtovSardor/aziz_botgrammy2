@@ -1,0 +1,2 @@
+{"context":"GrammyBotService","level":"error","message":"Failed to start Grammy Bot:","stack":[{"description":"Conflict: terminated by other getUpdates request; make sure that only one bot instance is running","error_code":409,"method":"getUpdates","name":"GrammyError","ok":false,"parameters":{},"payload":{"offset":465355380,"timeout":30}}],"timestamp":"2026-01-12 20:05:34"}
+{"context":"UserHandler","level":"error","message":"[handleCodeSearch] User not found: 6652831703","stack":[null],"timestamp":"2026-01-12 15:06:05"}
