@@ -143,9 +143,10 @@ export class SerialManagementService {
       return;
     }
 
+    const selectedField = fields[fieldIndex];
     this.sessionService.updateSessionData(ctx.from.id, {
-      selectedField: fields[fieldIndex],
-      fieldId: fields[fieldIndex].id,
+      selectedField: selectedField,
+      fieldId: selectedField?.id,
     });
     this.sessionService.setStep(ctx.from.id, 5); // POSTER step
 
@@ -166,7 +167,7 @@ export class SerialManagementService {
       posterFileId,
       posterType,
     });
-    this.sessionService.setStep(ctx.from.id, 6); 
+    this.sessionService.setStep(ctx.from.id, 6);
     this.sessionService.updateSessionData(ctx.from.id, {
       currentEpisode: 1,
       episodes: [],
@@ -314,7 +315,7 @@ export class SerialManagementService {
         fieldId,
         posterFileId,
         totalEpisodes: episodes.length,
-        channelMessageId: 0, 
+        channelMessageId: 0,
       });
 
       for (const epData of episodeData) {
@@ -413,7 +414,7 @@ export class SerialManagementService {
         nextEpisodeNumber,
         addedEpisodes: [],
       });
-      this.sessionService.setStep(ctx.from.id, 7); 
+      this.sessionService.setStep(ctx.from.id, 7);
 
       await ctx.reply(
         `🎬 Kino topildi!\n\n` +

@@ -208,7 +208,6 @@ export class AdminHandler implements OnModuleInit {
       this.withAdminCheck(this.clearChannelHistory.bind(this)),
     );
 
-    // Callback query handlers - all with admin check
     bot.callbackQuery(/^field_detail_(\d+)$/, async (ctx) => {
       const admin = await this.getAdmin(ctx);
       if (admin) await this.showFieldDetail(ctx);
@@ -429,7 +428,6 @@ export class AdminHandler implements OnModuleInit {
       if (admin) await this.backToAdminMenu(ctx);
     });
 
-    // Broadcast handlers - MUST be before the general pattern
     bot.callbackQuery('broadcast_premiere', async (ctx) => {
       const admin = await this.getAdmin(ctx);
       if (admin) {
@@ -449,7 +447,6 @@ export class AdminHandler implements OnModuleInit {
       if (admin) await this.handleBroadcastType(ctx);
     });
 
-    // Media handlers - ONLY work if admin is in a session
     bot.on('message:photo', async (ctx, next) => {
       if (!ctx.from) {
         await next();
@@ -461,7 +458,7 @@ export class AdminHandler implements OnModuleInit {
       if (admin && session) {
         await this.handlePhoto(ctx);
       } else {
-        await next(); // Let user handler process it
+        await next(); 
       }
     });
 
@@ -476,11 +473,10 @@ export class AdminHandler implements OnModuleInit {
       if (admin && session) {
         await this.handleVideoMessage(ctx);
       } else {
-        await next(); // Let user handler process it
+        await next(); 
       }
     });
 
-    // Text handler - ONLY work if admin is in a session
     bot.on('message:text', async (ctx, next) => {
       if (!ctx.from) {
         await next();
@@ -489,11 +485,9 @@ export class AdminHandler implements OnModuleInit {
       const admin = await this.getAdmin(ctx);
       const session = this.sessionService.getSession(ctx.from.id);
 
-      // ONLY handle if admin has active session
       if (admin && session) {
         await this.handleSessionText(ctx);
       } else {
-        // Let next handler (user handler) process it
         await next();
       }
     });
@@ -507,7 +501,6 @@ export class AdminHandler implements OnModuleInit {
     return admin;
   }
 
-  // Helper to wrap handlers with admin check
   private withAdminCheck(handler: (ctx: BotContext) => Promise<void>) {
     return async (ctx: BotContext) => {
       const admin = await this.getAdmin(ctx);
@@ -517,9 +510,7 @@ export class AdminHandler implements OnModuleInit {
     };
   }
 
-  // ==================== START COMMAND ====================
   private async handleAdminStart(ctx: BotContext, admin: any) {
-    // Clear any existing session
     this.sessionService.clearSession(ctx.from!.id);
 
     const welcomeMessage = `👋 Assalomu alaykum, ${admin.username || 'Admin'}!\n\n🔐 Siz admin panelidasiz.`;
@@ -527,7 +518,6 @@ export class AdminHandler implements OnModuleInit {
     await ctx.reply(welcomeMessage, AdminKeyboard.getAdminMainMenu(admin.role));
   }
 
-  // ==================== BASIC HANDLERS ====================
   private async handleBack(ctx: BotContext) {
     if (!ctx.from) return;
     const admin = await this.getAdmin(ctx);
@@ -552,7 +542,6 @@ export class AdminHandler implements OnModuleInit {
     );
   }
 
-  // ==================== STATISTICS ====================
   private async showStatistics(ctx: BotContext) {
     const admin = await this.getAdmin(ctx);
     if (!admin) return;
@@ -584,7 +573,6 @@ export class AdminHandler implements OnModuleInit {
 📈 **Yangi foydalanuvchilar (30 kun):** ${newUsers}
       `;
 
-      // Create keyboard with additional options
       const keyboard = new Keyboard()
         .text('👥 Barcha foydalanuvchilar')
         .row()
@@ -604,7 +592,6 @@ export class AdminHandler implements OnModuleInit {
     }
   }
 
-  // ==================== MOVIE CREATION ====================
   private async startMovieCreation(ctx: BotContext) {
     const admin = await this.getAdmin(ctx);
     if (!admin || !ctx.from) {
@@ -623,7 +610,6 @@ export class AdminHandler implements OnModuleInit {
     );
   }
 
-  // ==================== PHOTO HANDLER ====================
   private async handlePhoto(ctx: BotContext) {
     if (!ctx.from || !ctx.message || !('photo' in ctx.message)) return;
 
@@ -635,7 +621,6 @@ export class AdminHandler implements OnModuleInit {
 
     const photo = ctx.message.photo[ctx.message.photo.length - 1];
 
-    // Handle Movie Photo
     if (
       session.state === AdminState.CREATING_MOVIE &&
       session.step === MovieCreateStep.PHOTO
@@ -653,12 +638,10 @@ export class AdminHandler implements OnModuleInit {
       return;
     }
 
-    // Handle Serial Photo
     if (
       session.state === AdminState.CREATING_SERIAL &&
       session.step === SerialCreateStep.PHOTO
     ) {
-      // Instead of creating serial immediately, save poster and ask for episodes
       await this.serialManagementService.handleSerialPoster(
         ctx,
         photo.file_id,
@@ -668,14 +651,12 @@ export class AdminHandler implements OnModuleInit {
     }
   }
 
-  // ==================== VIDEO HANDLER ====================
   private async handleVideoMessage(ctx: BotContext) {
     if (!ctx.from || !ctx.message || !('video' in ctx.message)) return;
 
     const session = this.sessionService.getSession(ctx.from.id);
     if (!session) return;
 
-    // Check if uploading poster as video for movie
     if (
       session.state === AdminState.CREATING_MOVIE &&
       session.step === MovieCreateStep.PHOTO
@@ -694,7 +675,6 @@ export class AdminHandler implements OnModuleInit {
       return;
     }
 
-    // Check if uploading poster as video for serial
     if (
       session.state === AdminState.CREATING_SERIAL &&
       session.step === SerialCreateStep.PHOTO
@@ -708,7 +688,6 @@ export class AdminHandler implements OnModuleInit {
       return;
     }
 
-    // Check if creating movie
     if (
       session.state === AdminState.CREATING_MOVIE &&
       session.step === MovieCreateStep.VIDEO
@@ -717,9 +696,7 @@ export class AdminHandler implements OnModuleInit {
       return;
     }
 
-    // Check if creating serial and uploading episodes
     if (session.state === AdminState.CREATING_SERIAL && session.step === 6) {
-      // step 6 = UPLOADING_EPISODES (new serial)
       await this.serialManagementService.handleNewSerialEpisodeVideo(
         ctx,
         ctx.message.video.file_id,
@@ -728,9 +705,7 @@ export class AdminHandler implements OnModuleInit {
       return;
     }
 
-    // Check if adding episodes to existing serial
     if (session.state === AdminState.CREATING_SERIAL && session.step === 7) {
-      // step 7 = ADDING_EPISODES (existing serial or movie)
       await this.serialManagementService.handleExistingContentEpisodeVideo(
         ctx,
         ctx.message.video.file_id,
@@ -759,7 +734,6 @@ export class AdminHandler implements OnModuleInit {
     const data = session.data;
 
     try {
-      // Get all database channels
       const dbChannels = await this.channelService.findAllDatabase();
       if (dbChannels.length === 0) {
         await ctx.reply(
@@ -771,12 +745,10 @@ export class AdminHandler implements OnModuleInit {
 
       await ctx.reply('⏳ Kino yuklanmoqda, iltimos kuting...');
 
-      // Send video to all database channels and collect message IDs
       const videoMessages: { channelId: string; messageId: number }[] = [];
 
       for (const dbChannel of dbChannels) {
         try {
-          // Get field info for database channel caption
           const field = data.selectedField;
           const botInfo = await ctx.api.getMe();
           const botUsername = botInfo.username || 'bot';
@@ -817,12 +789,10 @@ export class AdminHandler implements OnModuleInit {
         return;
       }
 
-      // Get field info first
       const field = data.selectedField;
       const botInfo = await ctx.api.getMe();
       const botUsername = botInfo.username || 'bot';
 
-      // Create movie caption with button for field channel (DMC style)
       const caption = `
 ╭────────────────────
 ├‣  Kino nomi : ${data.title}
@@ -839,7 +809,6 @@ export class AdminHandler implements OnModuleInit {
         `https://t.me/${this.grammyBot.botUsername}?start=${data.code}`,
       );
 
-      // Send poster with info to field channel (photo or video)
       let sentPoster;
       if (data.posterType === 'video') {
         sentPoster = await ctx.api.sendVideo(
@@ -861,7 +830,6 @@ export class AdminHandler implements OnModuleInit {
         );
       }
 
-      // Save movie to database
       await this.movieService.create({
         code: data.code,
         title: data.title,
@@ -897,20 +865,17 @@ export class AdminHandler implements OnModuleInit {
     }
   }
 
-  // ==================== TEXT HANDLER (Session-based) ====================
   private async handleSessionText(ctx: BotContext) {
     if (!ctx.from || !ctx.message || !('text' in ctx.message)) return;
 
     const text = ctx.message.text;
     const session = this.sessionService.getSession(ctx.from.id);
 
-    // Skip if no session or it's a command/button
     if (!session || text.startsWith('/') || text.includes('�')) return;
 
     const admin = await this.getAdmin(ctx);
     if (!admin) return;
 
-    // Handle cancel button
     if (text === '❌ Bekor qilish') {
       this.sessionService.clearSession(ctx.from.id);
       await ctx.reply(
@@ -920,7 +885,6 @@ export class AdminHandler implements OnModuleInit {
       return;
     }
 
-    // Route to appropriate handler based on state
     switch (session.state) {
       case AdminState.CREATING_MOVIE:
         await this.handleMovieCreationSteps(ctx, text, session);
@@ -1004,8 +968,6 @@ export class AdminHandler implements OnModuleInit {
           );
           return;
         }
-
-        // Check if code is available
         const isAvailable = await this.movieService.isCodeAvailable(code);
         if (!isAvailable) {
           const nearestCodes =
@@ -1068,7 +1030,6 @@ export class AdminHandler implements OnModuleInit {
         }
         this.sessionService.setStep(ctx.from!.id, MovieCreateStep.FIELD);
 
-        // Show fields list
         const allFields = await this.fieldService.findAll();
         if (allFields.length === 0) {
           await ctx.reply(

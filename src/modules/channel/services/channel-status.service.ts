@@ -244,7 +244,7 @@ export class ChannelStatusService {
         } catch (error) {
           this.logger.error(
             `Error checking channel ${channel.channelName} for user ${userTelegramId}:`,
-            error.message,
+            error instanceof Error ? error.message : String(error),
           );
           // On error, mark as left (user probably not in channel)
           await this.updateStatus(

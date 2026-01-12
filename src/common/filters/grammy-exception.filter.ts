@@ -6,7 +6,7 @@ export class GrammyExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(GrammyExceptionFilter.name);
 
   async catch(exception: Error, host: any) {
-    const ctx: BotContext = host.getContext();
+    const ctx = host.getContext() as BotContext;
 
     this.logger.error('❌ Telegram Bot Error occurred');
     this.logger.error(`Error: ${exception.message}`);
