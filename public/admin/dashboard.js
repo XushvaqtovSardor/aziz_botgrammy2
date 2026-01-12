@@ -384,7 +384,7 @@ async function loadUsers() {
                                 <td>
                                     <button class="action-btn ${user.isBlocked ? 'btn-approve' : 'btn-delete'}" 
                                             onclick="toggleBlockUser('${user.telegramId}', ${!user.isBlocked})">
-                                        ${user.isBlocked ? '✅ Blokdan chiqarish' : '🚫 Bloklash'}
+                                        ${user.isBlocked ? '✅ Blokdan  chiqarish' : '🚫 Bloklash'}
                                     </button>
                                 </td>
                             </tr>
