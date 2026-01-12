@@ -1,31 +1,20 @@
 version: '3.8'
 
 services:
-  postgres:
+  db:
     image: postgres:16-alpine
-    container_name: aziz_bot_postgres
-    restart: unless-stopped
+    container_name: postgres_db
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-azizbot}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-securepassword}
-      POSTGRES_DB: ${POSTGRES_DB:-aziz_bot_db}
-      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=en_US.UTF-8"
-      # Performance tuning
-      POSTGRES_HOST_AUTH_METHOD: md5
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - aziz_bot_network
     ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-azizbot} -d ${POSTGRES_DB:-aziz_bot_db}"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 10s
-    shm_size: 128mb
-
+      - "5433:5432"
   app:
     build:
       context: .
@@ -35,10 +24,9 @@ services:
     container_name: aziz_bot_app
     restart: unless-stopped
     depends_on:
-      postgres:
-        condition: service_healthy
+      - db
     ports:
-      - "3000:3000"
+      - "9090:3000"
     environment:
       # Application
       - NODE_ENV=production
@@ -50,10 +38,10 @@ services:
       - BOT_USERNAME=${BOT_USERNAME:?BOT_USERNAME is required}
       
       # Database
-      - DATABASE_URL=${DATABASE_URL:?DATABASE_URL is required}
-      - POSTGRES_USER=${POSTGRES_USER:-azizbot}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-securepassword}
-      - POSTGRES_DB=${POSTGRES_DB:-aziz_bot_db}
+      - DATABASE_URL=${DATABASE_URL}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
       
       # Payment (optional)
       - PAYME_MERCHANT_ID=${PAYME_MERCHANT_ID:-}
@@ -61,28 +49,14 @@ services:
       - PAYME_TEST_KEY=${PAYME_TEST_KEY:-}
       - PAYME_ENDPOINT=${PAYME_ENDPOINT:-https://checkout.paycom.uz}
       
-      # Web Panel
-      - WEB_PANEL_URL=${WEB_PANEL_URL:-http://localhost:3000/admin/}
-      
-      # Optional: Default channel
-      - DEFAULT_DATABASE_CHANNEL_LINK=${DEFAULT_DATABASE_CHANNEL_LINK:-}
-      - DEFAULT_DATABASE_CHANNEL_NAME=${DEFAULT_DATABASE_CHANNEL_NAME:-}
+      - WEB_PANEL_URL=${WEB_PANEL_URL}
     volumes:
       - ./logs:/app/logs
       - ./public:/app/public
     networks:
       - aziz_bot_network
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+    command: sh -c "npx prisma db push && pnpm run start:dev"
+    
 
 networks:
   aziz_bot_network:
