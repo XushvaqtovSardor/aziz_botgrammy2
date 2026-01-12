@@ -28,25 +28,21 @@ services:
     ports:
       - "9090:3000"
     environment:
-      # Application
-      - NODE_ENV=production
-      - PORT=3000
-      - LOG_LEVEL=${LOG_LEVEL:-info}
+        NODE_ENV : production
+        PORT : 3000
+        LOG_LEVEL : ${LOG_LEVEL}
       
-      # Telegram Bot
-      - BOT_TOKEN=${BOT_TOKEN}
-      - BOT_USERNAME=@Kinolar_animelar_dramalar_bot
+        BOT_TOKEN: ${BOT_TOKEN}
+        BOT_USERNAME: ${BOT_USERNAME}
+        DATABASE_URL: ${DATABASE_URL}
       
-      # Database
-      - DATABASE_URL=postgresql://azizbot:your_strong_password@postgres:5432/aziz_bot_db?schema=public
       
-      # Payment (optional)
       - PAYME_MERCHANT_ID=${PAYME_MERCHANT_ID:-}
       - PAYME_KEY=${PAYME_KEY:-}
       - PAYME_TEST_KEY=${PAYME_TEST_KEY:-}
       - PAYME_ENDPOINT=${PAYME_ENDPOINT:-https://checkout.paycom.uz}
       
-      - WEB_PANEL_URL=${WEB_PANEL_URL}
+        WEB_PANEL_URL: ${WEB_PANEL_URL}
     volumes:
       - ./logs:/app/logs
       - ./public:/app/public
