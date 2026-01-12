@@ -14,7 +14,7 @@ services:
       - PORT=3000
       - BOT_TOKEN=${BOT_TOKEN}
       - BOT_USERNAME=${BOT_USERNAME}
-      - DATABASE_URL=DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?schema=public
+      - DATABASE_URL=${DATABASE_URL}
 
       - PAYME_MERCHANT_ID=${PAYME_MERCHANT_ID}
       - PAYME_KEY=${PAYME_KEY}
