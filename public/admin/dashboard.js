@@ -644,7 +644,7 @@ function showAddMandatoryChannelModal() {
             <div class="form-group">
                 <label>Channel ID (optional)</label>
                 <input type="text" name="channelId" placeholder="@azizkino yoki -1001234567890">
-                <small>Agar kiritmasangiz, linkdan avtomatik aniqlanadi</small>
+                <small>Agar kiritmasangiz , linkdan avtomatik aniqlanadi</small>
             </div>
             <button type="submit" class="submit-btn">Qo'shish</button>
         </form>
