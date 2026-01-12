@@ -38,7 +38,7 @@ services:
       - BOT_USERNAME=@Kinolar_animelar_dramalar_bot
       
       # Database
-      - DATABASE_URL=postgresql://azizbot:securepassword@postgres:5432/aziz_bot_db?schema=public
+      - DATABASE_URL=postgresql://azizbot:your_strong_password@postgres:5432/aziz_bot_db?schema=public
       
       # Payment (optional)
       - PAYME_MERCHANT_ID=${PAYME_MERCHANT_ID:-}
