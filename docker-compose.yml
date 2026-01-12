@@ -35,12 +35,10 @@ services:
         BOT_TOKEN: ${BOT_TOKEN}
         BOT_USERNAME: ${BOT_USERNAME}
         DATABASE_URL: ${DATABASE_URL}
-      
-      
-      - PAYME_MERCHANT_ID=${PAYME_MERCHANT_ID:-}
-      - PAYME_KEY=${PAYME_KEY:-}
-      - PAYME_TEST_KEY=${PAYME_TEST_KEY:-}
-      - PAYME_ENDPOINT=${PAYME_ENDPOINT:-https://checkout.paycom.uz}
+        PAYME_MERCHANT_ID: ${PAYME_MERCHANT_ID:-}
+        PAYME_KEY: ${PAYME_KEY:-}
+        PAYME_TEST_KEY: ${PAYME_TEST_KEY:-}
+        PAYME_ENDPOINT: ${PAYME_ENDPOINT:-https://checkout.paycom.uz}
       
         WEB_PANEL_URL: ${WEB_PANEL_URL}
     volumes:
