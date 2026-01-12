@@ -1,0 +1,50 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs
+dist
+build
+
+# Git
+.git
+.gitignore
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs (keep directory structure but not log files)
+logs/*.log
+logs/*-audit.json
+!logs/.gitkeep
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Testing
+coverage
+.nyc_output
+
+# Misc
+*.md
+!README.md
+.prettierrc
+.eslintrc.js
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore

@@ -1,0 +1,330 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 Int                   @id @default(autoincrement())
+  telegramId         String                @unique
+  username           String?
+  firstName          String?
+  lastName           String?
+  language           Language              @default(UZ)
+  isPremium          Boolean               @default(false)
+  premiumTill        DateTime?
+  premiumExpiresAt   DateTime?
+  hasTelegramPremium Boolean               @default(false)
+  isBlocked          Boolean               @default(false)
+  blockedAt          DateTime?
+  blockReason        String?
+  warningCount       Int                   @default(0)
+  premiumBanCount    Int                   @default(0)
+  isPremiumBanned    Boolean               @default(false)
+  premiumBannedAt    DateTime?
+  createdAt          DateTime              @default(now())
+  lastActivity       DateTime              @default(now())
+  payments           Payment[]
+  watchHistory       WatchHistory[]
+  channelStatuses    UserChannelStatus[]
+
+  @@index([telegramId])
+  @@index([isPremium])
+  @@index([hasTelegramPremium])
+  @@index([isPremiumBanned])
+}
+
+model Admin {
+  id               Int       @id @default(autoincrement())
+  telegramId       String    @unique
+  username         String?
+  role             AdminRole @default(ADMIN)
+  canAddAdmin      Boolean   @default(false)
+  canDeleteContent Boolean   @default(false)
+  createdBy        String?
+  createdAt        DateTime  @default(now())
+
+  @@index([telegramId])
+  @@index([role])
+}
+
+model Field {
+  id                Int              @id @default(autoincrement())
+  name              String           @unique
+  channelId         String           @unique
+  channelLink       String?
+  databaseChannelId Int?
+  isActive          Boolean          @default(true)
+  createdAt         DateTime         @default(now())
+  databaseChannel   DatabaseChannel? @relation(fields: [databaseChannelId], references: [id])
+  movies            Movie[]
+  serials           Serial[]
+
+  @@index([channelId])
+}
+
+model DatabaseChannel {
+  id          Int      @id @default(autoincrement())
+  channelId   String   @unique
+  channelName String
+  channelLink String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  fields      Field[]
+
+  @@index([channelId])
+}
+
+model MandatoryChannel {
+  id              Int                 @id @default(autoincrement())
+  type            ChannelType         @default(PUBLIC)
+  channelId       String?
+  channelName     String
+  channelLink     String
+  order           Int                 @default(0)
+  isActive        Boolean             @default(true)
+  memberLimit     Int?
+  currentMembers  Int                 @default(0)
+  pendingRequests Int                 @default(0)
+  createdAt       DateTime            @default(now())
+  userStatuses    UserChannelStatus[]
+
+  @@index([isActive])
+  @@index([type])
+}
+
+model Movie {
+  id               Int            @id @default(autoincrement())
+  code             Int            @unique
+  title            String
+  posterFileId     String
+  videoFileId      String?
+  videoMessageId   String?
+  channelMessageId Int?
+  genre            String?
+  language         String?
+  quality          String?
+  description      String?
+  year             Int?
+  imdb             Float?
+  duration         Int?
+  fieldId          Int
+  totalEpisodes    Int            @default(1)
+  views            Int            @default(0)
+  shareLink        String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  field            Field          @relation(fields: [fieldId], references: [id])
+  episodes         MovieEpisode[]
+  watchHistory     WatchHistory[]
+
+  @@index([code])
+  @@index([fieldId])
+  @@index([views])
+}
+
+model MovieEpisode {
+  id             Int      @id @default(autoincrement())
+  movieId        Int
+  episodeNumber  Int
+  title          String?
+  description    String?
+  videoFileId    String
+  videoMessageId String
+  views          Int      @default(0)
+  createdAt      DateTime @default(now())
+  movie          Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@unique([movieId, episodeNumber])
+  @@index([movieId])
+}
+
+model Serial {
+  id                Int            @id @default(autoincrement())
+  code              Int            @unique
+  title             String
+  posterFileId      String
+  channelMessageId  Int?
+  description       String?
+  genre             String?
+  totalEpisodes     Int            @default(0)
+  hasCustomChannel  Boolean        @default(false)
+  customChannelId   String?
+  customChannelLink String?
+  fieldId           Int
+  views             Int            @default(0)
+  shareLink         String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  episodes          Episode[]
+  field             Field          @relation(fields: [fieldId], references: [id])
+  watchHistory      WatchHistory[]
+
+  @@index([code])
+  @@index([fieldId])
+}
+
+model Episode {
+  id             Int      @id @default(autoincrement())
+  serialId       Int
+  episodeNumber  Int
+  title          String?
+  description    String?
+  videoFileId    String
+  videoMessageId String
+  views          Int      @default(0)
+  createdAt      DateTime @default(now())
+  serial         Serial   @relation(fields: [serialId], references: [id], onDelete: Cascade)
+
+  @@unique([serialId, episodeNumber])
+  @@index([serialId])
+}
+
+model WatchHistory {
+  id          Int         @id @default(autoincrement())
+  userId      Int
+  contentType ContentType
+  movieId     Int?
+  serialId    Int?
+  episodeId   Int?
+  watchedAt   DateTime    @default(now())
+  movie       Movie?      @relation(fields: [movieId], references: [id])
+  serial      Serial?     @relation(fields: [serialId], references: [id])
+  user        User        @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([watchedAt])
+}
+
+model Payment {
+  id              Int           @id @default(autoincrement())
+  userId          Int
+  amount          Float
+  duration        Int?
+  currency        String        @default("UZS")
+  receiptFileId   String?
+  status          PaymentStatus @default(PENDING)
+  provider        String        @default("payme")
+  transactionId   String?       @unique
+  processedBy     String?
+  processedAt     DateTime?
+  rejectionReason String?
+  createdAt       DateTime      @default(now())
+  user            User          @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([transactionId])
+}
+
+model PremiumSettings {
+  id              Int      @id @default(autoincrement())
+  monthlyPrice    Float
+  threeMonthPrice Float
+  sixMonthPrice   Float
+  yearlyPrice     Float
+  currency        String   @default("UZS")
+  cardNumber      String
+  cardHolder      String
+  description     String
+  updatedAt       DateTime @updatedAt
+}
+
+model BotSettings {
+  id                    Int      @id @default(autoincrement())
+  aboutBot              String
+  contactMessage        String?
+  supportUsername       String
+  adminNotificationChat String
+  welcomeMessage        String
+  updatedAt             DateTime @updatedAt
+}
+
+model Broadcast {
+  id            Int             @id @default(autoincrement())
+  type          BroadcastType
+  messageText   String
+  mediaFileId   String?
+  fromChatId    String?
+  fromMessageId Int?
+  status        BroadcastStatus @default(PENDING)
+  sentCount     Int             @default(0)
+  failedCount   Int             @default(0)
+  completedAt   DateTime?
+  createdBy     String
+  createdAt     DateTime        @default(now())
+
+  @@index([createdAt])
+  @@index([status])
+}
+
+enum AdminRole {
+  SUPERADMIN
+  MANAGER
+  ADMIN
+}
+
+enum Language {
+  UZ
+  RU
+  EN
+}
+
+enum ContentType {
+  MOVIE
+  SERIAL
+}
+
+enum BroadcastType {
+  AD
+  NOTIFICATION
+  ALL
+  PREMIUM
+  FREE
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  APPROVED
+  REJECTED
+}
+
+enum BroadcastStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+enum ChannelType {
+  PUBLIC
+  PRIVATE
+  EXTERNAL
+}
+
+enum ChannelStatus {
+  joined
+  requested
+  left
+}
+
+model UserChannelStatus {
+  id          Int              @id @default(autoincrement())
+  userId      Int
+  channelId   Int
+  status      ChannelStatus    @default(left)
+  lastUpdated DateTime         @default(now())
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel     MandatoryChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channelId])
+  @@index([userId])
+  @@index([channelId])
+  @@index([status])
+}

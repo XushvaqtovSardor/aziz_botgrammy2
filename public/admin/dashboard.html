@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Admin Panel</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h2>🎬 Aziz Kino</h2>
+            </div>
+            
+            <div class="admin-info">
+                <div class="avatar">👤</div>
+                <div class="info">
+                    <p class="name" id="adminName">Admin</p>
+                    <p class="role" id="adminRole">ADMIN</p>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-section="stats">
+                    📊 Statistika
+                </a>
+                <a href="#" class="nav-item" data-section="admins">
+                    👥 Adminlar
+                </a>
+                <a href="#" class="nav-item" data-section="users">
+                    👤 Foydalanuvchilar
+                </a>
+                <a href="#" class="nav-item" data-section="fields">
+                    📁 Fieldlar
+                </a>
+                <a href="#" class="nav-item" data-section="channels">
+                    📢 Kanallar
+                </a>
+                <a href="#" class="nav-item" data-section="movies">
+                    🎬 Kinolar
+                </a>
+                <a href="#" class="nav-item" data-section="serials">
+                    📺 Seriallar
+                </a>
+                <a href="#" class="nav-item" data-section="payments">
+                    💳 To'lovlar
+                </a>
+                <a href="#" class="nav-item" data-section="delete-content">
+                    🗑️ Kontent o'chirish
+                </a>
+            </nav>
+
+            <button class="logout-btn" onclick="logout()">
+                🚪 Chiqish
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="header">
+                <h1 id="sectionTitle">Statistika</h1>
+                <button class="refresh-btn" onclick="refreshData()">🔄 Yangilash</button>
+            </div>
+
+            <div class="content">
+                <!-- Stats Section -->
+                <div id="stats-section" class="section active">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-info">
+                                <p class="stat-value" id="totalUsers">0</p>
+                                <p class="stat-label">Foydalanuvchilar</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🎬</div>
+                            <div class="stat-info">
+                                <p class="stat-value" id="totalMovies">0</p>
+                                <p class="stat-label">Kinolar</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">📺</div>
+                            <div class="stat-info">
+                                <p class="stat-value" id="totalSerials">0</p>
+                                <p class="stat-label">Seriallar</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">💳</div>
+                            <div class="stat-info">
+                                <p class="stat-value" id="pendingPayments">0</p>
+                                <p class="stat-label">Kutilayotgan to'lovlar</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other sections will be loaded dynamically -->
+                <div id="admins-section" class="section"></div>
+                <div id="users-section" class="section"></div>
+                <div id="fields-section" class="section"></div>
+                <div id="channels-section" class="section"></div>
+                <div id="movies-section" class="section"></div>
+                <div id="serials-section" class="section"></div>
+                <div id="payments-section" class="section"></div>
+                <div id="delete-content-section" class="section"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+</html>

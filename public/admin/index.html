@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Aziz Kino Bot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .error {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .info {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3498db;
+        }
+
+        .info p {
+            color: #555;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>🎬 Admin Panel</h1>
+        
+        <div class="info">
+            <p><strong>Kirish uchun:</strong></p>
+            <p>Telegram ID'ingizni kiriting (masalan: 123456789)</p>
+            <p>ID olish: <a href="https://t.me/userinfobot" target="_blank">@userinfobot</a></p>
+        </div>
+
+        <form id="loginForm">
+            <div class="input-group">
+                <label for="telegramId">Telegram ID</label>
+                <input type="text" id="telegramId" placeholder="123456789" required>
+            </div>
+
+            <button type="submit">Kirish</button>
+        </form>
+
+        <div id="error" class="error"></div>
+    </div>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+        const API_BASE = '/api/admin';
+
+        // Auto-detect user ID
+        window.addEventListener('DOMContentLoaded', async () => {
+            let telegramId = null;
+            
+            // 1. URL parametrdan (token, userId, telegramId, id)
+            const urlParams = new URLSearchParams(window.location.search);
+            telegramId = urlParams.get('token') || urlParams.get('userId') || urlParams.get('telegramId') || urlParams.get('id');
+            
+            // 2. Telegram WebApp'dan
+            if (!telegramId && window.Telegram && window.Telegram.WebApp) {
+                const tg = window.Telegram.WebApp;
+                tg.ready();
+                if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                    telegramId = tg.initDataUnsafe.user.id.toString();
+                }
+            }
+            
+            // 3. localStorage'dan
+            if (!telegramId) {
+                telegramId = localStorage.getItem('admin_token');
+            }
+            
+            // Auto-login
+            if (telegramId) {
+                document.getElementById('telegramId').value = telegramId;
+                await tryLogin(telegramId);
+            }
+        });
+
+        async function tryLogin(telegramId) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = 'Tekshirilmoqda...';
+
+            try {
+                const response = await fetch(`${API_BASE}/me`, {
+                    headers: { 'X-Admin-Token': telegramId }
+                });
+
+                if (response.ok) {
+                    const admin = await response.json();
+                    localStorage.setItem('admin_token', telegramId);
+                    localStorage.setItem('admin_data', JSON.stringify(admin));
+                    window.location.href = '/admin/dashboard.html';
+                } else {
+                    errorDiv.textContent = 'Siz admin emassiz!';
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Xatolik: ' + error.message;
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const telegramId = document.getElementById('telegramId').value.trim();
+            if (!telegramId) {
+                document.getElementById('error').textContent = 'Telegram ID kiriting!';
+                return;
+            }
+            await tryLogin(telegramId);
+        });
+    </script>
+</body>
+</html>

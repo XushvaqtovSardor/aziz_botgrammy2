@@ -1,0 +1,56 @@
+# Optional monitoring stack
+# Usage: docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+
+version: '3.8'
+
+services:
+  # Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: aziz_bot_prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - bot-network
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: aziz_bot_grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_SERVER_ROOT_URL=http://localhost:3001
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - bot-network
+    depends_on:
+      - prometheus
+
+  # PostgreSQL Exporter for database metrics
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: aziz_bot_postgres_exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${DB_USER:-azizbot}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-aziz_bot_db}?sslmode=disable"
+    ports:
+      - "9187:9187"
+    networks:
+      - bot-network
+    depends_on:
+      - postgres
+
+volumes:
+  prometheus_data:
+  grafana_data:
