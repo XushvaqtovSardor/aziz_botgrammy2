@@ -145,13 +145,9 @@
                     telegramId = tg.initDataUnsafe.user.id.toString();
                 }
             }
-            
-            // 3. localStorage'dan
             if (!telegramId) {
                 telegramId = localStorage.getItem('admin_token');
             }
-            
-            // Auto-login
             if (telegramId) {
                 document.getElementById('telegramId').value = telegramId;
                 await tryLogin(telegramId);

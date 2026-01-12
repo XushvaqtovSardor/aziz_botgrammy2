@@ -53,7 +53,21 @@ db-seed: ## Seed database (if you have seed script)
 
 # Deployment
 deploy: ## Deploy to production (run on server)
-	./deploy.sh
+	@echo "🚀 Deploying to production..."
+	@if [ ! -f .env.production ]; then echo "❌ .env.production not found!"; exit 1; fi
+	@chmod +x deploy-production.sh
+	./deploy-production.sh
+
+deploy-quick: ## Quick deploy (rebuild and restart)
+	docker compose down
+	docker compose up -d --build
+
+deploy-check: ## Check deployment status
+	@echo "📊 Checking services..."
+	@docker compose ps
+	@echo ""
+	@echo "📋 Recent logs:"
+	@docker compose logs --tail=30 app
 
 setup-ssl: ## Setup SSL certificate (run on server as root)
 	sudo ./setup-ssl.sh

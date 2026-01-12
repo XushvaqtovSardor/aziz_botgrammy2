@@ -53,22 +53,36 @@ pnpm prisma migrate dev
 pnpm start:dev
 ```
 
-### Docker Deployment (Recommended)
+### 🐳 Docker Production Deployment (Recommended)
 
+**Step 1: Configure .env.production**
 ```bash
-# Setup environment
-cp .env.example .env
-nano .env  # Configure your settings
+# Edit .env.production file and set:
+BOT_TOKEN=your_bot_token_here
+BOT_USERNAME=your_bot_username
+POSTGRES_PASSWORD=SecurePass2026!@#
+WEB_PANEL_URL=http://YOUR_SERVER_IP:3000/admin/
+```
 
+**Step 2: Deploy on Server**
+```bash
 # Build and start services
 docker compose up -d
 
-# Run database migrations
-docker compose exec app npx prisma migrate deploy
-
 # View logs
 docker compose logs -f app
+
+# Check status
+docker compose ps
 ```
+
+**Or use deploy script:**
+```bash
+chmod +x deploy-production.sh
+./deploy-production.sh
+```
+
+📖 See [PRODUCTION_DEPLOY.md](./PRODUCTION_DEPLOY.md) for detailed guide.
 
 ### Digital Ocean Deployment
 

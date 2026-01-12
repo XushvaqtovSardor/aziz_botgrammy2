@@ -28,8 +28,12 @@ RUN pnpm build
 # Production stage
 FROM node:20-alpine AS production
 
-# Install pnpm
-RUN npm install -g pnpm
+# Install necessary tools
+RUN apk add --no-cache \
+    wget \
+    curl \
+    bash \
+    && npm install -g pnpm@latest
 
 # Set working directory
 WORKDIR /app
@@ -41,7 +45,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY prisma ./prisma
 
 # Install production dependencies only
-RUN pnpm install --prod --frozen-lockfile
+RUN pnpm install --prod --frozen-lockfile --no-optional
 
 # Generate Prisma Client
 RUN pnpm prisma generate
@@ -71,8 +75,8 @@ USER nestjs
 EXPOSE 3000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 3000) + '/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
 
 # Start application
 ENTRYPOINT ["./docker-entrypoint.sh"]
