@@ -28,7 +28,7 @@ jobs:
               git clone https://github.com/XushvaqtovSardor/aziz_botgrammy2
             else
               echo "Pulling latest changes!"
-              cd educoin_payment   
+              cd aziz_botgrammy2   
               git pull origin main  
             fi
 
