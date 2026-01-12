@@ -99,7 +99,7 @@ export class ChannelStatusService {
         userStatuses: {
           where: { userId: user.id },
         },
-      },
+       },
     });
 
     return channels.map((channel) => ({
