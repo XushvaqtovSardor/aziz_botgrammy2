@@ -5,23 +5,17 @@ function removeCommentsAndLogs(filePath) {
   let content = fs.readFileSync(filePath, 'utf-8');
   const original = content;
 
-  // Remove single-line comments (// but not URLs)
   const lines = content.split('\n');
-  const cleanedLines = lines.filter(line => {
-    // Keep if not a comment line
+  const cleanedLines = lines.filter((line) => {
     if (!line.trim().startsWith('//')) return true;
-    // Keep if it has http/https (URL)
     if (line.includes('http')) return true;
-    // Remove comment-only lines
     return false;
   });
 
   content = cleanedLines.join('\n');
 
-  // Remove multi-line comments /** ... */
   content = content.replace(/\/\*\*[\s\S]*?\*\//g, '');
 
-  // Remove excessive empty lines
   content = content.replace(/\n\s*\n\s*\n+/g, '\n\n');
 
   if (content !== original) {

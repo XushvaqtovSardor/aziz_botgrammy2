@@ -11,7 +11,7 @@ export class GrammyBotService implements OnModuleInit {
   constructor() {
     const token = process.env.BOT_TOKEN;
     if (!token) {
-      throw new Error('BOT_TOKEN is not defined in environment variables');
+      throw new Error('BOT_TOKEN is not defined in  environment variables');
     }
     this.bot = new Bot<BotContext>(token);
   }
