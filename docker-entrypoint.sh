@@ -18,10 +18,8 @@ fi
 
 echo "✅ Database connection established"
 
-echo "🔄 Running database migrations..."
-pnpm prisma migrate deploy
-
-echo "✅ Migrations completed"
+# ✅ Skip migrations in production for existing DB
+# pnpm prisma migrate deploy   <-- COMMENTED OUT
 
 echo "🚀 Starting application..."
-exec node --max-old-space-size=512 dist/main
+exec node --max-old-space-size=512 dist/main.js
