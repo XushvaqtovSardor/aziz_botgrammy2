@@ -10,7 +10,7 @@ export class AdminService {
     const admin = await this.prisma.admin.findUnique({
       where: { telegramId },
     });
-    console.log(`${admin}`)
+
     return !!admin;
   }
 

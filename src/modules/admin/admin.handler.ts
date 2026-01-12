@@ -49,9 +49,6 @@ export class AdminHandler implements OnModuleInit {
 
   onModuleInit() {
     this.registerHandlers();
-    if (this.isDevelopment) {
-      this.logger.debug('Admin handlers registered with Grammy');
-    }
   }
 
   private registerHandlers() {
@@ -61,18 +58,10 @@ export class AdminHandler implements OnModuleInit {
     bot.command('admin', async (ctx) => {
       if (!ctx.from) return;
 
-      this.logger.debug(`[/admin] Command received from user ${ctx.from.id}`);
-
       const admin = await this.getAdmin(ctx);
       if (admin) {
-        this.logger.debug(
-          `[/admin] Admin verified: ${admin.telegramId}, showing admin panel`,
-        );
         await this.handleAdminStart(ctx, admin);
       } else {
-        this.logger.warn(
-          `[/admin] User ${ctx.from.id} tried to access admin panel but is not admin`,
-        );
         await ctx.reply('❌ Siz admin emassiz!');
       }
     });
@@ -445,7 +434,6 @@ export class AdminHandler implements OnModuleInit {
     bot.callbackQuery('broadcast_premiere', async (ctx) => {
       const admin = await this.getAdmin(ctx);
       if (admin) {
-        this.logger.debug('🎬 Premiere broadcast button clicked');
         await this.startPremiereBroadcast(ctx);
       }
     });
@@ -453,7 +441,6 @@ export class AdminHandler implements OnModuleInit {
     bot.callbackQuery('broadcast_telegram_premium', async (ctx) => {
       const admin = await this.getAdmin(ctx);
       if (admin) {
-        this.logger.debug('⭐️ Telegram Premium broadcast button clicked');
         await this.startTelegramPremiumBroadcast(ctx);
       }
     });
@@ -518,13 +505,6 @@ export class AdminHandler implements OnModuleInit {
     const admin = await this.adminService.getAdminByTelegramId(
       String(ctx.from.id),
     );
-    if (admin) {
-      this.logger.debug(
-        `[getAdmin] Found admin: ${admin.telegramId} (${admin.role})`,
-      );
-    } else {
-      this.logger.warn(`[getAdmin] User ${ctx.from.id} is not an admin`);
-    }
     return admin;
   }
 
@@ -540,10 +520,6 @@ export class AdminHandler implements OnModuleInit {
 
   // ==================== START COMMAND ====================
   private async handleAdminStart(ctx: BotContext, admin: any) {
-    this.logger.debug(
-      `[handleAdminStart] Showing admin panel for ${admin.telegramId}`,
-    );
-
     // Clear any existing session
     this.sessionService.clearSession(ctx.from!.id);
 
@@ -631,8 +607,6 @@ export class AdminHandler implements OnModuleInit {
 
   // ==================== MOVIE CREATION ====================
   private async startMovieCreation(ctx: BotContext) {
-    this.logger.debug(`Admin ${ctx.from?.id} starting movie creation`);
-
     const admin = await this.getAdmin(ctx);
     if (!admin || !ctx.from) {
       await ctx.reply("❌ Sizda admin huquqi yo'q.");
@@ -1010,7 +984,6 @@ export class AdminHandler implements OnModuleInit {
         await this.handleDeleteContentSteps(ctx);
         break;
       default:
-        this.logger.warn(`Unhandled session state: ${session.state}`);
         break;
     }
   }
@@ -2366,10 +2339,6 @@ export class AdminHandler implements OnModuleInit {
           'Userlar endi "📞 Aloqa" tugmasini bosganida yangi matnni ko\'rishadi.',
         AdminKeyboard.getAdminMainMenu(admin.role),
       );
-
-      this.logger.debug(
-        `[handleContactMessageEditing] Admin ${admin.telegramId} updated contact message`,
-      );
     } catch (error) {
       this.logger.error('Error updating contact message:', error);
       await ctx.reply(
@@ -2448,23 +2417,16 @@ Qaysi guruhga xabar yubormoqchisiz?
   private async showWebPanel(ctx: BotContext) {
     const admin = await this.getAdmin(ctx);
     if (!admin) {
-      this.logger.warn(`[showWebPanel] User ${ctx.from?.id} is not an admin`);
       await ctx.reply('❌ Siz admin emassiz!');
       return;
     }
 
     try {
-      this.logger.debug(
-        `[showWebPanel] Admin ${admin.telegramId} requesting web panel link`,
-      );
-
       // Use WEB_PANEL_URL from env or construct from PORT
       const webPanelUrl =
         process.env.WEB_PANEL_URL ||
         `http://localhost:${process.env.PORT || 3001}`;
       const adminPanelUrl = `${webPanelUrl}/admin?token=${admin.telegramId}`;
-
-      this.logger.debug(`[showWebPanel] Generated URL: ${adminPanelUrl}`);
 
       const keyboard = new InlineKeyboard()
         .url("🌐 Admin Panelga o'tish", adminPanelUrl)
@@ -2478,10 +2440,6 @@ Qaysi guruhga xabar yubormoqchisiz?
         {
           reply_markup: keyboard,
         },
-      );
-
-      this.logger.debug(
-        `[showWebPanel] Web panel link sent successfully to ${admin.telegramId}`,
       );
     } catch (error) {
       this.logger.error('Error showing web panel:', error);
@@ -2853,7 +2811,6 @@ Qaysi guruhga xabar yubormoqchisiz?
             // Create channel with no limit
             await this.createChannelWithLimit(ctx, admin, sessionData, null);
           } else if (input === '🔢 Limitli') {
-      
             this.sessionService.nextStep(ctx.from.id);
             await ctx.reply(
               "🔢 Nechta a'zo qo'shilgandan keyin kanal o'chirilsin?\n\n" +
@@ -2875,10 +2832,9 @@ Qaysi guruhga xabar yubormoqchisiz?
         const step3Data = session.data;
 
         if (step3Data.channelType === ChannelType.EXTERNAL) {
-        
           try {
             await this.channelService.createMandatoryChannel({
-              channelId: step3Input, 
+              channelId: step3Input,
               channelName: step3Data.channelName,
               channelLink: step3Input,
               type: ChannelType.EXTERNAL,
@@ -3687,15 +3643,12 @@ Qaysi rol berasiz?
 
   private async startPremiereBroadcast(ctx: any) {
     try {
-      this.logger.debug('🎬 Starting premiere broadcast...');
-
       // Answer callback query first
       if (ctx.callbackQuery) {
         await ctx.answerCallbackQuery();
       }
 
       // Get admin info
-      this.logger.debug(`Fetching admin with telegramId: ${ctx.from.id}`);
       let admin;
       try {
         admin = await this.adminService.getAdminByTelegramId(
@@ -3712,11 +3665,9 @@ Qaysi rol berasiz?
       }
 
       if (!admin) {
-        this.logger.warn(`Admin not found for telegramId: ${ctx.from.id}`);
         await ctx.reply('⛔️ Admin topilmadi.');
         return;
       }
-      this.logger.debug(`Admin found: ${admin.username || admin.telegramId}`);
 
       // Start session
       this.sessionService.startSession(
@@ -3758,7 +3709,6 @@ Qaysi rol berasiz?
     session: any,
   ) {
     try {
-      this.logger.debug(`📝 Premiere broadcast step - received text: ${text}`);
       // Check for cancel
       if (text === '❌ Bekor qilish') {
         this.sessionService.clearSession(ctx.from.id);
@@ -3997,14 +3947,10 @@ Qaysi rol berasiz?
 
   private async startTelegramPremiumBroadcast(ctx: any) {
     try {
-      this.logger.debug('⭐️ Starting Telegram Premium broadcast...');
-
       // Answer callback query first
       if (ctx.callbackQuery) {
         await ctx.answerCallbackQuery();
       }
-
-      this.logger.debug(`Fetching admin with telegramId: ${ctx.from.id}`);
       let admin;
       try {
         admin = await this.adminService.getAdminByTelegramId(
@@ -4021,11 +3967,9 @@ Qaysi rol berasiz?
       }
 
       if (!admin) {
-        this.logger.warn(`Admin not found for telegramId: ${ctx.from.id}`);
         await ctx.reply('⛔️ Admin topilmadi.');
         return;
       }
-      this.logger.debug(`Admin found: ${admin.username || admin.telegramId}`);
 
       // Get count of Telegram Premium users
       let premiumUserCount = 0;
@@ -4036,7 +3980,6 @@ Qaysi rol berasiz?
             isBlocked: false,
           },
         });
-        this.logger.debug(`Found ${premiumUserCount} Telegram Premium users`);
       } catch (dbError) {
         this.logger.error('Database error counting premium users:', dbError);
         // Continue with count = 0
@@ -4084,9 +4027,6 @@ Qaysi rol berasiz?
     session: any,
   ) {
     try {
-      this.logger.debug(
-        `📝 Telegram Premium broadcast step - received text: ${text}`,
-      );
       // Check for cancel
       if (text === '❌ Bekor qilish') {
         this.sessionService.clearSession(ctx.from.id);
@@ -5061,14 +5001,8 @@ Qaysi rol berasiz?
             movie.field.channelId,
             movie.channelMessageId,
           );
-          this.logger.debug(
-            `Deleted movie ${code} from field channel ${movie.field.channelId}`,
-          );
         } catch (error) {
-          this.logger.warn(
-            `Failed to delete movie ${code} from field channel:`,
-            error,
-          );
+          // Silently ignore error
         }
       }
 
@@ -5079,14 +5013,8 @@ Qaysi rol berasiz?
             movie.field.databaseChannel.channelId,
             movie.channelMessageId,
           );
-          this.logger.debug(
-            `Deleted movie ${code} from database channel ${movie.field.databaseChannel.channelId}`,
-          );
         } catch (error) {
-          this.logger.warn(
-            `Failed to delete movie ${code} from database channel:`,
-            error,
-          );
+          // Silently ignore error
         }
       }
 
@@ -5159,14 +5087,8 @@ Qaysi rol berasiz?
             serial.field.channelId,
             serial.channelMessageId,
           );
-          this.logger.debug(
-            `Deleted serial ${code} from field channel ${serial.field.channelId}`,
-          );
         } catch (error) {
-          this.logger.warn(
-            `Failed to delete serial ${code} from field channel:`,
-            error,
-          );
+          // Silently ignore error
         }
       }
 
@@ -5177,14 +5099,8 @@ Qaysi rol berasiz?
             serial.field.databaseChannel.channelId,
             serial.channelMessageId,
           );
-          this.logger.debug(
-            `Deleted serial ${code} from database channel ${serial.field.databaseChannel.channelId}`,
-          );
         } catch (error) {
-          this.logger.warn(
-            `Failed to delete serial ${code} from database channel:`,
-            error,
-          );
+          // Silently ignore error
         }
       }
 

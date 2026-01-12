@@ -42,33 +42,14 @@ export class PrismaService
 
     this.pool = pool;
 
-    if (process.env.NODE_ENV === 'development') {
-      this.$on('query' as never, (e: any) => {
-        this.logger.debug(`Query: ${e.query}`);
-        this.logger.debug(`Duration: ${e.duration}ms`);
-      });
-    }
-
     this.$on('error' as never, (e: any) => {
       this.logger.error('Database error:', e);
     });
-
-    this.$on('warn' as never, (e: any) => {
-      this.logger.warn('Database warning:', e);
-    });
-
-    if (process.env.NODE_ENV !== 'production') {
-      this.logger.log(` Initializing database connection...`);
-      this.logger.debug(` Database URL: ${maskedUrl}`);
-    }
   }
 
   async onModuleInit() {
     try {
       await this.$connect();
-      if (process.env.NODE_ENV !== 'production') {
-        this.logger.log('Database connected successfully');
-      }
     } catch (error) {
       this.logger.error(' Database connection failed');
       this.logger.error(`Error details: ${error.message}`);
@@ -84,9 +65,6 @@ export class PrismaService
     try {
       await this.$disconnect();
       await this.pool.end();
-      if (process.env.NODE_ENV !== 'production') {
-        this.logger.log('Database disconnected successfully');
-      }
     } catch (error) {
       this.logger.error(' Error disconnecting database:', error);
     }

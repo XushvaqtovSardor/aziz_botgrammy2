@@ -51,7 +51,6 @@ export class UserHandler implements OnModuleInit {
 
   onModuleInit() {
     this.registerHandlers();
-    this.logger.debug('User handlers registered with Grammy');
   }
 
   private registerHandlers() {
@@ -69,7 +68,7 @@ export class UserHandler implements OnModuleInit {
             data: { hasTelegramPremium },
           });
         } catch (error) {
-          this.logger.debug('Error updating Telegram Premium status:', error);
+          // Silently ignore error
         }
       }
       await next();
@@ -148,9 +147,6 @@ export class UserHandler implements OnModuleInit {
     if (!ctx.from) return;
 
     const payload = ctx.match;
-    this.logger.debug(
-      `User ${ctx.from.id} started bot with payload: ${payload || 'none'}`,
-    );
 
     // Check Telegram Premium status
     const hasTelegramPremium = ctx.from.is_premium || false;
@@ -573,8 +569,6 @@ To'lov qilgandan keyin chekni botga yuboring.
       const photo = ctx.message.photo[ctx.message.photo.length - 1];
       const fileId = photo.file_id;
 
-      this.logger.debug(`User ${userId} uploaded receipt: ${fileId}`);
-
       // Get user from database
       const user = await this.userService.findByTelegramId(String(userId));
       if (!user) {
@@ -773,10 +767,6 @@ Savollaringiz bo'lsa murojaat qiling:
 
     const text = ctx.message.text;
 
-    this.logger.debug(
-      `[handleTextMessage] Received text: "${text}" from user ${ctx.from?.id}`,
-    );
-
     // Skip if it's a command or button text
     if (
       text.startsWith('/') ||
@@ -787,30 +777,19 @@ Savollaringiz bo'lsa murojaat qiling:
       text.includes('🎬') ||
       text.includes('📺')
     ) {
-      this.logger.debug(`[handleTextMessage] Skipping button/command text`);
       return;
     }
 
     // Try to parse as code
     const code = parseInt(text);
     if (!isNaN(code) && code > 0) {
-      this.logger.debug(
-        `[handleTextMessage] Parsed as code: ${code}, calling handleCodeSearch`,
-      );
       await this.handleCodeSearch(ctx, code);
-      this.logger.debug(
-        `[handleTextMessage] handleCodeSearch completed for code: ${code}`,
-      );
     }
   }
 
   // ==================== CODE SEARCH ====================
   private async handleCodeSearch(ctx: BotContext, code: number) {
     if (!ctx.from) return;
-
-    this.logger.debug(
-      `[handleCodeSearch] User ${ctx.from.id} searching for code: ${code}`,
-    );
 
     // Check if user exists and premium status
     const user = await this.userService.findByTelegramId(String(ctx.from.id));
@@ -822,17 +801,10 @@ Savollaringiz bo'lsa murojaat qiling:
     const premiumStatus = await this.premiumService.checkPremiumStatus(user.id);
     const isPremium = premiumStatus.isPremium && !premiumStatus.isExpired;
 
-    this.logger.debug(
-      `[handleCodeSearch] User ${ctx.from.id} premium status: ${isPremium}`,
-    );
-
     // Check subscription first if not premium
     if (!isPremium) {
       const hasSubscription = await this.checkSubscription(ctx, code, 'search');
       if (!hasSubscription) {
-        this.logger.debug(
-          `[handleCodeSearch] User ${ctx.from.id} not subscribed`,
-        );
         return;
       }
     }
@@ -840,9 +812,6 @@ Savollaringiz bo'lsa murojaat qiling:
     // Try to find movie
     const movie = await this.movieService.findByCode(String(code));
     if (movie) {
-      this.logger.debug(
-        `[handleCodeSearch] Found movie: ${movie.title} (${code})`,
-      );
       await this.sendMovieToUser(ctx, code);
       return;
     }
@@ -850,14 +819,10 @@ Savollaringiz bo'lsa murojaat qiling:
     // Try to find serial
     const serial = await this.serialService.findByCode(String(code));
     if (serial) {
-      this.logger.debug(
-        `[handleCodeSearch] Found serial: ${serial.title} (${code})`,
-      );
       await this.sendSerialToUser(ctx, code);
       return;
     }
 
-    this.logger.debug(`[handleCodeSearch] Movie/serial not found: ${code}`);
     await ctx.reply(`❌ ${code} kodli kino yoki serial topilmadi.`);
   }
 
@@ -935,8 +900,6 @@ ${movieDeepLink}`.trim();
             `share_movie_${movie.code}`,
           );
 
-          this.logger.warn(`sendMovieToUser CALLED for ${code}`);
-
           const videoCaption = `╭────────────────────
 ├‣  Kino nomi: ${movie.title}
 ├‣  Kino kodi: ${movie.code}
@@ -959,8 +922,6 @@ ${movieDeepLink}`.trim();
           await ctx.reply("⏳ Video hali yuklanmagan. Tez orada qo'shiladi.");
         }
       }
-
-      this.logger.debug(`User ${ctx.from.id} watched movie ${code}`);
     } catch (error) {
       this.logger.error(`Error sending movie ${code}:`, error);
       this.logger.error(`Error stack:`, error.stack);
@@ -1023,8 +984,6 @@ ${serialDeepLink}`.trim();
         parse_mode: 'Markdown',
         reply_markup: keyboard,
       });
-
-      this.logger.debug(`User ${ctx.from.id} requested serial ${code}`);
     } catch (error) {
       this.logger.error(`Error sending serial ${code}:`, error);
       await ctx.reply(
@@ -1044,10 +1003,6 @@ ${serialDeepLink}`.trim();
     // Check if user can access bot using new service
     const result = await this.channelStatusService.canUserAccessBot(
       String(ctx.from.id),
-    );
-
-    this.logger.debug(
-      `User ${ctx.from.id} can access bot: ${result.canAccess}`,
     );
 
     // If user can access bot (all channels are joined or requested), allow access
@@ -1118,10 +1073,6 @@ ${serialDeepLink}`.trim();
       String(ctx.from.id),
     );
 
-    this.logger.debug(
-      `[CheckSubscription] User ${ctx.from.id} can access: ${result.canAccess}`,
-    );
-
     // Check if user can access bot (all channels are joined or requested)
     if (result.canAccess) {
       // Delete old message
@@ -1133,7 +1084,7 @@ ${serialDeepLink}`.trim();
           );
         }
       } catch (error) {
-        this.logger.warn('Could not delete subscription message:', error);
+        // Silently ignore error
       }
 
       // Check if any have pending requests
@@ -1210,17 +1161,11 @@ ${serialDeepLink}`.trim();
     const userId = ctx.chatJoinRequest.from.id;
     const chatId = String(ctx.chatJoinRequest.chat.id);
 
-    this.logger.debug(`Join request from user ${userId} to channel ${chatId}`);
-
     // Update status in database to 'requested'
     await this.channelStatusService.updateStatus(
       String(userId),
       chatId,
       ChannelStatus.requested,
-    );
-
-    this.logger.debug(
-      `Updated status to 'requested' for user ${userId}, channel ${chatId}`,
     );
   }
 
@@ -1234,10 +1179,6 @@ ${serialDeepLink}`.trim();
     const oldStatus = update.old_chat_member.status;
     const newStatus = update.new_chat_member.status;
 
-    this.logger.debug(
-      `Chat member update: User ${userId}, Channel ${chatId}, ${oldStatus} -> ${newStatus}`,
-    );
-
     // User joined the channel
     if (
       ['member', 'administrator', 'creator'].includes(newStatus) &&
@@ -1248,9 +1189,6 @@ ${serialDeepLink}`.trim();
         chatId,
         ChannelStatus.joined,
       );
-      this.logger.debug(
-        `User ${userId} joined channel ${chatId}, status: joined`,
-      );
     }
 
     // User left or was kicked from channel
@@ -1260,7 +1198,6 @@ ${serialDeepLink}`.trim();
         chatId,
         ChannelStatus.left,
       );
-      this.logger.debug(`User ${userId} left channel ${chatId}, status: left`);
 
       // Send notification to user
       try {
@@ -1278,10 +1215,7 @@ ${serialDeepLink}`.trim();
           );
         }
       } catch (error) {
-        this.logger.debug(
-          `Could not send notification to user ${userId}:`,
-          error.message,
-        );
+        // Silently ignore notification error
       }
     }
   }
@@ -1376,10 +1310,6 @@ ${serialDeepLink}`.trim();
           await ctx.reply('❌ Video yuklashda xatolik.');
         }
       }
-
-      this.logger.debug(
-        `User ${ctx.from.id} watched episode ${episodeNumber} of serial ${serialId}`,
-      );
     } catch (error) {
       this.logger.error('Error handling episode callback:', error);
       await ctx.reply('❌ Qism yuklashda xatolik yuz berdi.');
@@ -1496,10 +1426,6 @@ ${serialDeepLink}`.trim();
           }
         }
       }
-
-      this.logger.debug(
-        `User ${ctx.from.id} watched episode ${episodeNumber} of movie ${movieId}`,
-      );
     } catch (error) {
       this.logger.error('Error handling movie episode callback:', error);
       await ctx.reply('❌ Qism yuklashda xatolik yuz berdi.');
