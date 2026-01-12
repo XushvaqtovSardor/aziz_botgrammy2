@@ -66,7 +66,6 @@ export class AdminHandler implements OnModuleInit {
       }
     });
 
-    // Admin menu buttons - only work for admins
     bot.hears(
       '📊 Statistika',
       this.withAdminCheck(this.showStatistics.bind(this)),

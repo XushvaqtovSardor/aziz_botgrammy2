@@ -11,12 +11,10 @@ export class AdminKeyboard {
       .text('📁 Fieldlar')
       .row();
 
-    // Managers and SuperAdmins can manage channels
     if (role === AdminRole.MANAGER || role === AdminRole.SUPERADMIN) {
       keyboard.text('📢 Majburiy kanallar').text('💾 Database kanallar').row();
     }
 
-    // Only SuperAdmins can manage admins and broadcasts
     if (role === AdminRole.SUPERADMIN) {
       keyboard
         .text('👥 Adminlar')
@@ -28,7 +26,6 @@ export class AdminKeyboard {
         .text("🗑️ Kontent o'chirish")
         .row();
     } else if (role === AdminRole.MANAGER) {
-      // Managers can also delete content if they have permission
       keyboard.text("🗑️ Kontent o'chirish").row();
     }
 

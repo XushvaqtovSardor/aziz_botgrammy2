@@ -37,11 +37,9 @@ export class SerialManagementService {
     private grammyBot: GrammyBotService,
   ) {}
 
-  // ========== NEW SERIAL CREATION ==========
   async handleNewSerialCode(ctx: BotContext, code: number) {
     if (!ctx.from) return;
 
-    // Check if code is taken by movie
     const existingMovie = await this.movieService.findByCode(code.toString());
     if (existingMovie) {
       const nearestCodes = await this.movieService.findNearestAvailableCodes(
@@ -58,7 +56,6 @@ export class SerialManagementService {
       return;
     }
 
-    // Check if code is taken by serial
     const existingSerial = await this.serialService.findByCode(code.toString());
     if (existingSerial) {
       const nearestCodes = await this.serialService.findNearestAvailableCodes(
@@ -121,7 +118,6 @@ export class SerialManagementService {
 
     this.sessionService.setStep(ctx.from.id, 4); // FIELD step
 
-    // Show fields
     const allFields = await this.fieldService.findAll();
     if (allFields.length === 0) {
       await ctx.reply('❌ Hech qanday field topilmadi. Avval field yarating.');
@@ -170,7 +166,7 @@ export class SerialManagementService {
       posterFileId,
       posterType,
     });
-    this.sessionService.setStep(ctx.from.id, 6); // UPLOADING_EPISODES step
+    this.sessionService.setStep(ctx.from.id, 6); 
     this.sessionService.updateSessionData(ctx.from.id, {
       currentEpisode: 1,
       episodes: [],
@@ -182,7 +178,6 @@ export class SerialManagementService {
     );
   }
 
-  // ========== EPISODE ADDING (NEW SERIAL) ==========
   async handleNewSerialEpisodeVideo(
     ctx: BotContext,
     videoFileId: string,
@@ -192,7 +187,6 @@ export class SerialManagementService {
 
     const { currentEpisode, episodes } = session.data;
 
-    // Save episode temporarily
     episodes.push({
       episodeNumber: currentEpisode,
       videoFileId,
@@ -200,7 +194,6 @@ export class SerialManagementService {
 
     this.sessionService.updateSessionData(ctx.from.id, { episodes });
 
-    // Ask: continue or finish?
     const keyboard = new Keyboard()
       .text(`➕ ${currentEpisode + 1}-qism yuklash`)
       .row()
@@ -222,7 +215,6 @@ export class SerialManagementService {
     if (!session) return;
 
     if (action.includes('qism yuklash')) {
-      // Continue adding episodes
       const { currentEpisode } = session.data;
       this.sessionService.updateSessionData(ctx.from.id, {
         currentEpisode: currentEpisode + 1,
@@ -233,7 +225,6 @@ export class SerialManagementService {
         AdminKeyboard.getCancelButton(),
       );
     } else if (action === '✅ Tugatish') {
-      // Finish and ask about posting to field
       const keyboard = new Keyboard()
         .text('✅ Ha, field kanalga tashla')
         .row()
@@ -266,14 +257,12 @@ export class SerialManagementService {
     try {
       await ctx.reply('⏳ Serial yuklanmoqda...');
 
-      // Get database channels
       const dbChannels = await this.channelService.findAllDatabase();
       if (dbChannels.length === 0) {
         await ctx.reply('❌ Database kanal topilmadi!');
         return;
       }
 
-      // Upload all episode videos to database channels
       const episodeData = [];
       const botInfo = await ctx.api.getMe();
       const botUsername = botInfo.username;
@@ -317,7 +306,6 @@ export class SerialManagementService {
         });
       }
 
-      // Create serial in database
       const serial = await this.serialService.create({
         code: code.toString(),
         title,
@@ -326,10 +314,9 @@ export class SerialManagementService {
         fieldId,
         posterFileId,
         totalEpisodes: episodes.length,
-        channelMessageId: 0, // Will update if posting to field
+        channelMessageId: 0, 
       });
 
-      // Create episodes
       for (const epData of episodeData) {
         await this.episodeService.create({
           serialId: serial.id,
@@ -339,7 +326,6 @@ export class SerialManagementService {
         });
       }
 
-      // Post to field channel if requested
       let posterMessageId = 0;
       if (postToField) {
         const caption = `
@@ -358,7 +344,6 @@ export class SerialManagementService {
           `https://t.me/${this.grammyBot.botUsername}?start=s${code}`,
         );
 
-        // Send poster as photo or video
         let sentPoster;
         const posterType = session.data.posterType || 'photo';
 
@@ -420,9 +405,6 @@ export class SerialManagementService {
     }
 
     if (movie) {
-      // Handle movie episodes
-      // Note: movie.totalEpisodes includes the original video (episode 1)
-      // So if totalEpisodes = 1, next episode should be 2
       const nextEpisodeNumber = movie.totalEpisodes + 1;
 
       this.sessionService.updateSessionData(ctx.from.id, {
@@ -431,7 +413,7 @@ export class SerialManagementService {
         nextEpisodeNumber,
         addedEpisodes: [],
       });
-      this.sessionService.setStep(ctx.from.id, 7); // Step for adding episodes
+      this.sessionService.setStep(ctx.from.id, 7); 
 
       await ctx.reply(
         `🎬 Kino topildi!\n\n` +
@@ -441,8 +423,6 @@ export class SerialManagementService {
         AdminKeyboard.getCancelButton(),
       );
     } else if (serial) {
-      // Handle serial episodes
-      // Use serial.totalEpisodes to determine next episode number
       const nextEpisodeNumber = serial.totalEpisodes + 1;
 
       this.sessionService.updateSessionData(ctx.from.id, {
@@ -451,7 +431,7 @@ export class SerialManagementService {
         nextEpisodeNumber,
         addedEpisodes: [],
       });
-      this.sessionService.setStep(ctx.from.id, 7); // Step for adding episodes
+      this.sessionService.setStep(ctx.from.id, 7);
 
       await ctx.reply(
         `📺 Serial topildi!\n\n` +
@@ -508,13 +488,11 @@ export class SerialManagementService {
     try {
       await ctx.reply('⏳ Qismlar yuklanmoqda...');
 
-      // Get database channels
       const dbChannels = await this.channelService.findAllDatabase();
       const botInfo = await ctx.api.getMe();
       const botUsername = botInfo.username;
 
       if (contentType === 'movie') {
-        // Upload movie episodes
         for (const ep of addedEpisodes) {
           const videoMessages = [];
           for (const dbChannel of dbChannels) {
@@ -544,7 +522,6 @@ export class SerialManagementService {
             }
           }
 
-          // Save movie episode to database
           await this.movieEpisodeService.create({
             movieId: movie.id,
             episodeNumber: ep.episodeNumber,
@@ -553,16 +530,13 @@ export class SerialManagementService {
           });
         }
 
-        // Update movie total episodes
         const allEpisodes = await this.movieEpisodeService.findByMovieId(
           movie.id,
         );
-        // Movie totalEpisodes = 1 (original video) + additional episodes count
         await this.movieService.update(movie.id, {
           totalEpisodes: 1 + allEpisodes.length,
         });
       } else {
-        // Upload serial episodes
         for (const ep of addedEpisodes) {
           const videoMessages = [];
           for (const dbChannel of dbChannels) {
@@ -592,7 +566,6 @@ export class SerialManagementService {
             }
           }
 
-          // Save episode to database
           await this.episodeService.create({
             serialId: serial.id,
             episodeNumber: ep.episodeNumber,
@@ -601,14 +574,12 @@ export class SerialManagementService {
           });
         }
 
-        // Update serial total episodes
         const allEpisodes = await this.episodeService.findBySerialId(serial.id);
         await this.serialService.update(serial.id, {
           totalEpisodes: allEpisodes.length,
         });
       }
 
-      // Update field channel poster if requested
       if (updateField) {
         if (contentType === 'movie' && movie.channelMessageId) {
           const field = await this.fieldService.findOne(movie.fieldId);
@@ -616,7 +587,6 @@ export class SerialManagementService {
             const allEpisodes = await this.movieEpisodeService.findByMovieId(
               movie.id,
             );
-            // Movie has 1 original video + additional episodes
             const totalEpisodes = 1 + allEpisodes.length;
             const caption = `
 ╭────────────────────
@@ -697,7 +667,6 @@ export class SerialManagementService {
         const allEpisodes = await this.movieEpisodeService.findByMovieId(
           movie.id,
         );
-        // Movie has 1 original video + additional episodes
         const totalEpisodes = 1 + allEpisodes.length;
         await ctx.reply(
           `✅ Qismlar muvaffaqiyatli qo'shildi!\n\n` +
