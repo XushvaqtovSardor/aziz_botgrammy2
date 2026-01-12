@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # Digital Ocean deployment script for Aziz Bot
-<<<<<<< HEAD
 # Usage: ./deploy.sh [OPTIONS]
 # Options:
 #   --skip-build    Skip Docker image rebuild
@@ -45,7 +44,7 @@ echo "📝 Loading environment variables..."
 export $(cat .env | grep -v '^#' | xargs)
 
 # Check required variables
-REQUIRED_VARS=("BOT_TOKEN" "DATABASE_URL" "DB_PASSWORD")
+REQUIRED_VARS=("BOT_TOKEN" "DATABASE_URL")
 for var in "${REQUIRED_VARS[@]}"; do
   if [ -z "${!var}" ]; then
     echo "❌ Error: Required variable $var is not set!"
@@ -60,7 +59,7 @@ if docker ps | grep -q aziz_bot_postgres; then
   echo "💾 Creating database backup..."
   mkdir -p backups
   BACKUP_FILE="backups/db_backup_$(date +%Y%m%d_%H%M%S).sql"
-  docker exec aziz_bot_postgres pg_dump -U "${DB_USER:-azizbot}" "${DB_NAME:-aziz_bot_db}" > "$BACKUP_FILE" 2>/dev/null || echo "⚠️  Backup skipped (no existing database)"
+  docker exec aziz_bot_postgres pg_dump -U "${POSTGRES_USER:-azizbot}" "${POSTGRES_DB:-aziz_bot_db}" > "$BACKUP_FILE" 2>/dev/null || echo "⚠️  Backup skipped (no existing database)"
   if [ -f "$BACKUP_FILE" ]; then
     echo "✅ Backup saved: $BACKUP_FILE"
   fi
@@ -71,27 +70,11 @@ if [ -d .git ]; then
   echo "📥 Pulling latest code..."
   git pull origin main || echo "⚠️  Git pull skipped"
 fi
-=======
-
-set -e
-
-echo "🚀 Starting deployment..."
-
-# Load environment variables
-if [ -f .env ]; then
-  export $(cat .env | grep -v '#' | xargs)
-fi
-
-# Pull latest changes
-echo "📥 Pulling latest code..."
-git pull origin main
->>>>>>> 9e7ed34722035ce8c5e304e50c0ff830bf2359f3
 
 # Stop existing containers
 echo "⏹️  Stopping existing containers..."
 docker-compose down
 
-<<<<<<< HEAD
 # Clean up old images if not skipping build
 if [ "$SKIP_BUILD" = false ]; then
   echo "🗑️  Removing old images..."
@@ -114,7 +97,7 @@ docker-compose up -d postgres
 echo "⏳ Waiting for database to be ready..."
 retries=0
 max_retries=30
-while ! docker-compose exec -T postgres pg_isready -U "${DB_USER:-azizbot}" >/dev/null 2>&1; do
+while ! docker-compose exec -T postgres pg_isready -U "${POSTGRES_USER:-azizbot}" >/dev/null 2>&1; do
   retries=$((retries + 1))
   if [ $retries -ge $max_retries ]; then
     echo "❌ Database failed to start after $max_retries attempts"
@@ -124,21 +107,6 @@ while ! docker-compose exec -T postgres pg_isready -U "${DB_USER:-azizbot}" >/de
   sleep 2
 done
 echo "✅ Database is ready"
-=======
-# Remove old images
-echo "🗑️  Removing old images..."
-docker image prune -f
-
-# Build new images
-echo "🔨 Building new images..."
-docker-compose build --no-cache
->>>>>>> 9e7ed34722035ce8c5e304e50c0ff830bf2359f3
-
-# Run database migrations
-echo "🗄️  Running database migrations..."
-docker-compose run --rm app pnpm prisma migrate deploy
-<<<<<<< HEAD
-echo "✅ Migrations completed"
 
 # Start all services
 echo "▶️  Starting all services..."
@@ -167,6 +135,9 @@ docker-compose ps
 echo ""
 echo "✅ Deployment completed successfully!"
 echo "Time: $(date '+%Y-%m-%d %H:%M:%S')"
+echo ""
+echo "🌐 Web Panel: http://YOUR_IP:3000/admin/"
+echo "🔍 Health Check: http://YOUR_IP:3000/health"
 
 # Show logs
 if [ "$NO_LOGS" = false ]; then
@@ -175,13 +146,3 @@ if [ "$NO_LOGS" = false ]; then
   echo "-----------------------------------"
   docker-compose logs -f --tail=50
 fi
-=======
-
-# Start services
-echo "▶️  Starting services..."
-docker-compose up -d
-
-# Show logs
-echo "📋 Showing logs..."
-docker-compose logs -f --tail=100
->>>>>>> 9e7ed34722035ce8c5e304e50c0ff830bf2359f3

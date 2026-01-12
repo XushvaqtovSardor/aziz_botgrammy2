@@ -5,10 +5,13 @@ node_modules
 # Build outputs
 dist
 build
+.next
+out
 
 # Git
 .git
 .gitignore
+.gitattributes
 
 # Environment
 .env
@@ -25,26 +28,48 @@ build
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Logs (keep directory structure but not log files)
+# Logs
 logs/*.log
 logs/*-audit.json
 !logs/.gitkeep
 *.log
 npm-debug.log*
 pnpm-debug.log*
+yarn-debug.log*
 
 # Testing
 coverage
 .nyc_output
+test
+tests
+__tests__
 
 # Misc
 *.md
 !README.md
 .prettierrc
 .eslintrc.js
+eslint.config.mjs
 
 # Docker
 Dockerfile
-docker-compose.yml
+docker-compose*.yml
 .dockerignore
+
+# Scripts
+deploy.sh
+setup*.sh
+quick-deploy.sh
+prepare-deploy.sh
+
+# SSH keys
+*.pub
+droplet*
+id_rsa*
+
+# Backups
+backups/
+*.sql
+*.dump

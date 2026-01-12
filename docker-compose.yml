@@ -1,13 +1,37 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: aziz_bot_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-azizbot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-securepassword}
+      POSTGRES_DB: ${POSTGRES_DB:-aziz_bot_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - aziz_bot_network
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-azizbot}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   app:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: aziz_bot_app
     restart: unless-stopped
-    network_mode: "host"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
@@ -20,11 +44,25 @@ services:
       - PAYME_ENDPOINT=${PAYME_ENDPOINT:-https://checkout.paycom.uz}
     volumes:
       - ./logs:/app/logs
+      - ./public:/app/public
+    networks:
+      - aziz_bot_network
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  aziz_bot_network:
+    driver: bridge
+
 volumes:
   postgres_data:
     driver: local

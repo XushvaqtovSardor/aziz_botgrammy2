@@ -1,52 +1,66 @@
 #!/bin/bash
 
-# Quick deployment script for updating the bot
-# Usage: ./quick-deploy.sh [message]
+# Quick deployment script for Digital Ocean Droplet
+# Usage: ./quick-deploy.sh
 
 set -e
 
-DEPLOY_MESSAGE="${1:-Quick update}"
-DROPLET_IP="165.232.136.50"
-DROPLET_USER="root"
-SSH_KEY="droplet_2"
-PROJECT_PATH="/opt/aziz_bot"
+echo "🚀 Quick Deploy - Aziz Bot"
+echo "=========================="
 
-echo "🚀 Quick Deploy: $DEPLOY_MESSAGE"
-echo "Target: $DROPLET_USER@$DROPLET_IP"
-echo ""
-
-# Check SSH key
-if [ ! -f "$SSH_KEY" ]; then
-    echo "❌ SSH key not found: $SSH_KEY"
-    exit 1
+# Check .env
+if [ ! -f .env ]; then
+  echo "❌ .env fayl topilmadi!"
+  echo "Iltimos .env.example dan .env yarating"
+  exit 1
 fi
 
-# Git commit and push (optional)
-if [ -d .git ]; then
-    read -p "Commit and push changes? (y/N): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo "📝 Committing changes..."
-        git add .
-        git commit -m "$DEPLOY_MESSAGE" || echo "No changes to commit"
-        git push origin main
-        echo "✅ Pushed to GitHub"
+# Stop containers
+echo "⏹️  Containerlarni to'xtatish..."
+docker-compose down 2>/dev/null || true
+
+# Remove old images
+echo "🗑️  Eski imagelarni tozalash..."
+docker image prune -f
+
+# Build and start
+echo "🔨 Build va start..."
+docker-compose up -d --build
+
+# Wait for services
+echo "⏳ Servislar ishga tushishini kutish..."
+sleep 10
+
+# Check status
+echo ""
+echo "📊 Status:"
+docker-compose ps
+
+echo ""
+echo "✅ Deploy tugadi!"
+echo ""
+echo "Foydali komandalar:"
+echo "  docker-compose logs -f          # Loglarni ko'rish"
+echo "  docker-compose restart          # Restart"
+echo "  docker-compose down             # To'xtatish"
+echo ""
+
+# Get server IP
+if [ -f .env ]; then
+    SERVER_IP=$(grep WEB_PANEL_URL .env | cut -d'/' -f3 | cut -d':' -f1)
+    if [ ! -z "$SERVER_IP" ] && [ "$SERVER_IP" != "YOUR_IP" ]; then
+        echo "🌐 Web panel: http://$SERVER_IP:3000/admin/"
+    else
+        echo "🌐 Web panel: http://YOUR_IP:3000/admin/"
     fi
 fi
 
-# Deploy to droplet
-echo ""
-echo "📡 Deploying to droplet..."
-
-ssh -i "$SSH_KEY" "$DROPLET_USER@$DROPLET_IP" << 'ENDSSH'
-    set -e
-    cd /opt/aziz_bot
-    
-    echo "📥 Pulling latest changes..."
-    git pull origin main
-    
-    echo "🔄 Restarting services..."
-    docker-compose restart app
+# Show logs
+read -p "Loglarni ko'rasizmi? (y/n) " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    docker-compose logs -f --tail=50
+fi
     
     echo "⏳ Waiting for app to be ready..."
     sleep 5

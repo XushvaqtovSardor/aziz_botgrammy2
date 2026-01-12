@@ -1,5 +1,9 @@
 # 🎬 Aziz Kino Bot
 
+![Deploy Status](https://github.com/XushvaqtovSardor/aziz_botgrammy2/actions/workflows/deploy.yml/badge.svg)
+![Node.js Version](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen)
+![Docker](https://img.shields.io/badge/docker-enabled-blue)
+
 Telegram bot for managing and sharing movies and TV series with premium subscriptions and payment integration.
 
 ## ✨ Features
@@ -15,6 +19,8 @@ Telegram bot for managing and sharing movies and TV series with premium subscrip
 - 📤 **Share Functionality** - Inline queries and share buttons
 - 🔍 **Search** - Find movies by code
 - ⚡ **Fast Performance** - Optimized with caching and database indexing
+- 🐳 **Docker Ready** - One-click deployment with Docker Compose
+- 🚀 **Auto Deploy** - GitHub Actions integration for CI/CD
 
 ## 🚀 Quick Start
 
@@ -29,8 +35,8 @@ Telegram bot for managing and sharing movies and TV series with premium subscrip
 
 ```bash
 # Clone repository
-git clone https://github.com/XushvaqtovSardor/aziz_kino_bot_withgrammy.git
-cd aziz_kino_bot_withgrammy
+git clone https://github.com/XushvaqtovSardor/aziz_botgrammy2.git
+cd aziz_botgrammy2
 
 # Install dependencies
 pnpm install
@@ -81,46 +87,67 @@ docker compose exec app npx prisma migrate deploy
 
 ## 📚 Documentation
 
-- [Quick Deploy Guide](./QUICK_DEPLOY.md) - Fast deployment in 5 minutes
-- [Complete Deployment Guide](./DIGITAL_OCEAN_DEPLOY.md) - Step-by-step instructions
-- [Deployment Checklist](./DEPLOYMENT_CHECKLIST.md) - Pre/post deployment tasks
-- [Architecture Overview](./ARCHITECTURE.md) - System design and structure
+- **[DEPLOY_GUIDE.md](./DEPLOY_GUIDE.md)** - Digital Ocean deploy qo'llanmasi (O'zbekcha)
+- **[GITHUB_ACTIONS.md](./GITHUB_ACTIONS.md)** - Avtomatik deploy sozlash
+- **[DOCKER_DESKTOP.md](./DOCKER_DESKTOP.md)** - Windows/Docker Desktop test
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - System architecture
 
-### Using Docker Compose
-=======
-### Using Docker Compose (Recommended)
->>>>>>> 9e7ed34722035ce8c5e304e50c0ff830bf2359f3
+## 🐳 Docker Deployment
+
+### Quick Start
 
 ```bash
-# Setup environment
+# Environment sozlash
 cp .env.example .env
-# Edit .env with your credentials
+nano .env  # Konfiguratsiya
 
-# Start all services
-docker compose up -d
+# Docker bilan start
+docker-compose up -d
 
-# View logs
-docker compose logs -f
+# Status tekshirish
+docker-compose ps
 
-# Stop services
-docker compose down
+# Loglar
+docker-compose logs -f
 ```
 
-### Digital Ocean Deployment
+### Digital Ocean Droplet
 
-See detailed instructions in [DEPLOYMENT.md](./DEPLOYMENT.md).
-
-Quick deploy:
+**Qisqa yo'l:**
 ```bash
-ssh root@your_droplet_ip
-cd /opt
-git clone <your-repo>
-cd aziz_bot_grammy
+ssh root@YOUR_DROPLET_IP
+cd /root
+git clone https://github.com/XushvaqtovSardor/aziz_botgrammy2.git
+cd aziz_botgrammy2
 cp .env.example .env
-nano .env  # Update credentials
+nano .env  # Configure
 chmod +x deploy.sh
 ./deploy.sh
 ```
+
+**Batafsil qo'llanma:** [DEPLOY_GUIDE.md](./DEPLOY_GUIDE.md)
+
+## 🚀 GitHub Actions - Auto Deploy
+
+Push qilsangiz avtomatik deploy bo'ladi!
+
+### Sozlash:
+
+1. **GitHub Secrets qo'shish** (`Settings` → `Secrets`):
+   - `SSH_HOST` - Droplet IP
+   - `SSH_USER` - `root`
+   - `SSH_KEY` - SSH private key
+
+2. **Push qilish:**
+```bash
+git add .
+git commit -m "Update"
+git push origin main
+```
+
+3. **Avtomatik deploy ishga tushadi!** 🎉
+
+**Batafsil:** [GITHUB_ACTIONS.md](./GITHUB_ACTIONS.md)
 
 ## 📁 Project Structure
 

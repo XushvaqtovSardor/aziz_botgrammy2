@@ -1,0 +1,42 @@
+name: deploy CI/CD project
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy over SSH and run Docker Compose
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            echo "Creating project folder if it doesn't exist!"
+            mkdir -p /root
+            cd /root
+
+            if [ ! -d "aziz_botgrammy2/.git" ]; then
+              echo "Cloning repository!" 
+              git clone https://github.com/XushvaqtovSardor/aziz_botgrammy2
+            else
+              echo "Pulling latest changes!"
+              cd educoin_payment   
+              git pull origin main  
+            fi
+
+            echo "Stopping containers"
+            docker compose down
+
+            echo "Building containers"
+            docker compose build 
+
+            echo "Running containers"
+            docker compose up -d

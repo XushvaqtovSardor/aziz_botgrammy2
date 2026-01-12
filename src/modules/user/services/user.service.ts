@@ -108,7 +108,7 @@ export class UserService {
         this.prisma.user.count({ where: { isPremium: true } }),
         this.prisma.user.count({ where: { isBlocked: true } }),
         this.prisma.user.count({
-          where: {
+          where: { 
             lastActivity: {
               gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
             },
