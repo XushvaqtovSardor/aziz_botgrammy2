@@ -34,14 +34,11 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-info}
       
       # Telegram Bot
-      - BOT_TOKEN=${BOT_TOKEN:?BOT_TOKEN is required}
-      - BOT_USERNAME=${BOT_USERNAME:?BOT_USERNAME is required}
+      - BOT_TOKEN=${BOT_TOKEN}
+      - BOT_USERNAME=@Kinolar_animelar_dramalar_bot
       
       # Database
-      - DATABASE_URL=${DATABASE_URL}
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${DB_NAME}
+      - DATABASE_URL=postgresql://azizbot:securepassword@postgres:5432/aziz_bot_db?schema=public
       
       # Payment (optional)
       - PAYME_MERCHANT_ID=${PAYME_MERCHANT_ID:-}
