@@ -457,7 +457,7 @@ export class AdminHandler implements OnModuleInit {
       if (admin && session) {
         await this.handlePhoto(ctx);
       } else {
-        await next(); 
+        await next();
       }
     });
 
@@ -472,7 +472,7 @@ export class AdminHandler implements OnModuleInit {
       if (admin && session) {
         await this.handleVideoMessage(ctx);
       } else {
-        await next(); 
+        await next();
       }
     });
 
@@ -3039,9 +3039,17 @@ Qaysi rol berasiz?
           );
           return;
         } else {
+          const session = this.sessionService.getSession(ctx.from.id);
+          if (!session) return;
           const data = session.data;
+          const currentEpisodeNumber =
+            data.nextEpisodeNumber ||
+            (data.addedEpisodes?.length || 0) +
+              (data.contentType === 'movie'
+                ? data.movie.totalEpisodes
+                : data.serial.totalEpisodes);
           await ctx.reply(
-            `📹 ${data.nextEpisodeNumber}-qism videosini yuboring:`,
+            `📹 ${currentEpisodeNumber}-qism videosini yuboring:`,
             AdminKeyboard.getCancelButton(),
           );
           return;
@@ -3212,7 +3220,7 @@ Qaysi rol berasiz?
         this.sessionService.setStep(ctx.from.id, SerialCreateStep.PHOTO);
 
         await ctx.reply(
-          '🖼 Serial rasmini (poster) yuboring:',
+          '🖼 Serial rasmini (poster) yoki vedio yuboring:',
           AdminKeyboard.getCancelButton(),
         );
         break;
@@ -4777,8 +4785,7 @@ Qaysi rol berasiz?
             movie.field.channelId,
             movie.channelMessageId,
           );
-        } catch (error) {
-        }
+        } catch (error) {}
       }
 
       if (movie.channelMessageId && movie.field?.databaseChannel?.channelId) {
@@ -4787,8 +4794,7 @@ Qaysi rol berasiz?
             movie.field.databaseChannel.channelId,
             movie.channelMessageId,
           );
-        } catch (error) {
-        }
+        } catch (error) {}
       }
 
       await this.prisma.movieEpisode.deleteMany({
@@ -4856,8 +4862,7 @@ Qaysi rol berasiz?
             serial.field.channelId,
             serial.channelMessageId,
           );
-        } catch (error) {
-        }
+        } catch (error) {}
       }
 
       if (serial.channelMessageId && serial.field?.databaseChannel?.channelId) {
@@ -4866,8 +4871,7 @@ Qaysi rol berasiz?
             serial.field.databaseChannel.channelId,
             serial.channelMessageId,
           );
-        } catch (error) {
-        }
+        } catch (error) {}
       }
 
       await this.prisma.episode.deleteMany({
@@ -5012,8 +5016,7 @@ Qaysi rol berasiz?
           if (field.databaseChannel) {
             targetChannelId = field.databaseChannel.channelId;
             targetChannelName = field.databaseChannel.channelName;
-          }
-          else if (field.channelId) {
+          } else if (field.channelId) {
             targetChannelId = field.channelId;
             targetChannelName = field.name;
           }
