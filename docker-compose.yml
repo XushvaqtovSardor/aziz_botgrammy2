@@ -14,7 +14,8 @@ services:
       - PORT=3000
       - BOT_TOKEN=${BOT_TOKEN}
       - BOT_USERNAME=${BOT_USERNAME}
-      - DATABASE_URL=postgresql://${DB_USER:-azizbot}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-aziz_bot_db}?schema=public
+      - DATABASE_URL=DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?schema=public
+
       - PAYME_MERCHANT_ID=${PAYME_MERCHANT_ID}
       - PAYME_KEY=${PAYME_KEY}
       - PAYME_TEST_KEY=${PAYME_TEST_KEY}
