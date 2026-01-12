@@ -18,7 +18,6 @@ export class AdminApiGuard implements CanActivate {
       throw new UnauthorizedException('Admin token required');
     }
 
-    // Token format: telegramId (oddiy qilamiz)
     const telegramId = token.toString();
 
     const admin = await this.adminService.getAdminByTelegramId(telegramId);

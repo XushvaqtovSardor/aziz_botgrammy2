@@ -39,13 +39,11 @@ export class AdminApiController {
     private prisma: PrismaService,
   ) {}
 
-  // ==================== AUTH ====================
   @Get('me')
   getMe(@Request() req: any) {
     return req.admin;
   }
 
-  // ==================== STATISTICS ====================
   @Get('stats')
   async getStatistics() {
     const [userStats, paymentStats] = await Promise.all([
@@ -59,7 +57,6 @@ export class AdminApiController {
     };
   }
 
-  // ==================== ADMINS ====================
   @Get('admins')
   async getAdmins(@Request() req) {
     const isSuperAdmin = req.admin.role === AdminRole.SUPERADMIN;
@@ -103,12 +100,10 @@ export class AdminApiController {
       );
     }
 
-    // Check if trying to delete themselves
     if (telegramId === req.admin.telegramId) {
       throw new HttpException('Cannot delete yourself', HttpStatus.BAD_REQUEST);
     }
 
-    // Get the admin to be deleted
     const adminToDelete =
       await this.adminService.getAdminByTelegramId(telegramId);
 
@@ -116,7 +111,6 @@ export class AdminApiController {
       throw new HttpException('Admin not found', HttpStatus.NOT_FOUND);
     }
 
-    // Get current admin details
     const currentAdmin = await this.adminService.getAdminByTelegramId(
       req.admin.telegramId,
     );
@@ -125,9 +119,6 @@ export class AdminApiController {
       throw new HttpException('Current admin not found', HttpStatus.NOT_FOUND);
     }
 
-    // Check if allowed to delete:
-    // 1. Admin was created by current user
-    // 2. OR admin was created after current user
     const canDelete =
       adminToDelete.createdBy === req.admin.telegramId ||
       adminToDelete.createdAt > currentAdmin.createdAt;
@@ -142,7 +133,6 @@ export class AdminApiController {
     return this.adminService.deleteAdmin(telegramId);
   }
 
-  // ==================== USERS ====================
   @Get('users')
   async getUsers() {
     return this.userService.getAllUsers();
@@ -166,7 +156,6 @@ export class AdminApiController {
     return this.userService.unblockUser(telegramId);
   }
 
-  // ==================== FIELDS ====================
   @Get('fields')
   async getFields() {
     return this.fieldService.findAll();
@@ -204,7 +193,6 @@ export class AdminApiController {
     return this.fieldService.delete(+id);
   }
 
-  // ==================== CHANNELS ====================
   @Get('channels/mandatory')
   async getMandatoryChannels() {
     return this.channelService.findAll();
@@ -220,10 +208,8 @@ export class AdminApiController {
       order?: number;
     },
   ) {
-    // Extract channelId from link if not provided
     let channelId = body.channelId;
     if (!channelId && body.channelLink) {
-      // Try to extract from t.me/username
       const match = body.channelLink.match(/t\.me\/([^/?]+)/);
       if (match) {
         channelId = '@' + match[1];
@@ -266,7 +252,6 @@ export class AdminApiController {
     return this.channelService.deleteDatabaseChannel(+id);
   }
 
-  // ==================== MOVIES ====================
   @Get('movies')
   async getMovies() {
     return this.movieService.findAll();
@@ -290,7 +275,6 @@ export class AdminApiController {
     return this.movieService.delete(+id);
   }
 
-  // ==================== SERIALS ====================
   @Get('serials')
   async getSerials() {
     return this.serialService.findAll();
@@ -314,7 +298,6 @@ export class AdminApiController {
     return this.serialService.delete(+id);
   }
 
-  // Delete movie by code
   @Delete('movies/code/:code')
   async deleteMovieByCode(@Request() req, @Param('code') code: string) {
     const canDelete =
@@ -342,39 +325,30 @@ export class AdminApiController {
       throw new NotFoundException(`Movie with code ${code} not found`);
     }
 
-    // Try to delete from field channel if exists
     let deletedFromFieldChannel = false;
     if (movie.channelMessageId && movie.field?.channelId) {
       try {
-        // This would need bot instance access, so we'll just log it
-        // In real implementation, you'd inject the bot service
         deletedFromFieldChannel = true;
       } catch (error) {
-        // Log but continue
       }
     }
 
-    // Try to delete from database channel if exists
     let deletedFromDatabaseChannel = false;
     if (movie.channelMessageId && movie.field?.databaseChannel?.channelId) {
       try {
         deletedFromDatabaseChannel = true;
       } catch (error) {
-        // Log but continue
       }
     }
 
-    // Delete all episodes first (cascade should handle this, but being explicit)
     await this.prisma.movieEpisode.deleteMany({
       where: { movieId: movie.id },
     });
 
-    // Delete watch history
     await this.prisma.watchHistory.deleteMany({
       where: { movieId: movie.id },
     });
 
-    // Delete the movie
     await this.prisma.movie.delete({
       where: { id: movie.id },
     });
@@ -387,7 +361,6 @@ export class AdminApiController {
     };
   }
 
-  // Delete serial by code
   @Delete('serials/code/:code')
   async deleteSerialByCode(@Request() req, @Param('code') code: string) {
     const canDelete =
@@ -415,23 +388,19 @@ export class AdminApiController {
       throw new NotFoundException(`Serial with code ${code} not found`);
     }
 
-    // Try to delete from channels (logged for reference)
     let deletedFromChannels = false;
     if (serial.channelMessageId) {
       deletedFromChannels = true;
     }
 
-    // Delete all episodes first
     await this.prisma.episode.deleteMany({
       where: { serialId: serial.id },
     });
 
-    // Delete watch history
     await this.prisma.watchHistory.deleteMany({
       where: { serialId: serial.id },
     });
 
-    // Delete the serial
     await this.prisma.serial.delete({
       where: { id: serial.id },
     });
@@ -444,7 +413,6 @@ export class AdminApiController {
     };
   }
 
-  // ==================== PAYMENTS ====================
   @Get('payments/pending')
   async getPendingPayments() {
     return this.paymentService.findPending();
@@ -511,7 +479,6 @@ export class AdminApiController {
     return this.paymentService.reject(+id, admin!.id, body.reason);
   }
 
-  // ==================== PREMIUM BANNED USERS ====================
   @Get('users/premium-banned')
   async getPremiumBannedUsers() {
     return this.userService.getPremiumBannedUsers();

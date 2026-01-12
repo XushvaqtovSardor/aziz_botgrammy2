@@ -12,7 +12,6 @@ export class MarkupHelper {
           keyboard.text(btn.text, btn.callback_data);
         }
         if (btnIndex < row.length - 1) {
-          // Button separator (optional)
         }
       });
       if (rowIndex < buttons.length - 1) {

@@ -49,7 +49,6 @@ export class PremiumService {
     const isExpired = user.premiumExpiresAt && user.premiumExpiresAt < now;
 
     if (isExpired) {
-      // Auto-deactivate expired premium
       await this.deactivatePremium(userId);
       return {
         isPremium: false,

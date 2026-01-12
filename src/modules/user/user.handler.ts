@@ -24,7 +24,6 @@ import { ChannelStatus } from '@prisma/client';
 export class UserHandler implements OnModuleInit {
   private readonly logger = new Logger(UserHandler.name);
 
-  // Store users waiting to upload receipt
   private waitingForReceipt = new Map<
     number,
     { amount: number; duration: number; months: number }
@@ -56,35 +55,29 @@ export class UserHandler implements OnModuleInit {
   private registerHandlers() {
     const bot = this.grammyBot.bot;
 
-    // Middleware to update Telegram Premium status
     bot.use(async (ctx, next) => {
       if (ctx.from && ctx.from.id) {
         try {
           const hasTelegramPremium = ctx.from.is_premium || false;
 
-          // Update user's Telegram Premium status in database
           await this.prisma.user.updateMany({
             where: { telegramId: String(ctx.from.id) },
             data: { hasTelegramPremium },
           });
         } catch (error) {
-          // Silently ignore error
         }
       }
       await next();
     });
 
-    // Start command
     bot.command('start', this.handleStart.bind(this));
 
-    // Main menu buttons
     bot.hears("🔍 Kino kodi bo'yicha qidirish", this.handleSearch.bind(this));
     bot.hears('💎 Premium sotib olish', this.showPremium.bind(this));
     bot.hears('ℹ️ Bot haqida', this.showAbout.bind(this));
     bot.hears('📞 Aloqa', this.showContact.bind(this));
     bot.hears('🔙 Orqaga', this.handleBack.bind(this));
 
-    // Callback query handlers
     bot.callbackQuery(/^movie_\d+$/, this.handleMovieCallback.bind(this));
     bot.callbackQuery(/^serial_\d+$/, this.handleSerialCallback.bind(this));
     bot.callbackQuery(
@@ -116,22 +109,15 @@ export class UserHandler implements OnModuleInit {
       this.handleShareSerial.bind(this),
     );
 
-    // Inline query handler for sharing
     bot.on('inline_query', this.handleInlineQuery.bind(this));
 
-    // Handle chat join requests (for private channels)
     bot.on('chat_join_request', this.handleJoinRequest.bind(this));
 
-    // Handle chat member updates (when user joins/leaves channel)
     bot.on('chat_member', this.handleChatMemberUpdate.bind(this));
     bot.on('my_chat_member', this.handleChatMemberUpdate.bind(this));
 
-    // Handle photo messages (for receipt upload)
     bot.on('message:photo', this.handlePhotoMessage.bind(this));
 
-    // NOTE: message:text is handled by admin.handler.ts middleware first
-    // If admin has no session, it calls next() which then triggers bot.use()
-    // We register handleTextMessage via bot.use() to be called after admin middleware
     bot.use(async (ctx, next) => {
       if (ctx.message && 'text' in ctx.message) {
         await this.handleTextMessage(ctx);
@@ -142,16 +128,13 @@ export class UserHandler implements OnModuleInit {
     });
   }
 
-  // ==================== START COMMAND ====================
   private async handleStart(ctx: BotContext) {
     if (!ctx.from) return;
 
     const payload = ctx.match;
 
-    // Check Telegram Premium status
     const hasTelegramPremium = ctx.from.is_premium || false;
 
-    // Check or create user
     const user = await this.userService.findOrCreate(String(ctx.from.id), {
       firstName: ctx.from.first_name || '',
       lastName: ctx.from.last_name || '',
@@ -159,7 +142,6 @@ export class UserHandler implements OnModuleInit {
       languageCode: ctx.from.language_code || 'uz',
     });
 
-    // Check if user is blocked
     if (user.isBlocked) {
       await ctx.reply(
         '🚫 Siz botdan foydalanish huquqidan mahrum etilgansiz.\n\n' +
@@ -168,32 +150,25 @@ export class UserHandler implements OnModuleInit {
       return;
     }
 
-    // Update Telegram Premium status in database
     await this.prisma.user.update({
       where: { id: user.id },
       data: { hasTelegramPremium },
     });
 
-    // Check premium status
     const premiumStatus = await this.premiumService.checkPremiumStatus(user.id);
     const isPremium = premiumStatus.isPremium && !premiumStatus.isExpired;
 
-    // Check if user is admin/manager/superadmin
     const admin = await this.adminService.getAdminByTelegramId(
       String(ctx.from.id),
     );
     const isAdmin = !!admin; // If admin exists, skip channel check
 
-    // Check mandatory channels subscription FIRST (for all users, new and old)
-    // Skip check for admins, managers, and superadmins
     if (!isPremium && !isAdmin) {
       const hasSubscription = await this.checkSubscription(ctx, 0, 'start');
       if (!hasSubscription) return; // Will show mandatory channels
     }
 
-    // Handle deep link (start=123 for movie or start=s123 for serial)
     if (typeof payload === 'string' && payload.length > 0) {
-      // Check if it's a serial (starts with 's')
       if (payload.startsWith('s')) {
         const code = parseInt(payload.substring(1));
         if (!isNaN(code)) {
@@ -201,7 +176,6 @@ export class UserHandler implements OnModuleInit {
           return;
         }
       } else {
-        // It's a movie (just the code number)
         const code = parseInt(payload);
         if (!isNaN(code)) {
           await this.sendMovieToUser(ctx, code);
@@ -210,7 +184,6 @@ export class UserHandler implements OnModuleInit {
       }
     }
 
-    // Show welcome message
     const welcomeMessage =
       `👋 Assalomu alaykum, ${ctx.from.first_name} botimizga xush kelibsiz.
 
@@ -222,7 +195,6 @@ export class UserHandler implements OnModuleInit {
     );
   }
 
-  // ==================== MOVIES ====================
   private async showMovies(ctx: BotContext) {
     const fields = await this.fieldService.findAll();
 
@@ -246,12 +218,10 @@ export class UserHandler implements OnModuleInit {
     });
   }
 
-  // ==================== SERIALS ====================
   private async showSerials(ctx: BotContext) {
     await ctx.reply("📺 Seriallar bo'limi ishlab chiqilmoqda...");
   }
 
-  // ==================== SEARCH ====================
   private async handleSearch(ctx: BotContext) {
     if (!ctx.from) return;
 
@@ -263,7 +233,6 @@ export class UserHandler implements OnModuleInit {
     );
   }
 
-  // ==================== BOT HAQIDA ====================
   private async showAbout(ctx: BotContext) {
     if (!ctx.from) return;
 
@@ -310,7 +279,6 @@ export class UserHandler implements OnModuleInit {
       }
     });
 
-    // Add back button to inline keyboard
     keyboard.row().text('🔙 Orqaga', 'back_to_main');
 
     await ctx.reply(message, {
@@ -319,7 +287,6 @@ export class UserHandler implements OnModuleInit {
     });
   }
 
-  // ==================== FIELD KANALLARGA O'TISH ====================
   private async showFieldChannels(ctx: BotContext) {
     const fields = await this.fieldService.findAll();
 
@@ -347,7 +314,6 @@ export class UserHandler implements OnModuleInit {
     });
   }
 
-  // ==================== PROFILE ====================
   private async showProfile(ctx: BotContext) {
     if (!ctx.from) return;
 
@@ -384,11 +350,9 @@ export class UserHandler implements OnModuleInit {
     await ctx.reply(message, { parse_mode: 'Markdown' });
   }
 
-  // ==================== PREMIUM ====================
   private async showPremium(ctx: BotContext) {
     if (!ctx.from) return;
 
-    // Check if user is banned from premium
     const user = await this.prisma.user.findUnique({
       where: { telegramId: String(ctx.from.id) },
     });
@@ -402,7 +366,6 @@ export class UserHandler implements OnModuleInit {
       return;
     }
 
-    // Handle callback query if it exists
     if (ctx.callbackQuery) {
       await ctx.answerCallbackQuery();
     }
@@ -453,7 +416,6 @@ Qaysi muddatga obuna bo'lmoqchisiz?
     if (!ctx.callbackQuery || !('data' in ctx.callbackQuery)) return;
     if (!ctx.from) return;
 
-    // Check if user is banned from premium
     const user = await this.prisma.user.findUnique({
       where: { telegramId: String(ctx.from.id) },
     });
@@ -492,7 +454,6 @@ Qaysi muddatga obuna bo'lmoqchisiz?
         break;
     }
 
-    // Generate Payme link
     const botUsername = (await ctx.api.getMe()).username;
     const paymeUrl = this.generatePaymeUrl(
       ctx.from.id,
@@ -531,7 +492,6 @@ To'lov qilgandan keyin chekni botga yuboring.
       reply_markup: keyboard,
     });
 
-    // Store payment info for this user
     this.waitingForReceipt.set(ctx.from.id, {
       amount: price,
       duration,
@@ -557,11 +517,9 @@ To'lov qilgandan keyin chekni botga yuboring.
 
     const userId = ctx.from.id;
 
-    // Check if user is waiting to upload receipt
     const paymentInfo = this.waitingForReceipt.get(userId);
 
     if (!paymentInfo) {
-      // User is not in receipt upload mode
       return;
     }
 
@@ -569,14 +527,12 @@ To'lov qilgandan keyin chekni botga yuboring.
       const photo = ctx.message.photo[ctx.message.photo.length - 1];
       const fileId = photo.file_id;
 
-      // Get user from database
       const user = await this.userService.findByTelegramId(String(userId));
       if (!user) {
         await ctx.reply('❌ Foydalanuvchi topilmadi.');
         return;
       }
 
-      // Create payment record
       const payment = await this.paymentService.create(
         user.id,
         paymentInfo.amount,
@@ -584,10 +540,8 @@ To'lov qilgandan keyin chekni botga yuboring.
         paymentInfo.duration,
       );
 
-      // Remove from waiting list
       this.waitingForReceipt.delete(userId);
 
-      // Send confirmation to user
       await ctx.reply(
         '✅ **Chek qabul qilindi!**\n\n' +
           `📝 To'lov ID: ${payment.id}\n` +
@@ -597,7 +551,6 @@ To'lov qilgandan keyin chekni botga yuboring.
         { parse_mode: 'Markdown' },
       );
 
-      // Send notification to admins
       await this.notifyAdminsNewPayment(payment, user, paymentInfo);
     } catch (error) {
       this.logger.error('Error processing receipt:', error);
@@ -613,7 +566,6 @@ To'lov qilgandan keyin chekni botga yuboring.
     paymentInfo: { amount: number; duration: number; months: number },
   ) {
     try {
-      // Get all admins from database
       const admins = await this.adminService.findAll();
 
       const message = `
@@ -634,7 +586,6 @@ To'lov qilgandan keyin chekni botga yuboring.
 
       for (const admin of admins) {
         try {
-          // Send receipt photo to admin
           await this.grammyBot.bot.api.sendPhoto(
             admin.telegramId,
             payment.receiptFileId,
@@ -662,7 +613,6 @@ To'lov qilgandan keyin chekni botga yuboring.
     duration: number,
     botUsername: string,
   ): string {
-    // Payme merchant ID from environment
     const merchantId = process.env.PAYME_MERCHANT_ID || '';
 
     if (!merchantId) {
@@ -670,10 +620,8 @@ To'lov qilgandan keyin chekni botga yuboring.
       return 'https://checkout.paycom.uz';
     }
 
-    // Amount in tiyin (1 so'm = 100 tiyin)
     const amountInTiyin = amount * 100;
 
-    // Transaction params
     const params = Buffer.from(
       JSON.stringify({
         merchant_id: merchantId,
@@ -692,12 +640,10 @@ To'lov qilgandan keyin chekni botga yuboring.
     return `${paymeEndpoint}/${params}`;
   }
 
-  // ==================== SETTINGS ====================
   private async showSettings(ctx: BotContext) {
     await ctx.reply("⚙️ Sozlamalar bo'limi ishlab chiqilmoqda...");
   }
 
-  // ==================== BACK BUTTON ====================
   private async handleBack(ctx: BotContext) {
     if (!ctx.from) return;
 
@@ -724,7 +670,6 @@ To'lov qilgandan keyin chekni botga yuboring.
     const isPremium = user.isPremium || false;
     const isPremiumBanned = user.isPremiumBanned || false;
 
-    // Delete the inline keyboard message
     try {
       await ctx.deleteMessage();
     } catch (error) {
@@ -737,13 +682,11 @@ To'lov qilgandan keyin chekni botga yuboring.
     );
   }
 
-  // ==================== CONTACT ====================
   private async showContact(ctx: BotContext) {
     if (!ctx.from) return;
 
     const settings = await this.settingsService.getSettings();
 
-    // Use custom contact message if set by admin, otherwise use default
     const message =
       settings.contactMessage ||
       `
@@ -761,13 +704,11 @@ Savollaringiz bo'lsa murojaat qiling:
     });
   }
 
-  // ==================== TEXT MESSAGE HANDLER ====================
   private async handleTextMessage(ctx: BotContext) {
     if (!ctx.message || !('text' in ctx.message)) return;
 
     const text = ctx.message.text;
 
-    // Skip if it's a command or button text
     if (
       text.startsWith('/') ||
       text.includes('🔍') ||
@@ -780,18 +721,15 @@ Savollaringiz bo'lsa murojaat qiling:
       return;
     }
 
-    // Try to parse as code
     const code = parseInt(text);
     if (!isNaN(code) && code > 0) {
       await this.handleCodeSearch(ctx, code);
     }
   }
 
-  // ==================== CODE SEARCH ====================
   private async handleCodeSearch(ctx: BotContext, code: number) {
     if (!ctx.from) return;
 
-    // Check if user exists and premium status
     const user = await this.userService.findByTelegramId(String(ctx.from.id));
     if (!user) {
       this.logger.error(`[handleCodeSearch] User not found: ${ctx.from.id}`);
@@ -801,7 +739,6 @@ Savollaringiz bo'lsa murojaat qiling:
     const premiumStatus = await this.premiumService.checkPremiumStatus(user.id);
     const isPremium = premiumStatus.isPremium && !premiumStatus.isExpired;
 
-    // Check subscription first if not premium
     if (!isPremium) {
       const hasSubscription = await this.checkSubscription(ctx, code, 'search');
       if (!hasSubscription) {
@@ -809,14 +746,12 @@ Savollaringiz bo'lsa murojaat qiling:
       }
     }
 
-    // Try to find movie
     const movie = await this.movieService.findByCode(String(code));
     if (movie) {
       await this.sendMovieToUser(ctx, code);
       return;
     }
 
-    // Try to find serial
     const serial = await this.serialService.findByCode(String(code));
     if (serial) {
       await this.sendSerialToUser(ctx, code);
@@ -826,7 +761,6 @@ Savollaringiz bo'lsa murojaat qiling:
     await ctx.reply(`❌ ${code} kodli kino yoki serial topilmadi.`);
   }
 
-  // ==================== SEND MOVIE ====================
   private async sendMovieToUser(ctx: BotContext, code: number) {
     if (!ctx.from) return;
 
@@ -840,13 +774,11 @@ Savollaringiz bo'lsa murojaat qiling:
       const user = await this.userService.findByTelegramId(String(ctx.from.id));
       if (!user) return;
 
-      // Get movie episodes
       const episodes = await this.movieEpisodeService.findByMovieId(movie.id);
 
       const botUsername = (await ctx.api.getMe()).username;
       const field = await this.fieldService.findOne(movie.fieldId);
 
-      // If movie has multiple episodes (total > 1), show episode selection
       if (movie.totalEpisodes > 1) {
         const movieDeepLink = `https://t.me/${botUsername}?start=${movie.code}`;
 
@@ -860,20 +792,15 @@ Savollaringiz bo'lsa murojaat qiling:
 ▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️
 ${movieDeepLink}`.trim();
 
-        // Create keyboard with episode numbers
-        // Include episode 1 (original movie video) + additional episodes
         const keyboard = new InlineKeyboard();
 
-        // Add button for episode 1 (original video)
         keyboard.text('1', `movie_episode_${movie.id}_1`);
 
-        // Add buttons for additional episodes
         episodes.forEach((episode, index) => {
           keyboard.text(
             `${episode.episodeNumber}`,
             `movie_episode_${movie.id}_${episode.episodeNumber}`,
           );
-          // New row after every 5 buttons
           if ((index + 2) % 5 === 0) keyboard.row(); // +2 because we started with episode 1
         });
         if ((episodes.length + 1) % 5 !== 0) keyboard.row();
@@ -883,16 +810,13 @@ ${movieDeepLink}`.trim();
           .row()
           .text('🔙 Orqaga', 'back_to_main');
 
-        // Send poster with episodes
         await ctx.replyWithPhoto(movie.posterFileId, {
           caption,
           reply_markup: keyboard,
         });
 
-        // Record watch history
         await this.watchHistoryService.recordMovieWatch(user.id, movie.id);
       } else {
-        // Single episode movie - send video directly
         if (movie.videoFileId) {
           const movieDeepLink = `https://t.me/${botUsername}?start=${movie.code}`;
           const shareKeyboard = new InlineKeyboard().text(
@@ -916,7 +840,6 @@ ${movieDeepLink}`.trim();
             reply_markup: shareKeyboard,
           });
 
-          // Record watch history
           await this.watchHistoryService.recordMovieWatch(user.id, movie.id);
         } else {
           await ctx.reply("⏳ Video hali yuklanmagan. Tez orada qo'shiladi.");
@@ -944,7 +867,6 @@ ${movieDeepLink}`.trim();
       const user = await this.userService.findByTelegramId(String(ctx.from.id));
       if (!user) return;
 
-      // Get episodes
       const episodes = await this.episodeService.findBySerialId(serial.id);
 
       const botUsername = (await ctx.api.getMe()).username;
@@ -961,7 +883,6 @@ ${movieDeepLink}`.trim();
 ▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️
 ${serialDeepLink}`.trim();
 
-      // Create keyboard with episode numbers
       const keyboard = new InlineKeyboard();
       episodes.forEach((episode, index) => {
         keyboard.text(
@@ -973,7 +894,6 @@ ${serialDeepLink}`.trim();
 
       if (episodes.length % 5 !== 0) keyboard.row();
 
-      // Add share button
       keyboard
         .text('📤 Ulashish', `share_serial_${code}`)
         .row()
@@ -992,7 +912,6 @@ ${serialDeepLink}`.trim();
     }
   }
 
-  // ==================== CHECK SUBSCRIPTION ====================
   private async checkSubscription(
     ctx: BotContext,
     contentCode?: number,
@@ -1000,22 +919,18 @@ ${serialDeepLink}`.trim();
   ): Promise<boolean> {
     if (!ctx.from) return false;
 
-    // Check if user can access bot using new service
     const result = await this.channelStatusService.canUserAccessBot(
       String(ctx.from.id),
     );
 
-    // If user can access bot (all channels are joined or requested), allow access
     if (result.canAccess) {
       return true;
     }
 
-    // Show channels that need join/request
     const needsAction = result.statuses.filter(
       (s) => s.status === ChannelStatus.left,
     );
 
-    // Separate external channels (just for display, don't block bot)
     const externalChannels = needsAction.filter(
       (s) => s.channelType === 'EXTERNAL',
     );
@@ -1027,19 +942,16 @@ ${serialDeepLink}`.trim();
 
     message += `<blockquote>💎 Premium obuna sotib olib, kanallarga obuna bo'lmasdan foydalanishingiz mumkin.</blockquote>`;
 
-    // Add content code if provided
     if (contentCode && contentType) {
       message += `\n\n🎬 Kino kodi: <b>${contentCode}</b>`;
     }
 
     const keyboard = new InlineKeyboard();
 
-    // Add required channel buttons (PUBLIC and PRIVATE)
     requiredChannels.forEach((channel) => {
       keyboard.url(channel.channelName, channel.channelLink).row();
     });
 
-    // Add external channels at the bottom (informational only)
     if (externalChannels.length > 0) {
       externalChannels.forEach((channel) => {
         keyboard.url(channel.channelName, channel.channelLink).row();
@@ -1062,20 +974,16 @@ ${serialDeepLink}`.trim();
 
     await ctx.answerCallbackQuery({ text: 'Tekshirilmoqda...' });
 
-    // Sync user's channel statuses with real-time Telegram API check
     await this.channelStatusService.syncUserChannelStatuses(
       String(ctx.from.id),
       ctx.api,
     );
 
-    // Check if user can access bot using new service
     const result = await this.channelStatusService.canUserAccessBot(
       String(ctx.from.id),
     );
 
-    // Check if user can access bot (all channels are joined or requested)
     if (result.canAccess) {
-      // Delete old message
       try {
         if (ctx.callbackQuery?.message) {
           await ctx.api.deleteMessage(
@@ -1084,10 +992,8 @@ ${serialDeepLink}`.trim();
           );
         }
       } catch (error) {
-        // Silently ignore error
       }
 
-      // Check if any have pending requests
       const hasRequested = result.statuses.some(
         (ch) => ch.status === ChannelStatus.requested,
       );
@@ -1106,12 +1012,10 @@ ${serialDeepLink}`.trim();
       return;
     }
 
-    // Show channels that need join/request
     const needsAction = result.statuses.filter(
       (s) => s.status === ChannelStatus.left,
     );
 
-    // Separate external channels (just for display, don't block bot)
     const externalChannels = needsAction.filter(
       (s) => s.channelType === 'EXTERNAL',
     );
@@ -1125,12 +1029,10 @@ ${serialDeepLink}`.trim();
 
     const keyboard = new InlineKeyboard();
 
-    // Add required channel buttons (PUBLIC and PRIVATE)
     requiredChannels.forEach((channel) => {
       keyboard.url(channel.channelName, channel.channelLink).row();
     });
 
-    // Add external channels at the bottom (informational only)
     if (externalChannels.length > 0) {
       externalChannels.forEach((channel) => {
         keyboard.url(channel.channelName, channel.channelLink).row();
@@ -1154,14 +1056,12 @@ ${serialDeepLink}`.trim();
     }
   }
 
-  // ==================== JOIN REQUEST HANDLER ====================
   private async handleJoinRequest(ctx: BotContext) {
     if (!ctx.chatJoinRequest) return;
 
     const userId = ctx.chatJoinRequest.from.id;
     const chatId = String(ctx.chatJoinRequest.chat.id);
 
-    // Update status in database to 'requested'
     await this.channelStatusService.updateStatus(
       String(userId),
       chatId,
@@ -1169,7 +1069,6 @@ ${serialDeepLink}`.trim();
     );
   }
 
-  // ==================== CHAT MEMBER UPDATE HANDLER ====================
   private async handleChatMemberUpdate(ctx: BotContext) {
     const update = ctx.chatMember || ctx.myChatMember;
     if (!update) return;
@@ -1179,7 +1078,6 @@ ${serialDeepLink}`.trim();
     const oldStatus = update.old_chat_member.status;
     const newStatus = update.new_chat_member.status;
 
-    // User joined the channel
     if (
       ['member', 'administrator', 'creator'].includes(newStatus) &&
       !['member', 'administrator', 'creator'].includes(oldStatus)
@@ -1191,7 +1089,6 @@ ${serialDeepLink}`.trim();
       );
     }
 
-    // User left or was kicked from channel
     if (['left', 'kicked'].includes(newStatus)) {
       await this.channelStatusService.updateStatus(
         String(userId),
@@ -1199,7 +1096,6 @@ ${serialDeepLink}`.trim();
         ChannelStatus.left,
       );
 
-      // Send notification to user
       try {
         const channel = await this.prisma.mandatoryChannel.findFirst({
           where: { channelId: chatId, isActive: true },
@@ -1215,12 +1111,10 @@ ${serialDeepLink}`.trim();
           );
         }
       } catch (error) {
-        // Silently ignore notification error
       }
     }
   }
 
-  // ==================== CALLBACK HANDLERS ====================
   private async handleMovieCallback(ctx: BotContext) {
     if (!ctx.callbackQuery || !('data' in ctx.callbackQuery)) return;
 
@@ -1261,7 +1155,6 @@ ${serialDeepLink}`.trim();
         return;
       }
 
-      // Send episode video with share button
       const serial = await this.serialService.findById(serialId);
       const botUsername = (await ctx.api.getMe()).username;
       const field = await this.fieldService.findOne(serial.fieldId);
@@ -1291,7 +1184,6 @@ ${serialDeepLink}`.trim();
           reply_markup: shareKeyboard,
         });
       } else if (episode.videoMessageId) {
-        // Try to copy from channel
         try {
           const videoData = JSON.parse(episode.videoMessageId);
           if (Array.isArray(videoData) && videoData.length > 0) {
@@ -1358,7 +1250,6 @@ ${serialDeepLink}`.trim();
 ▶️ Kinoning to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!
       `.trim();
 
-      // If episode 1, send the original movie video
       if (episodeNumber === 1) {
         if (movie.videoFileId) {
           await ctx.replyWithVideo(movie.videoFileId, {
@@ -1367,7 +1258,6 @@ ${serialDeepLink}`.trim();
             reply_markup: shareKeyboard,
           });
         } else if (movie.videoMessageId) {
-          // Try to copy from channel
           try {
             const videoData = JSON.parse(movie.videoMessageId);
             if (Array.isArray(videoData) && videoData.length > 0) {
@@ -1388,7 +1278,6 @@ ${serialDeepLink}`.trim();
           }
         }
       } else {
-        // For episodes > 1, get from MovieEpisode table
         const episode = await this.movieEpisodeService.findByMovieIdAndNumber(
           movieId,
           episodeNumber,
@@ -1405,7 +1294,6 @@ ${serialDeepLink}`.trim();
             reply_markup: shareKeyboard,
           });
         } else if (episode.videoMessageId) {
-          // Try to copy from channel
           try {
             const videoData = JSON.parse(episode.videoMessageId);
             if (Array.isArray(videoData) && videoData.length > 0) {
@@ -1451,10 +1339,8 @@ ${serialDeepLink}`.trim();
 
       await ctx.answerCallbackQuery();
 
-      // Build the channel URL
       const channelUrl = field.channelLink || `https://t.me/${field.channelId}`;
 
-      // Create inline keyboard with URL button
       const keyboard = new InlineKeyboard()
         .url(`📁 ${field.name} kanaliga o'tish`, channelUrl)
         .row()
@@ -1529,13 +1415,11 @@ ${serialDeepLink}`.trim();
     );
   }
 
-  // ==================== INLINE QUERY HANDLER ====================
   private async handleInlineQuery(ctx: BotContext) {
     if (!ctx.inlineQuery) return;
 
     const query = ctx.inlineQuery.query.trim();
 
-    // Parse query: "123" for movie or "s123" for serial
     const serialMatch = query.match(/^s(\d+)$/i);
     const movieMatch = !serialMatch ? query.match(/^(\d+)$/) : null;
 
@@ -1550,14 +1434,12 @@ ${serialDeepLink}`.trim();
           const botUsername = (await ctx.api.getMe()).username;
           const shareLink = `https://t.me/${botUsername}?start=${code}`;
 
-          // Get channel link from field
           const field = await this.prisma.field.findUnique({
             where: { id: movie.fieldId },
             select: { channelLink: true },
           });
           const channelLink = field?.channelLink || '@YourChannel';
 
-          // Format the message with box-drawing characters
           const messageText = `╭────────────────────
 ├‣  Kino nomi: ${movie.title}
 ├‣  Kino kodi: ${code}
@@ -1599,14 +1481,12 @@ ${shareLink}`;
           const botUsername = (await ctx.api.getMe()).username;
           const shareLink = `https://t.me/${botUsername}?start=s${code}`;
 
-          // Get channel link from field
           const field = await this.prisma.field.findUnique({
             where: { id: serial.fieldId },
             select: { channelLink: true },
           });
           const channelLink = field?.channelLink || '@YourChannel';
 
-          // Format the message with box-drawing characters
           const messageText = `╭────────────────────
 ├‣  Serial nomi: ${serial.title}
 ├‣  Serial kodi: ${code}

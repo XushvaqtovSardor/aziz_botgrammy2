@@ -26,23 +26,16 @@ export class PaymentController {
     private grammyBot: GrammyBotService,
   ) {}
 
-  /**
-   * Create payment and return payment link
-   */
   @Post('create')
   @HttpCode(HttpStatus.OK)
   async createPayment(
     @Body() body: { telegramId: string; amount: number; duration?: number },
   ) {
     try {
-      this.logger.debug('Creating payment', body);
-
-      // Validate input
       if (!body.telegramId || !body.amount) {
         throw new BadRequestException('telegramId and amount are required');
       }
 
-      // Create payment record
       const payment = await this.paymentService.createOnlinePayment({
         telegramId: body.telegramId,
         amount: body.amount,
@@ -50,7 +43,6 @@ export class PaymentController {
         provider: 'payme',
       });
 
-      // Generate payment link
       const paymentLink = this.paymeService.generatePaymentLink(
         payment.id,
         body.amount,
@@ -69,25 +61,17 @@ export class PaymentController {
     }
   }
 
-  /**
-   * Payme webhook handler
-   */
   @Post('webhook/payme')
   @HttpCode(HttpStatus.OK)
   async handlePaymeWebhook(@Headers() headers: any, @Body() body: any) {
     try {
-      this.logger.debug('Received Payme webhook', body);
-
-      // Verify webhook signature
       const isValid = this.paymeService.verifySignature({ headers });
       if (!isValid) {
         throw new BadRequestException('Invalid signature');
       }
 
-      // Handle webhook
       const result = await this.paymeService.handleWebhook(body);
 
-      // If payment was successful, send notification to user
       if (body.method === 'PerformTransaction') {
         await this.sendPaymentSuccessNotification(body.params.account.order_id);
       }
@@ -104,22 +88,15 @@ export class PaymentController {
     }
   }
 
-  /**
-   * Manual webhook test endpoint (for development)
-   */
   @Post('webhook/test')
   @HttpCode(HttpStatus.OK)
   async testWebhook(@Body() body: { paymentId: number; status: string }) {
     try {
-      this.logger.debug('Test webhook received', body);
-
       if (body.status === 'success') {
-        // Process payment
         const payment = await this.paymentService.processSuccessfulPayment({
           paymentId: body.paymentId,
         });
 
-        // Send notification
         await this.sendPaymentSuccessNotification(body.paymentId);
 
         return {
@@ -143,9 +120,6 @@ export class PaymentController {
     }
   }
 
-  /**
-   * Check payment status
-   */
   @Get('status/:paymentId')
   async getPaymentStatus(@Param('paymentId') paymentId: string) {
     try {
@@ -169,9 +143,6 @@ export class PaymentController {
     }
   }
 
-  /**
-   * Check user premium status
-   */
   @Get('premium-status/:telegramId')
   async checkPremiumStatus(@Param('telegramId') telegramId: string) {
     try {
@@ -188,9 +159,6 @@ export class PaymentController {
     }
   }
 
-  /**
-   * Send payment success notification to user via Telegram
-   */
   private async sendPaymentSuccessNotification(paymentId: number) {
     try {
       const payment = await this.paymentService.getPaymentById(paymentId);
@@ -202,19 +170,12 @@ export class PaymentController {
           payment.user.telegramId,
           message,
         );
-
-        this.logger.debug(
-          `Payment success notification sent to user ${payment.user.telegramId}`,
-        );
       }
     } catch (error) {
       this.logger.error('Error sending payment notification', error);
     }
   }
 
-  /**
-   * Get payment history
-   */
   @Get('history/:telegramId')
   async getPaymentHistory(@Param('telegramId') telegramId: string) {
     try {

@@ -14,7 +14,6 @@ export class GrammyBotService implements OnModuleInit {
       throw new Error('BOT_TOKEN is not defined in environment variables');
     }
     this.bot = new Bot<BotContext>(token);
-    this.logger.debug('Grammy Bot instance created');
   }
 
   async onModuleInit() {
@@ -23,15 +22,8 @@ export class GrammyBotService implements OnModuleInit {
     });
 
     this.bot.use(async (ctx, next) => {
-      if (ctx.message && 'text' in ctx.message) {
-        this.logger.debug(
-          `[TELEGRAM] Message from ${ctx.from?.id}: "${ctx.message.text}"`,
-        );
-      }
       await next();
     });
-
-    this.logger.debug('Grammy Bot middleware configured');
   }
 
   async startBot() {
@@ -39,7 +31,6 @@ export class GrammyBotService implements OnModuleInit {
       await this.bot.start({
         onStart: ({ username }) => {
           this.botUsername = username;
-          this.logger.debug(`🤖 Grammy Bot @${username} started successfully!`);
         },
       });
     } catch (error) {

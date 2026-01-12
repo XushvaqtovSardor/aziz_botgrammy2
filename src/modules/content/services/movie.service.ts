@@ -61,15 +61,12 @@ export class MovieService {
     const availableCodes: number[] = [];
     let offset = 1;
 
-    // Search both up and down from the requested code
     while (availableCodes.length < count && offset <= 1000) {
-      // Check higher code
       const higherCode = requestedCode + offset;
       if (await this.isCodeAvailable(higherCode)) {
         availableCodes.push(higherCode);
       }
 
-      // Check lower code (only if positive)
       if (requestedCode - offset > 0) {
         const lowerCode = requestedCode - offset;
         if (await this.isCodeAvailable(lowerCode)) {
@@ -82,7 +79,6 @@ export class MovieService {
 
     return availableCodes
       .sort((a, b) => {
-        // Sort by distance from requested code
         const distA = Math.abs(a - requestedCode);
         const distB = Math.abs(b - requestedCode);
         return distA - distB;
@@ -138,7 +134,6 @@ export class MovieService {
   }
 
   async search(query: string) {
-    // Try to parse query as number for code search
     const codeQuery = parseInt(query);
 
     return this.prisma.movie.findMany({

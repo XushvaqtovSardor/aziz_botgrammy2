@@ -453,7 +453,6 @@ export class SerialManagementService {
 
     const { nextEpisodeNumber, addedEpisodes } = session.data;
 
-    // Save episode temporarily
     addedEpisodes.push({
       episodeNumber: nextEpisodeNumber,
       videoFileId,

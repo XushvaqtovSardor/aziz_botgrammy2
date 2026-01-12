@@ -1,5 +1,4 @@
 export interface LanguageTexts {
-  // Common
   yes: string;
   no: string;
   cancel: string;
@@ -8,7 +7,6 @@ export interface LanguageTexts {
   done: string;
   skip: string;
 
-  // User Panel
   welcome: string;
   welcomeMessage: string;
   searchMovie: string;
@@ -16,19 +14,16 @@ export interface LanguageTexts {
   premiumSubscription: string;
   aboutBot: string;
 
-  // Movie Search
   searchByCode: string;
   movieNotFound: string;
   watchMovie: string;
   shareMovie: string;
 
-  // Subscription
   mustSubscribe: string;
   checkSubscription: string;
   subscriptionVerified: string;
   pleaseSubscribeAll: string;
 
-  // Premium
   premiumFeatures: string;
   monthlyPrice: string;
   uploadReceipt: string;
@@ -36,11 +31,9 @@ export interface LanguageTexts {
   premiumActivated: string;
   paymentRejected: string;
 
-  // Language
   selectLanguage: string;
   languageChanged: string;
 
-  // Admin Panel
   adminPanel: string;
   addField: string;
   databaseChannel: string;
@@ -55,7 +48,6 @@ export interface LanguageTexts {
   blockUsers: string;
   guide: string;
 
-  // Field Management
   enterFieldName: string;
   enterChannelId: string;
   enterChannelLink: string;
@@ -63,7 +55,6 @@ export interface LanguageTexts {
   fieldDeleted: string;
   fieldList: string;
 
-  // Movie Upload
   adminEnterMovieCode: string;
   codeIsTaken: string;
   availableCodes: string;
@@ -77,7 +68,6 @@ export interface LanguageTexts {
   selectField: string;
   movieCreated: string;
 
-  // Serial Upload
   createNewSerial: string;
   addEpisodeToSerial: string;
   useMainChannel: string;
@@ -95,14 +85,12 @@ export interface LanguageTexts {
   continueUploading: string;
   finishUploading: string;
 
-  // Admin Management
   enterUsername: string;
   selectRole: string;
   adminCreated: string;
   canAddAdmin: string;
   canDeleteContent: string;
 
-  // Statistics
   totalUsers: string;
   totalMovies: string;
   totalSerials: string;
@@ -110,7 +98,6 @@ export interface LanguageTexts {
   activeUsers: string;
   newUsers: string;
 
-  // Broadcast
   selectBroadcastType: string;
   advertisement: string;
   notification: string;
@@ -120,7 +107,6 @@ export interface LanguageTexts {
   sentTo: string;
   failedTo: string;
 
-  // Payment
   pendingPayments: string;
   approvePayment: string;
   rejectPayment: string;
@@ -129,19 +115,16 @@ export interface LanguageTexts {
   warning: string;
   fakeReceiptWarning: string;
 
-  // Block
   enterUsernameToBlock: string;
   searchFromUsers: string;
   userBlocked: string;
   userUnblocked: string;
 
-  // Errors
   error: string;
   accessDenied: string;
   invalidInput: string;
   operationFailed: string;
 
-  // Additional User Panel
   alreadyPremium: string;
   premiumPrices: string;
   monthlyPremium: string;

@@ -19,30 +19,17 @@ export class PaymeService {
       this.configService.get('PAYME_MERCHANT_SERVICE_ID') || '';
   }
 
-  /**
-   * Generate payment link for Payme
-   */
   generatePaymentLink(paymentId: number, amount: number): string {
-    // Convert amount to tiyin (1 UZS = 100 tiyin)
     const amountInTiyin = amount * 100;
 
-    // Encode payment data
     const params = Buffer.from(
       `m=${this.merchantId};ac.order_id=${paymentId};a=${amountInTiyin}`,
     ).toString('base64');
 
-    // Generate payment URL
     const paymentUrl = `https://checkout.paycom.uz/${params}`;
-
-    this.logger.debug(
-      `Generated Payme payment link for payment ${paymentId}: ${paymentUrl}`,
-    );
     return paymentUrl;
   }
 
-  /**
-   * Verify webhook signature
-   */
   verifySignature(request: any): boolean {
     const auth = request.headers.authorization;
     if (!auth) return false;
@@ -56,12 +43,7 @@ export class PaymeService {
     return username === this.merchantId;
   }
 
-  /**
-   * Handle Payme webhook
-   */
   async handleWebhook(body: any) {
-    this.logger.debug('Handling Payme webhook', body);
-
     const { method, params } = body;
 
     try {
@@ -90,16 +72,12 @@ export class PaymeService {
     }
   }
 
-  /**
-   * Check if transaction can be performed
-   */
   private async checkPerformTransaction(params: {
     account: { order_id: number };
   }) {
     const { account } = params;
     const orderId = account.order_id;
 
-    // Check if payment exists and is pending
     const payment = await this.paymentService.findById(orderId);
 
     if (!payment) {
@@ -113,9 +91,6 @@ export class PaymeService {
     return { allow: true };
   }
 
-  /**
-   * Create transaction
-   */
   private async createTransaction(params: {
     id: string;
     account: { order_id: number };
@@ -123,14 +98,12 @@ export class PaymeService {
     const { id, account } = params;
     const orderId = account.order_id;
 
-    // Check if payment exists
     const payment = await this.paymentService.findById(orderId);
 
     if (!payment) {
       throw new Error('Order not found');
     }
 
-    // Update payment with transaction ID
     await this.paymentService.updateTransactionId(orderId, id);
 
     return {
@@ -140,23 +113,18 @@ export class PaymeService {
     };
   }
 
-  /**
-   * Perform transaction (complete payment)
-   */
   private async performTransaction(params: {
     id: string;
     account: { order_id: number };
   }) {
     const { id, account } = params;
 
-    // Find payment by order ID
     const payment = await this.paymentService.findById(account.order_id);
 
     if (!payment) {
       throw new Error('Transaction not found');
     }
 
-    // Process payment
     await this.paymentService.processSuccessfulPayment({
       paymentId: payment.id,
     });
@@ -168,9 +136,6 @@ export class PaymeService {
     };
   }
 
-  /**
-   * Cancel transaction
-   */
   private async cancelTransaction(params: {
     id: string;
     account: { order_id: number };
@@ -178,14 +143,12 @@ export class PaymeService {
   }) {
     const { id, account, reason } = params;
 
-    // Find payment by order ID
     const payment = await this.paymentService.findById(account.order_id);
 
     if (!payment) {
       throw new Error('Transaction not found');
     }
 
-    // Mark payment as failed
     await this.paymentService.markPaymentFailed(
       payment.id,
       `Cancelled: ${reason || 'Unknown'}`,
@@ -198,16 +161,12 @@ export class PaymeService {
     };
   }
 
-  /**
-   * Check transaction status
-   */
   private async checkTransaction(params: {
     id: string;
     account: { order_id: number };
   }) {
     const { account } = params;
 
-    // Find payment by order ID
     const payment = await this.paymentService.findById(account.order_id);
 
     if (!payment) {
@@ -227,9 +186,6 @@ export class PaymeService {
     };
   }
 
-  /**
-   * Generate test payment link for development
-   */
   generateTestPaymentLink(paymentId: number, amount: number): string {
     return `https://test.paycom.uz/checkout?paymentId=${paymentId}&amount=${amount}`;
   }

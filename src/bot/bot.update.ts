@@ -13,19 +13,14 @@ export class BotUpdate implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    // Register handlers
     this.grammyBot.bot.callbackQuery(
       'check_subscription',
       this.checkSubscription.bind(this),
     );
-
-    this.logger.debug('Bot handlers registered');
   }
 
   private async checkSubscription(ctx: BotContext) {
     if (!ctx.from) return;
-
-    this.logger.debug(`User ${ctx.from.id} checking subscription`);
 
     await ctx.answerCallbackQuery();
 
@@ -60,12 +55,8 @@ export class BotUpdate implements OnModuleInit {
     }
 
     if (notJoined.length === 0) {
-      this.logger.debug(`User ${ctx.from.id} is subscribed to all channels`);
       await ctx.editMessageText("✅ Siz barcha kanallarga obuna bo'lgansiz!");
     } else {
-      this.logger.debug(
-        `User ${ctx.from.id} not subscribed to ${notJoined.length} channels`,
-      );
     }
   }
 }

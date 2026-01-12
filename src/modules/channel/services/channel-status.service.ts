@@ -9,16 +9,12 @@ export class ChannelStatusService {
 
   constructor(private prisma: PrismaService) {}
 
-  /**
-   * Update user's channel status in database
-   */
   async updateStatus(
     userTelegramId: string,
     channelTelegramId: string,
     status: ChannelStatus,
   ): Promise<void> {
     try {
-      // Find user
       const user = await this.prisma.user.findUnique({
         where: { telegramId: userTelegramId },
       });
@@ -28,7 +24,6 @@ export class ChannelStatusService {
         return;
       }
 
-      // Find channel
       const channel = await this.prisma.mandatoryChannel.findFirst({
         where: { channelId: channelTelegramId, isActive: true },
       });
@@ -38,7 +33,6 @@ export class ChannelStatusService {
         return;
       }
 
-      // Upsert status
       await this.prisma.userChannelStatus.upsert({
         where: {
           userId_channelId: {
@@ -57,10 +51,6 @@ export class ChannelStatusService {
           lastUpdated: new Date(),
         },
       });
-
-      this.logger.debug(
-        `Updated status: User ${userTelegramId} -> Channel ${channel.channelName}: ${status}`,
-      );
     } catch (error) {
       this.logger.error(
         `Error updating status for user ${userTelegramId}, channel ${channelTelegramId}:`,
@@ -69,9 +59,6 @@ export class ChannelStatusService {
     }
   }
 
-  /**
-   * Get user's status for all mandatory channels
-   */
   async getUserChannelStatuses(userTelegramId: string): Promise<
     {
       channelId: number;
@@ -82,7 +69,6 @@ export class ChannelStatusService {
       status: ChannelStatus;
     }[]
   > {
-    // Find user
     const user = await this.prisma.user.findUnique({
       where: { telegramId: userTelegramId },
     });
@@ -91,7 +77,6 @@ export class ChannelStatusService {
       return [];
     }
 
-    // Get all active channels with user statuses
     const channels = await this.prisma.mandatoryChannel.findMany({
       where: { isActive: true },
       orderBy: { order: 'asc' },
@@ -112,9 +97,6 @@ export class ChannelStatusService {
     }));
   }
 
-  /**
-   * Check if user can access bot (all channels are joined or requested)
-   */
   async canUserAccessBot(userTelegramId: string): Promise<{
     canAccess: boolean;
     statuses: {
@@ -126,11 +108,6 @@ export class ChannelStatusService {
   }> {
     const statuses = await this.getUserChannelStatuses(userTelegramId);
 
-    // EXTERNAL channels cannot be automatically checked
-    // We consider them as always needing user confirmation
-    // For bot access: ALL non-external channels must be 'joined' or 'requested'
-    // EXTERNAL channels are always shown to user but don't block access
-
     const nonExternalStatuses = statuses.filter(
       (s) => s.channelType !== 'EXTERNAL',
     );
@@ -139,7 +116,6 @@ export class ChannelStatusService {
       (s) => s.channelType === 'EXTERNAL',
     );
 
-    // User can access if ALL non-external channels are either 'joined' or 'requested'
     const canAccess = nonExternalStatuses.every(
       (s) =>
         s.status === ChannelStatus.joined ||
@@ -165,16 +141,11 @@ export class ChannelStatusService {
     };
   }
 
-  /**
-   * Sync user's channel statuses with real-time Telegram API check
-   * This should be called when user presses "Check subscription" button
-   */
   async syncUserChannelStatuses(
     userTelegramId: string,
     api: Api,
   ): Promise<void> {
     try {
-      // Find user
       const user = await this.prisma.user.findUnique({
         where: { telegramId: userTelegramId },
       });
@@ -184,25 +155,21 @@ export class ChannelStatusService {
         return;
       }
 
-      // Get all active channels
       const channels = await this.prisma.mandatoryChannel.findMany({
         where: { isActive: true },
       });
 
       for (const channel of channels) {
-        // Skip external channels (cannot check via API)
         if (channel.type === 'EXTERNAL' || !channel.channelId) {
           continue;
         }
 
         try {
-          // Check user's membership via Telegram API
           const member = await api.getChatMember(
             channel.channelId,
             parseInt(userTelegramId),
           );
 
-          // Determine status based on member.status
           let newStatus: ChannelStatus;
 
           if (
@@ -215,7 +182,6 @@ export class ChannelStatusService {
           ) {
             newStatus = ChannelStatus.joined;
           } else if (member.status === 'left' || member.status === 'kicked') {
-            // Check if there's a pending request in database
             const existingStatus =
               await this.prisma.userChannelStatus.findUnique({
                 where: {
@@ -226,7 +192,6 @@ export class ChannelStatusService {
                 },
               });
 
-            // Keep 'requested' status if it exists, otherwise mark as 'left'
             newStatus =
               existingStatus?.status === ChannelStatus.requested
                 ? ChannelStatus.requested
@@ -235,18 +200,12 @@ export class ChannelStatusService {
             newStatus = ChannelStatus.left;
           }
 
-          // Update status in database
           await this.updateStatus(userTelegramId, channel.channelId, newStatus);
-
-          this.logger.debug(
-            `Synced status: User ${userTelegramId} -> Channel ${channel.channelName}: ${newStatus} (API: ${member.status})`,
-          );
         } catch (error) {
           this.logger.error(
             `Error checking channel ${channel.channelName} for user ${userTelegramId}:`,
             error instanceof Error ? error.message : String(error),
           );
-          // On error, mark as left (user probably not in channel)
           await this.updateStatus(
             userTelegramId,
             channel.channelId,

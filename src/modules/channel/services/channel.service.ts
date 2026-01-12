@@ -174,7 +174,6 @@ export class ChannelService {
       },
     });
 
-    // Auto-disable if limit reached
     if (
       updated.memberLimit !== null &&
       updated.currentMembers >= updated.memberLimit
@@ -213,8 +212,6 @@ export class ChannelService {
     });
   }
 
-  // ==================== SUBSCRIPTION CHECKER ====================
-
   async checkSubscription(
     userId: number,
     api: Api,
@@ -252,10 +249,6 @@ export class ChannelService {
     };
   }
 
-  /**
-   * Check which channels user has NOT subscribed to or sent join request
-   * Returns all unsubscribed channels including external ones
-   */
   async checkUserSubscriptionStatus(
     userId: number,
     api: Api,
@@ -286,7 +279,6 @@ export class ChannelService {
     }[] = [];
 
     for (const channel of allChannels) {
-      // External channels are always included in unsubscribed (user can't verify)
       if (channel.type === 'EXTERNAL') {
         unsubscribedChannels.push({
           id: channel.id,
@@ -299,20 +291,11 @@ export class ChannelService {
         continue;
       }
 
-      // Check cache for join requests
       const cacheKey = `${userId}_${channel.channelId}`;
       const hasPendingRequest = joinRequestCache.has(cacheKey);
 
-      this.logger.debug(
-        `[checkUserSubscription] Channel: ${channel.channelName} (${channel.type}), User: ${userId}, hasPendingRequest: ${hasPendingRequest}, cacheKey: ${cacheKey}`,
-      );
-
       try {
         const member = await api.getChatMember(channel.channelId, userId);
-
-        this.logger.debug(
-          `[checkUserSubscription] Member status: ${member.status} for channel ${channel.channelName}`,
-        );
 
         const isSubscribed =
           member.status === 'member' ||
@@ -322,17 +305,13 @@ export class ChannelService {
             'is_member' in member &&
             member.is_member);
 
-        // Clear cache if user is now subscribed
         if (isSubscribed && hasPendingRequest) {
           joinRequestCache.delete(cacheKey);
         }
 
-        // For PRIVATE channels: join request is enough to access bot
-        // For PUBLIC channels: must be actual member
         const hasAccess =
           isSubscribed || (hasPendingRequest && channel.type === 'PRIVATE');
 
-        // User has left the channel AND no pending request - mark as unsubscribed
         if (
           (member.status === 'left' || member.status === 'kicked') &&
           !hasAccess
@@ -362,7 +341,6 @@ export class ChannelService {
             hasPendingRequest: hasPendingRequest && !isSubscribed,
           });
         } else {
-          // Not subscribed - add to unsubscribed list
           unsubscribedChannels.push({
             id: channel.id,
             channelId: channel.channelId,
@@ -374,8 +352,6 @@ export class ChannelService {
           });
         }
       } catch (error) {
-        // If error (user not in channel or bot can't check), add to unsubscribed
-        // Also clear pending request cache on error
         if (hasPendingRequest) {
           joinRequestCache.delete(cacheKey);
         }
@@ -398,7 +374,6 @@ export class ChannelService {
       totalChannels: allChannels.length,
       unsubscribedCount: unsubscribedChannels.length,
       subscribedCount: subscribedChannels.length,
-      // User can access bot only if all non-external channels are subscribed
       canAccessBot:
         unsubscribedChannels.filter((ch) => !ch.isExternal).length === 0,
     };
@@ -417,7 +392,6 @@ export class ChannelService {
     return newChannels > 0;
   }
 
-  // Barcha kanallarni olish (active va inactive)
   async findAllWithHistory() {
     return this.prisma.mandatoryChannel.findMany({
       orderBy: [
@@ -440,7 +414,6 @@ export class ChannelService {
     });
   }
 
-  // Link bo'yicha kanal qidirish
   async findByLink(link: string) {
     return this.prisma.mandatoryChannel.findFirst({
       where: {

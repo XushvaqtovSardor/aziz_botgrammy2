@@ -33,7 +33,7 @@ services:
       
         BOT_TOKEN: ${BOT_TOKEN}
         BOT_USERNAME: ${BOT_USERNAME}
-        DATABASE_URL: ${DATABASE_URL}
+        DATABASE_URL: postgresql://azizbot:your_strong_password@postgres:5432/aziz_bot_db?schema=public
         PAYME_MERCHANT_ID: ${PAYME_MERCHANT_ID:-}
         PAYME_KEY: ${PAYME_KEY:-}
         PAYME_TEST_KEY: ${PAYME_TEST_KEY:-}

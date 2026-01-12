@@ -74,7 +74,6 @@ export class PaymentService {
       },
     });
 
-    // Activate premium for user
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + durationDays);
 
@@ -128,20 +127,12 @@ export class PaymentService {
     };
   }
 
-  /**
-   * Create payment for online payment providers (Payme, Click, etc)
-   */
   async createOnlinePayment(data: {
     telegramId: string;
     amount: number;
     duration?: number;
     provider?: string;
   }) {
-    this.logger.debug(
-      `Creating online payment for user ${data.telegramId}, amount: ${data.amount}`,
-    );
-
-    // Find user by telegram ID
     const user = await this.prisma.user.findUnique({
       where: { telegramId: data.telegramId },
     });
@@ -150,7 +141,6 @@ export class PaymentService {
       throw new NotFoundException('User not found');
     }
 
-    // Create payment record
     const payment = await this.prisma.payment.create({
       data: {
         userId: user.id,
@@ -164,20 +154,13 @@ export class PaymentService {
       },
     });
 
-    this.logger.debug(`Online payment created: ${payment.id}`);
     return payment;
   }
 
-  /**
-   * Process successful payment from webhook
-   */
   async processSuccessfulPayment(data: {
     paymentId?: number;
     transactionId?: string;
   }) {
-    this.logger.debug(`Processing successful payment`, data);
-
-    // Find payment by ID or transaction ID
     const payment = await this.prisma.payment.findFirst({
       where: data.paymentId
         ? { id: data.paymentId }
@@ -189,18 +172,15 @@ export class PaymentService {
       throw new NotFoundException('Payment not found');
     }
 
-    // Check if already processed
     if (payment.status === PaymentStatus.SUCCESS) {
       this.logger.warn(`Payment ${payment.id} already processed`);
       return payment;
     }
 
-    // Calculate premium expiration date
     const duration = payment.duration || 30;
     const premiumTill = new Date();
     premiumTill.setDate(premiumTill.getDate() + duration);
 
-    // Update payment status and user premium status
     const updatedPayment = await this.prisma.payment.update({
       where: { id: payment.id },
       data: {
@@ -217,19 +197,10 @@ export class PaymentService {
       include: { user: true },
     });
 
-    this.logger.debug(
-      `Payment ${payment.id} processed successfully. User ${payment.user.telegramId} premium until ${premiumTill}`,
-    );
-
     return updatedPayment;
   }
 
-  /**
-   * Mark payment as failed
-   */
   async markPaymentFailed(paymentId: number, reason?: string) {
-    this.logger.debug(`Marking payment ${paymentId} as failed`);
-
     const payment = await this.prisma.payment.update({
       where: { id: paymentId },
       data: {
@@ -242,9 +213,6 @@ export class PaymentService {
     return payment;
   }
 
-  /**
-   * Check if user has active premium
-   */
   async checkPremiumStatus(telegramId: string): Promise<boolean> {
     const user = await this.prisma.user.findUnique({
       where: { telegramId },
@@ -254,9 +222,7 @@ export class PaymentService {
       return false;
     }
 
-    // Check if premium is still valid
     if (user.premiumTill && user.premiumTill < new Date()) {
-      // Premium expired, update user
       await this.prisma.user.update({
         where: { id: user.id },
         data: { isPremium: false },
@@ -267,9 +233,6 @@ export class PaymentService {
     return true;
   }
 
-  /**
-   * Get user's payment history
-   */
   async getPaymentHistory(telegramId: string) {
     const user = await this.prisma.user.findUnique({
       where: { telegramId },
@@ -287,9 +250,6 @@ export class PaymentService {
     return user.payments;
   }
 
-  /**
-   * Get payment by ID
-   */
   async getPaymentById(paymentId: number) {
     const payment = await this.prisma.payment.findUnique({
       where: { id: paymentId },
@@ -303,9 +263,6 @@ export class PaymentService {
     return payment;
   }
 
-  /**
-   * Update payment transaction ID
-   */
   async updateTransactionId(paymentId: number, transactionId: string) {
     return this.prisma.payment.update({
       where: { id: paymentId },

@@ -54,7 +54,6 @@ export class AdminHandler implements OnModuleInit {
   private registerHandlers() {
     const bot = this.grammyBot.bot;
 
-  
     bot.command('admin', async (ctx) => {
       if (!ctx.from) return;
 
@@ -1076,7 +1075,6 @@ export class AdminHandler implements OnModuleInit {
     }
   }
 
-  // ==================== SERIAL MANAGEMENT ====================
   private async startSerialCreation(ctx: BotContext) {
     const admin = await this.getAdmin(ctx);
     if (!admin || !ctx.from) {
@@ -1155,7 +1153,6 @@ export class AdminHandler implements OnModuleInit {
     );
   }
 
-  // ==================== FIELD MANAGEMENT ====================
   private async openFieldsMenu(ctx: BotContext) {
     const admin = await this.getAdmin(ctx);
     if (!admin) {
@@ -1251,7 +1248,6 @@ export class AdminHandler implements OnModuleInit {
     await ctx.editMessageText('✅ Field muvaffaqiyatli ochirildi');
   }
 
-  // ==================== CHANNEL MANAGEMENT ====================
   private async showMandatoryChannels(ctx: BotContext) {
     const admin = await this.getAdmin(ctx);
     if (!admin) return;
@@ -1480,7 +1476,6 @@ export class AdminHandler implements OnModuleInit {
     message += `🔗 ${channel.channelLink}\n`;
     message += `📁 Turi: ${channel.type === 'PUBLIC' ? 'Public' : channel.type === 'PRIVATE' ? 'Private' : 'Boshqa'}\n`;
 
-    // Check if channel is truly active
     let isReallyActive = channel.isActive;
     let inactiveReason = '';
 
@@ -1511,7 +1506,6 @@ export class AdminHandler implements OnModuleInit {
 
     message += `📅 Qo'shilgan: ${new Date(channel.createdAt).toLocaleDateString('uz-UZ')}\n`;
 
-    // Add note if database says it's inactive but no obvious reason
     if (!channel.isActive && !inactiveReason) {
       message += `\n⚠️ Qayd: Kanal database'da nofaol deb belgilangan.`;
     }
@@ -1559,7 +1553,6 @@ export class AdminHandler implements OnModuleInit {
       inlineKeyboard.row();
     }
 
-    // Add delete buttons
     inlineKeyboard.text("🗑 O'chirish", 'show_delete_db_channels').row();
 
     await ctx.reply(message, {
@@ -1619,14 +1612,12 @@ export class AdminHandler implements OnModuleInit {
     const channelId = ctx.match![1] as string;
 
     try {
-      // Get channel info
       const chat = await this.grammyBot.bot.api.getChat(channelId);
 
       let channelLink = '';
       if ('username' in chat && chat.username) {
         channelLink = `https://t.me/${chat.username}`;
       } else {
-        // Try to get invite link for private channels
         try {
           const inviteLink =
             await this.grammyBot.bot.api.exportChatInviteLink(channelId);
@@ -1694,12 +1685,10 @@ export class AdminHandler implements OnModuleInit {
     await this.showDeleteDatabaseChannels(ctx);
   }
 
-  // ==================== PAYMENT MANAGEMENT ====================
   private async showPaymentsMenu(ctx: BotContext) {
     const admin = await this.getAdmin(ctx);
     if (!admin) return;
 
-    // Clear any existing session to mark we're in payment menu
     if (ctx.from) {
       this.sessionService.clearSession(ctx.from.id);
     }
@@ -1823,7 +1812,6 @@ export class AdminHandler implements OnModuleInit {
       return;
     }
 
-    // Start session to ask for duration
     this.sessionService.startSession(ctx.from.id, AdminState.APPROVE_PAYMENT);
     this.sessionService.updateSessionData(ctx.from.id, {
       paymentId,
@@ -1865,7 +1853,6 @@ export class AdminHandler implements OnModuleInit {
       return;
     }
 
-    // Start session to ask for rejection reason
     this.sessionService.startSession(ctx.from.id, AdminState.REJECT_PAYMENT);
     this.sessionService.updateSessionData(ctx.from.id, {
       paymentId,
@@ -1889,7 +1876,6 @@ export class AdminHandler implements OnModuleInit {
     );
   }
 
-  // ==================== ADMIN MANAGEMENT ====================
   private async showAdminsList(ctx: BotContext) {
     const admin = await this.getAdmin(ctx);
     if (!admin || admin.role !== 'SUPERADMIN') {
@@ -1908,7 +1894,6 @@ export class AdminHandler implements OnModuleInit {
           const roleEmoji =
             a.role === 'SUPERADMIN' ? '👑' : a.role === 'MANAGER' ? '👨‍💼' : '👥';
 
-          // Show who created this admin
           const creatorInfo =
             a.createdBy === ctx.from?.id.toString()
               ? ' (✅ Siz yaratdingiz)'
@@ -1923,21 +1908,15 @@ export class AdminHandler implements OnModuleInit {
 
       const keyboard = new InlineKeyboard();
 
-      // Only show delete button for admins that:
-      // 1. Were created by current admin (createdBy matches)
-      // 2. OR were created after current admin (createdAt is later)
       const currentAdmin = await this.adminService.getAdminByTelegramId(
         ctx.from!.id.toString(),
       );
 
       const deletableAdmins = admins.filter((a) => {
-        // Can't delete yourself
         if (a.telegramId === ctx.from?.id.toString()) return false;
 
-        // Can delete if you created this admin
         if (a.createdBy === ctx.from?.id.toString()) return true;
 
-        // Can delete if this admin was created after you
         if (currentAdmin && a.createdAt > currentAdmin.createdAt) return true;
 
         return false;
@@ -2008,7 +1987,6 @@ export class AdminHandler implements OnModuleInit {
     try {
       const adminTelegramId = ctx.match![1] as string;
 
-      // Check if trying to delete themselves
       if (adminTelegramId === ctx.from?.id.toString()) {
         await ctx.answerCallbackQuery({
           text: "❌ O'zingizni o'chira olmaysiz!",
@@ -2017,7 +1995,6 @@ export class AdminHandler implements OnModuleInit {
         return;
       }
 
-      // Get the admin to be deleted
       const adminToDelete =
         await this.adminService.getAdminByTelegramId(adminTelegramId);
 
@@ -2029,7 +2006,6 @@ export class AdminHandler implements OnModuleInit {
         return;
       }
 
-      // Get current admin details
       const currentAdmin = await this.adminService.getAdminByTelegramId(
         ctx.from!.id.toString(),
       );
@@ -2042,9 +2018,6 @@ export class AdminHandler implements OnModuleInit {
         return;
       }
 
-      // Check if allowed to delete:
-      // 1. Admin was created by current user
-      // 2. OR admin was created after current user
       const canDelete =
         adminToDelete.createdBy === ctx.from!.id.toString() ||
         adminToDelete.createdAt > currentAdmin.createdAt;
@@ -2061,10 +2034,8 @@ export class AdminHandler implements OnModuleInit {
 
       await ctx.answerCallbackQuery({ text: '✅ Admin ochirildi' });
 
-      // Edit the current message to remove the deleted admin
       await ctx.editMessageText('✅ Admin muvaffaqiyatli ochirildi!');
 
-      // Show updated admin list
       setTimeout(() => {
         this.showAdminsList(ctx);
       }, 1000);
@@ -2086,7 +2057,6 @@ export class AdminHandler implements OnModuleInit {
       return;
     }
 
-    // Extract role and telegramId from callback data: select_admin_role_ROLE_telegramId
     const match = ctx.callbackQuery!.data!.match(
       /^select_admin_role_(ADMIN|MANAGER|SUPERADMIN)_(.+)$/,
     );
@@ -2098,12 +2068,10 @@ export class AdminHandler implements OnModuleInit {
     const role = match[1] as 'ADMIN' | 'MANAGER' | 'SUPERADMIN';
     const telegramId = match[2];
 
-    // Retrieve session data
     const session = this.sessionService.getSession(ctx.from.id);
     const username = session?.data?.username || telegramId;
 
     try {
-      // Create admin with selected role
       await this.adminService.createAdmin({
         telegramId,
         username,
@@ -2111,10 +2079,8 @@ export class AdminHandler implements OnModuleInit {
         createdBy: ctx.from.id.toString(),
       });
 
-      // Clear session
       this.sessionService.clearSession(ctx.from.id);
 
-      // Show success message
       const roleNames = {
         ADMIN: '👥 Admin',
         MANAGER: '👨‍💼 Manager',
@@ -2131,7 +2097,6 @@ export class AdminHandler implements OnModuleInit {
 
       await ctx.answerCallbackQuery({ text: "✅ Admin qo'shildi!" });
 
-      // Return to admin management
       setTimeout(() => {
         this.showAdminsList(ctx);
       }, 2000);
@@ -2148,7 +2113,6 @@ export class AdminHandler implements OnModuleInit {
     }
   }
 
-  // ==================== SETTINGS ====================
   private async showSettings(ctx: BotContext) {
     const admin = await this.getAdmin(ctx);
     if (!admin || admin.role !== 'SUPERADMIN') {
@@ -2289,7 +2253,6 @@ export class AdminHandler implements OnModuleInit {
     if (!admin || !ctx.from) return;
 
     try {
-      // Update contact message in database
       await this.settingsService.updateContactMessage(text);
 
       this.sessionService.clearSession(ctx.from.id);
@@ -2319,7 +2282,6 @@ export class AdminHandler implements OnModuleInit {
     );
   }
 
-  // ==================== BROADCAST ====================
   private async startBroadcast(ctx: BotContext) {
     const admin = await this.getAdmin(ctx);
     if (!admin || admin.role !== 'SUPERADMIN') {
@@ -2360,7 +2322,6 @@ Qaysi guruhga xabar yubormoqchisiz?
 
     const broadcastType = callbackData.replace('broadcast_', '').toUpperCase();
 
-    // Start broadcast session
     this.sessionService.startSession(ctx.from.id, 'BROADCASTING' as any);
     this.sessionService.updateSessionData(ctx.from.id, { broadcastType });
 
@@ -2373,7 +2334,6 @@ Qaysi guruhga xabar yubormoqchisiz?
     );
   }
 
-  // ==================== WEB PANEL ====================
   private async showWebPanel(ctx: BotContext) {
     const admin = await this.getAdmin(ctx);
     if (!admin) {
@@ -2382,7 +2342,6 @@ Qaysi guruhga xabar yubormoqchisiz?
     }
 
     try {
-      // Use WEB_PANEL_URL from env or construct from PORT
       const webPanelUrl =
         process.env.WEB_PANEL_URL ||
         `http://localhost:${process.env.PORT || 3001}`;
@@ -2409,7 +2368,6 @@ Qaysi guruhga xabar yubormoqchisiz?
     }
   }
 
-  // ==================== SESSION TEXT HANDLERS ====================
   private async handleFieldCreationSteps(
     ctx: BotContext,
     text: string,
@@ -2493,12 +2451,10 @@ Qaysi guruhga xabar yubormoqchisiz?
           return;
         }
 
-        // Try to get channel info
         try {
           const chat = await ctx.api.getChat(channelId);
           const channelName = 'title' in chat ? chat.title : channelId;
 
-          // Try to get channel link if it's a public channel
           let channelLink: string | undefined;
           if ('username' in chat && chat.username) {
             channelLink = `https://t.me/${chat.username}`;
@@ -2562,7 +2518,6 @@ Qaysi guruhga xabar yubormoqchisiz?
         } else if (text === '🔗 Boshqa link') {
           channelType = ChannelType.EXTERNAL;
           this.sessionService.updateSessionData(ctx.from.id, { channelType });
-          // Skip Step 1 (ID verification) for external channels - they don't need Telegram ID
           this.sessionService.nextStep(ctx.from.id); // Go to step 1
           this.sessionService.nextStep(ctx.from.id); // Then skip to step 2
           await ctx.reply(
@@ -2576,9 +2531,7 @@ Qaysi guruhga xabar yubormoqchisiz?
         const channelLink = text.trim();
         const data = session.data;
 
-        // Check if we're waiting for private channel ID
         if (data.waitingForPrivateChannelId) {
-          // Validate ID format
           if (!channelLink.startsWith('-')) {
             await ctx.reply(
               "❌ Kanal ID noto'g'ri formatda!\n\n" +
@@ -2590,7 +2543,6 @@ Qaysi guruhga xabar yubormoqchisiz?
           }
 
           try {
-            // Verify channel exists and bot is admin
             const chat = await ctx.api.getChat(channelLink);
             const botMember = await ctx.api.getChatMember(
               channelLink,
@@ -2645,7 +2597,6 @@ Qaysi guruhga xabar yubormoqchisiz?
           return;
         }
 
-        // Validate link format
         if (!channelLink.startsWith('https://t.me/')) {
           await ctx.reply(
             "❌ Link noto'g'ri formatda!\n\nLink 'https://t.me/' bilan boshlanishi kerak.\nMasalan: https://t.me/mychannel yoki https://t.me/+abc123",
@@ -2654,7 +2605,6 @@ Qaysi guruhga xabar yubormoqchisiz?
           return;
         }
 
-        // Verify channel and get info
         try {
           let channelId: string;
           let channelName: string;
@@ -2663,8 +2613,6 @@ Qaysi guruhga xabar yubormoqchisiz?
             channelLink.includes('/+') ||
             channelLink.includes('/joinchat/')
           ) {
-            // PRIVATE channel - can't validate via link alone
-            // Ask for channel ID directly
             await ctx.reply(
               "🔒 Private kanal uchun ID kerak bo'ladi.\n\n" +
                 '📱 Kanal ID sini olish uchun:\n' +
@@ -2675,14 +2623,12 @@ Qaysi guruhga xabar yubormoqchisiz?
                 'Masalan: -1001234567890',
               AdminKeyboard.getCancelButton(),
             );
-            // Save the link but wait for ID
             this.sessionService.updateSessionData(ctx.from.id, {
               channelLink,
               waitingForPrivateChannelId: true,
             });
             return; // Stay on step 1
           } else {
-            // PUBLIC channel - extract username and validate
             const username = channelLink.split('/').pop();
             if (!username) {
               await ctx.reply(
@@ -2696,12 +2642,10 @@ Qaysi guruhga xabar yubormoqchisiz?
               ? username
               : `@${username}`;
 
-            // Get channel info
             const chat = await ctx.api.getChat(channelIdentifier);
             channelId = String(chat.id);
             channelName = 'title' in chat ? chat.title : channelIdentifier;
 
-            // Verify bot is admin
             const botMember = await ctx.api.getChatMember(channelId, ctx.me.id);
             if (
               botMember.status !== 'administrator' &&
@@ -2755,8 +2699,6 @@ Qaysi guruhga xabar yubormoqchisiz?
         const sessionData = session.data;
 
         if (sessionData.channelType === ChannelType.EXTERNAL) {
-          // For EXTERNAL channels (Instagram, Facebook, etc.)
-          // No ID verification needed - these are not Telegram channels
           this.sessionService.updateSessionData(ctx.from.id, {
             channelName: input,
           });
@@ -2766,9 +2708,7 @@ Qaysi guruhga xabar yubormoqchisiz?
             AdminKeyboard.getCancelButton(),
           );
         } else {
-          // For PUBLIC/PRIVATE, handle limit selection
           if (input === '♾️ Cheksiz') {
-            // Create channel with no limit
             await this.createChannelWithLimit(ctx, admin, sessionData, null);
           } else if (input === '🔢 Limitli') {
             this.sessionService.nextStep(ctx.from.id);
@@ -2818,7 +2758,6 @@ Qaysi guruhga xabar yubormoqchisiz?
             );
           }
         } else {
-          // For PUBLIC/PRIVATE, this is the limit number
           const limitNumber = parseInt(step3Input);
           if (isNaN(limitNumber) || limitNumber <= 0) {
             await ctx.reply(
@@ -2841,7 +2780,6 @@ Qaysi guruhga xabar yubormoqchisiz?
     memberLimit: number | null,
   ) {
     try {
-      // Channel ID and name already verified and saved in session
       await this.channelService.createMandatoryChannel({
         channelId: data.channelId,
         channelName: data.channelName,
@@ -2884,17 +2822,14 @@ Qaysi guruhga xabar yubormoqchisiz?
     const telegramId = text.trim();
 
     try {
-      // Check if user exists in Telegram
       const user = await ctx.api.getChat(telegramId);
       const username = 'username' in user ? user.username : undefined;
 
-      // Save user data in session
       this.sessionService.updateSessionData(ctx.from.id, {
         telegramId,
         username: username || telegramId,
       });
 
-      // Show role selection with descriptions
       const message = `
 👤 **Admin qo'shish**
 
@@ -3076,9 +3011,7 @@ Qaysi rol berasiz?
     const admin = await this.getAdmin(ctx);
     if (!admin || !ctx.from) return;
 
-    // Check if we're in episode uploading step
     if (session.step === 6) {
-      // UPLOADING_EPISODES step (new serial)
       if (text.includes('qism yuklash') || text === '✅ Tugatish') {
         await this.serialManagementService.handleContinueOrFinish(ctx, text);
         return;
@@ -3091,12 +3024,9 @@ Qaysi rol berasiz?
       }
     }
 
-    // Check if we're adding episodes to existing serial
     if (session.step === 7) {
-      // ADDING_EPISODES step (existing serial)
       if (text.includes('qism yuklash') || text === '✅ Tugatish') {
         if (text === '✅ Tugatish') {
-          // Ask about updating field channel
           const keyboard = new Keyboard()
             .text('✅ Ha, field kanalga yangilash')
             .row()
@@ -3109,7 +3039,6 @@ Qaysi rol berasiz?
           );
           return;
         } else {
-          // Continue adding more episodes
           const data = session.data;
           await ctx.reply(
             `📹 ${data.nextEpisodeNumber}-qism videosini yuboring:`,
@@ -3137,17 +3066,14 @@ Qaysi rol berasiz?
           return;
         }
 
-        // Check if code is available (both Movie and Serial)
         const existingSerial = await this.serialService.findByCode(
           code.toString(),
         );
 
-        // Check if code is used by a movie
         const existingMovie = await this.movieService.findByCode(
           code.toString(),
         );
 
-        // If adding episodes to existing content and code belongs to movie
         if (existingMovie && session.data?.isAddingEpisode) {
           await this.serialManagementService.handleAddEpisodeCode(ctx, code);
           return;
@@ -3161,14 +3087,12 @@ Qaysi rol berasiz?
           return;
         }
 
-        // If adding episodes to existing content and code belongs to serial
         if (existingSerial && session.data?.isAddingEpisode) {
           await this.serialManagementService.handleAddEpisodeCode(ctx, code);
           return;
         }
 
         if (existingSerial) {
-          // Find nearest available codes
           const nearestCodes =
             await this.serialService.findNearestAvailableCodes(code, 5);
           const codesList =
@@ -3198,7 +3122,6 @@ Qaysi rol berasiz?
 
       case SerialCreateStep.TITLE:
         if (text === "➕ Yangi qism qo'shish") {
-          // Continue with existing serial
           const data = session.data;
           this.sessionService.updateSessionData(ctx.from.id, {
             isAddingEpisode: true,
@@ -3248,7 +3171,6 @@ Qaysi rol berasiz?
         }
         this.sessionService.setStep(ctx.from.id, SerialCreateStep.FIELD);
 
-        // Show fields list
         const allFields = await this.fieldService.findAll();
         if (allFields.length === 0) {
           await ctx.reply(
@@ -3357,11 +3279,9 @@ Qaysi rol berasiz?
     const broadcastType = session.data.broadcastType;
     const message = ctx.message;
 
-    // Start broadcasting
     await ctx.reply('📤 Xabar yuborilmoqda... Iltimos kuting.');
 
     try {
-      // Get users based on type
       let users;
       if (broadcastType === 'PREMIUM') {
         users = await this.premiumService.getPremiumUsers();
@@ -3371,7 +3291,6 @@ Qaysi rol berasiz?
         const premiumIds = premiumUsers.map((u) => u.id);
         users = users.filter((u) => !premiumIds.includes(u.id));
       } else {
-        // ALL
         users = await this.userService.findAll();
       }
 
@@ -3380,7 +3299,6 @@ Qaysi rol berasiz?
 
       for (const user of users) {
         try {
-          // Forward message to preserve "forward from" metadata
           if (message) {
             await ctx.api.copyMessage(
               user.telegramId,
@@ -3389,12 +3307,10 @@ Qaysi rol berasiz?
               { protect_content: false },
             );
           } else {
-            // Fallback to sending text
             await ctx.api.sendMessage(user.telegramId, text);
           }
           successCount++;
 
-          // Delay to avoid flood
           await new Promise((resolve) => setTimeout(resolve, 50));
         } catch (error) {
           failCount++;
@@ -3424,7 +3340,6 @@ Qaysi rol berasiz?
     }
   }
 
-  // ==================== PAYMENT APPROVAL ====================
   private async handleApprovePaymentSteps(
     ctx: BotContext,
     text: string,
@@ -3435,7 +3350,6 @@ Qaysi rol berasiz?
 
     const { paymentId, userId, amount } = session.data;
 
-    // Parse duration from text or button
     let durationDays: number;
 
     if (text === '30 kun (1 oy)') {
@@ -3447,7 +3361,6 @@ Qaysi rol berasiz?
     } else if (text === '365 kun (1 yil)') {
       durationDays = 365;
     } else {
-      // Try to parse as number
       durationDays = parseInt(text);
       if (isNaN(durationDays) || durationDays <= 0) {
         await ctx.reply(
@@ -3458,13 +3371,10 @@ Qaysi rol berasiz?
     }
 
     try {
-      // Approve payment and give premium
       await this.paymentService.approve(paymentId, admin.id, durationDays);
 
-      // Get payment details
       const payment = await this.paymentService.findById(paymentId);
 
-      // Send notification to user
       try {
         const expiresDate = new Date();
         expiresDate.setDate(expiresDate.getDate() + durationDays);
@@ -3482,7 +3392,6 @@ Qaysi rol berasiz?
         this.logger.error('Error notifying user:', error);
       }
 
-      // Clear session and show success
       this.sessionService.clearSession(ctx.from.id);
 
       await ctx.reply(
@@ -3512,7 +3421,6 @@ Qaysi rol berasiz?
 
     const { paymentId, userId } = session.data;
 
-    // Use predefined reason or custom text
     let reason = text;
     if (text === "Noto'g'ri chek") {
       reason = "Yuborilgan chek noto'g'ri yoki o'qib bo'lmaydi";
@@ -3527,13 +3435,10 @@ Qaysi rol berasiz?
     }
 
     try {
-      // Reject payment
       await this.paymentService.reject(paymentId, admin.id, reason);
 
-      // Get payment details
       const payment = await this.paymentService.findById(paymentId);
 
-      // Increment ban counter
       const updatedUser = await this.prisma.user.update({
         where: { id: payment.userId },
         data: { premiumBanCount: { increment: 1 } },
@@ -3541,12 +3446,10 @@ Qaysi rol berasiz?
 
       const banCount = updatedUser.premiumBanCount;
 
-      // Send notification to user with warning
       try {
         let message = '';
 
         if (banCount === 1) {
-          // First warning
           message =
             `❌ **To'lovingiz rad etildi**\n\n` +
             `📝 Sabab: ${reason}\n\n` +
@@ -3554,7 +3457,6 @@ Qaysi rol berasiz?
             `Siz to'lov qilishda yolg'on ma'lumotlardan foydalandingiz. Agar bu holat yana takrorlansa, botning bu funksiyasi siz uchun butunlay yopiladi.\n\n` +
             `🚨 Ogohlantirish: 1/2`;
         } else if (banCount >= 2) {
-          // Second warning - ban user
           await this.prisma.user.update({
             where: { id: payment.userId },
             data: {
@@ -3580,7 +3482,6 @@ Qaysi rol berasiz?
         this.logger.error('Error notifying user:', error);
       }
 
-      // Clear session and show success
       this.sessionService.clearSession(ctx.from.id);
 
       await ctx.reply(
@@ -3603,12 +3504,10 @@ Qaysi rol berasiz?
 
   private async startPremiereBroadcast(ctx: any) {
     try {
-      // Answer callback query first
       if (ctx.callbackQuery) {
         await ctx.answerCallbackQuery();
       }
 
-      // Get admin info
       let admin;
       try {
         admin = await this.adminService.getAdminByTelegramId(
@@ -3629,7 +3528,6 @@ Qaysi rol berasiz?
         return;
       }
 
-      // Start session
       this.sessionService.startSession(
         ctx.from.id,
         AdminState.BROADCAST_PREMIERE,
@@ -3669,7 +3567,6 @@ Qaysi rol berasiz?
     session: any,
   ) {
     try {
-      // Check for cancel
       if (text === '❌ Bekor qilish') {
         this.sessionService.clearSession(ctx.from.id);
         const admin = await this.adminService.getAdminByTelegramId(
@@ -3682,7 +3579,6 @@ Qaysi rol berasiz?
         return;
       }
 
-      // Parse code - check if serial (starts with 's') or movie
       const isSerial = text.toLowerCase().startsWith('s');
       const code = isSerial ? text.substring(1) : text;
 
@@ -3695,7 +3591,6 @@ Qaysi rol berasiz?
 
       const codeNumber = parseInt(code);
 
-      // Fetch content
       let content: any;
       let contentType: string;
 
@@ -3726,18 +3621,15 @@ Qaysi rol berasiz?
         return;
       }
 
-      // Get field info for channel link
       const field =
         content.field ||
         (await this.prisma.field.findUnique({
           where: { id: content.fieldId },
         }));
 
-      // Get bot username
       const botInfo = await ctx.api.getMe();
       const botUsername = botInfo.username || 'bot';
 
-      // Ask if admin wants to send to field channel
       const keyboard = new InlineKeyboard()
         .text(
           '📢 Ha, field kanalga yuborish',
@@ -3751,7 +3643,6 @@ Qaysi rol berasiz?
         .row()
         .text('❌ Bekor qilish', 'cancel_premiere');
 
-      // Get channel link - use channelLink field if available
       let channelLink = field?.channelLink || '';
       if (!channelLink && field?.name) {
         channelLink = `@${field.name}`;
@@ -3759,7 +3650,6 @@ Qaysi rol berasiz?
         channelLink = '@Kanal';
       }
 
-      // Format message
       const caption =
         '╭────────────────────\n' +
         `├‣  ${isSerial ? 'Serial' : 'Kino'} nomi : ${content.title}\n` +
@@ -3770,7 +3660,6 @@ Qaysi rol berasiz?
         '╰────────────────────\n' +
         `▶️ ${isSerial ? 'Serialning' : 'Kinoning'} to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!`;
 
-      // Send preview to admin
       if (content.posterFileId) {
         await ctx.replyWithPhoto(content.posterFileId, {
           caption:
@@ -3790,7 +3679,6 @@ Qaysi rol berasiz?
         );
       }
 
-      // Save data to session
       this.sessionService.updateSession(ctx.from.id, {
         state: AdminState.BROADCAST_PREMIERE,
         data: {
@@ -3814,7 +3702,6 @@ Qaysi rol berasiz?
     try {
       await ctx.answerCallbackQuery('📤 Yuborilmoqda...');
 
-      // Get session data
       const session = this.sessionService.getSession(ctx.from.id);
       if (!session || !session.data) {
         await ctx.reply("❌ Ma'lumot topilmadi. Qaytadan urinib ko'ring.");
@@ -3823,16 +3710,13 @@ Qaysi rol berasiz?
 
       const { caption, poster, contentType, code } = session.data;
 
-      // Get all active users
       const users = await this.prisma.user.findMany({
         where: { isBlocked: false },
       });
 
-      // Get bot username
       const botInfo = await ctx.api.getMe();
       const botUsername = botInfo.username || 'bot';
 
-      // Send to all users
       let successCount = 0;
       let failCount = 0;
 
@@ -3845,7 +3729,6 @@ Qaysi rol berasiz?
 
       for (const user of users) {
         try {
-          // Create deep link button
           const deepLink = `https://t.me/${botUsername}?start=${contentType}_${code}`;
           const keyboard = {
             inline_keyboard: [[{ text: '▶️ Tomosha qilish', url: deepLink }]],
@@ -3864,7 +3747,6 @@ Qaysi rol berasiz?
 
           successCount++;
 
-          // Update status every 10 users
           if (successCount % 10 === 0) {
             await ctx.api.editMessageText(
               ctx.chat.id,
@@ -3873,7 +3755,6 @@ Qaysi rol berasiz?
             );
           }
 
-          // Sleep to avoid rate limits (30 messages per second max)
           await new Promise((resolve) => setTimeout(resolve, 35));
         } catch (error) {
           failCount++;
@@ -3881,14 +3762,12 @@ Qaysi rol berasiz?
         }
       }
 
-      // Final status
       await ctx.api.editMessageText(
         ctx.chat.id,
         statusMsg.message_id,
         `✅ Yuborish tugadi!\n\n👥 Jami: ${users.length}\n✅ Yuborildi: ${successCount}\n❌ Xatolik: ${failCount}`,
       );
 
-      // Clear session
       this.sessionService.clearSession(ctx.from.id);
 
       const admin = await this.adminService.getAdminByTelegramId(
@@ -3907,7 +3786,6 @@ Qaysi rol berasiz?
 
   private async startTelegramPremiumBroadcast(ctx: any) {
     try {
-      // Answer callback query first
       if (ctx.callbackQuery) {
         await ctx.answerCallbackQuery();
       }
@@ -3931,7 +3809,6 @@ Qaysi rol berasiz?
         return;
       }
 
-      // Get count of Telegram Premium users
       let premiumUserCount = 0;
       try {
         premiumUserCount = await this.prisma.user.count({
@@ -3942,10 +3819,8 @@ Qaysi rol berasiz?
         });
       } catch (dbError) {
         this.logger.error('Database error counting premium users:', dbError);
-        // Continue with count = 0
       }
 
-      // Start session
       this.sessionService.startSession(
         ctx.from.id,
         AdminState.BROADCAST_TELEGRAM_PREMIUM,
@@ -3987,7 +3862,6 @@ Qaysi rol berasiz?
     session: any,
   ) {
     try {
-      // Check for cancel
       if (text === '❌ Bekor qilish') {
         this.sessionService.clearSession(ctx.from.id);
         const admin = await this.adminService.getAdminByTelegramId(
@@ -4000,10 +3874,8 @@ Qaysi rol berasiz?
         return;
       }
 
-      // Get message text
       const message = text;
 
-      // Get all Telegram Premium users
       const telegramPremiumUsers = await this.prisma.user.findMany({
         where: {
           hasTelegramPremium: true,
@@ -4011,7 +3883,6 @@ Qaysi rol berasiz?
         },
       });
 
-      // Show confirmation
       await ctx.reply(
         `📤 Quyidagi xabar barcha Telegram Premium foydalanuvchilarga yuboriladi:\n\n` +
           `━━━━━━━━━━━━━━━━━━\n${message}\n━━━━━━━━━━━━━━━━━━\n\n` +
@@ -4035,7 +3906,6 @@ Qaysi rol berasiz?
         },
       );
 
-      // Save message to session
       this.sessionService.updateSession(ctx.from.id, {
         state: AdminState.BROADCAST_TELEGRAM_PREMIUM,
         data: {
@@ -4057,7 +3927,6 @@ Qaysi rol berasiz?
     try {
       await ctx.answerCallbackQuery('📤 Yuborilmoqda...');
 
-      // Get session data
       const session = this.sessionService.getSession(ctx.from.id);
       if (!session || !session.data) {
         await ctx.reply("❌ Ma'lumot topilmadi. Qaytadan urinib ko'ring.");
@@ -4066,7 +3935,6 @@ Qaysi rol berasiz?
 
       const { message } = session.data;
 
-      // Get all Telegram Premium users
       const telegramPremiumUsers = await this.prisma.user.findMany({
         where: {
           hasTelegramPremium: true,
@@ -4074,7 +3942,6 @@ Qaysi rol berasiz?
         },
       });
 
-      // Send to all Telegram Premium users
       let successCount = 0;
       let failCount = 0;
 
@@ -4093,7 +3960,6 @@ Qaysi rol berasiz?
 
           successCount++;
 
-          // Update status every 10 users
           if (successCount % 10 === 0) {
             await ctx.api.editMessageText(
               ctx.chat.id,
@@ -4102,7 +3968,6 @@ Qaysi rol berasiz?
             );
           }
 
-          // Sleep to avoid rate limits
           await new Promise((resolve) => setTimeout(resolve, 35));
         } catch (error) {
           failCount++;
@@ -4110,14 +3975,12 @@ Qaysi rol berasiz?
         }
       }
 
-      // Final status
       await ctx.api.editMessageText(
         ctx.chat.id,
         statusMsg.message_id,
         `✅ Yuborish tugadi!\n\n👥 Jami: ${telegramPremiumUsers.length}\n✅ Yuborildi: ${successCount}\n❌ Xatolik: ${failCount}`,
       );
 
-      // Clear session
       this.sessionService.clearSession(ctx.from.id);
 
       const admin = await this.adminService.getAdminByTelegramId(
@@ -4139,7 +4002,6 @@ Qaysi rol berasiz?
       const admin = await this.getAdmin(ctx);
       if (!admin) return;
 
-      // Get all users with pagination
       const users = await this.prisma.user.findMany({
         take: 50, // Show first 50 users
         orderBy: [{ createdAt: 'desc' }],
@@ -4191,7 +4053,6 @@ Qaysi rol berasiz?
       const admin = await this.getAdmin(ctx);
       if (!admin) return;
 
-      // Start session
       this.sessionService.startSession(ctx.from!.id, AdminState.BLOCK_USER);
       this.sessionService.updateSessionData(ctx.from!.id, {});
 
@@ -4217,7 +4078,6 @@ Qaysi rol berasiz?
 
   private async handleBlockUserSteps(ctx: any, text: string, session: any) {
     try {
-      // Check for cancel
       if (text === '❌ Bekor qilish') {
         this.sessionService.clearSession(ctx.from.id);
         const admin = await this.adminService.getAdminByTelegramId(
@@ -4230,20 +4090,16 @@ Qaysi rol berasiz?
         return;
       }
 
-      // Check if input is numeric (Telegram ID) or text (username)
       const isNumeric = /^\d+$/.test(text.trim());
       let user;
 
       if (isNumeric) {
-        // Search by Telegram ID
         const telegramId = text.trim();
         user = await this.prisma.user.findFirst({
           where: { telegramId: telegramId },
         });
       } else {
-        // Parse username (remove @ if exists)
         const username = text.startsWith('@') ? text.substring(1) : text;
-        // Search by username
         user = await this.prisma.user.findFirst({
           where: { username: username },
         });
@@ -4257,7 +4113,6 @@ Qaysi rol berasiz?
         return;
       }
 
-      // Check if already blocked
       if (user.isBlocked) {
         await ctx.reply(
           `⚠️ Bu foydalanuvchi allaqachon bloklangan!\n\n` +
@@ -4269,7 +4124,6 @@ Qaysi rol berasiz?
         return;
       }
 
-      // Show confirmation
       await ctx.reply(
         `⚠️ **Tasdiqlash**\n\n` +
           `Haqiqatdan ham quyidagi foydalanuvchini bloklaysizmi?\n\n` +
@@ -4297,7 +4151,6 @@ Qaysi rol berasiz?
         },
       );
 
-      // Save user ID to session
       this.sessionService.updateSession(ctx.from.id, {
         state: AdminState.BLOCK_USER,
         data: { userId: user.id, username: user.username },
@@ -4313,7 +4166,6 @@ Qaysi rol berasiz?
     try {
       await ctx.answerCallbackQuery();
 
-      // Get session data
       const session = this.sessionService.getSession(ctx.from.id);
       if (!session || !session.data || !session.data.userId) {
         await ctx.reply("❌ Ma'lumot topilmadi. Qaytadan urinib ko'ring.");
@@ -4322,7 +4174,6 @@ Qaysi rol berasiz?
 
       const { userId, username } = session.data;
 
-      // Block user
       const user = await this.prisma.user.update({
         where: { id: userId },
         data: {
@@ -4332,10 +4183,8 @@ Qaysi rol berasiz?
         },
       });
 
-      // Clear session
       this.sessionService.clearSession(ctx.from.id);
 
-      // Edit message to remove buttons
       await ctx.editMessageReplyMarkup({
         reply_markup: { inline_keyboard: [] },
       });
@@ -4362,13 +4211,11 @@ Qaysi rol berasiz?
     }
   }
 
-  // ==================== UNBLOCK USER ====================
   private async startUnblockUser(ctx: BotContext) {
     try {
       const admin = await this.getAdmin(ctx);
       if (!admin) return;
 
-      // Start session
       this.sessionService.startSession(ctx.from!.id, AdminState.UNBLOCK_USER);
       this.sessionService.updateSessionData(ctx.from!.id, {});
 
@@ -4394,7 +4241,6 @@ Qaysi rol berasiz?
 
   private async handleUnblockUserSteps(ctx: any, text: string, session: any) {
     try {
-      // Check for cancel
       if (text === '❌ Bekor qilish') {
         this.sessionService.clearSession(ctx.from.id);
         const admin = await this.adminService.getAdminByTelegramId(
@@ -4407,20 +4253,16 @@ Qaysi rol berasiz?
         return;
       }
 
-      // Check if input is numeric (Telegram ID) or text (username)
       const isNumeric = /^\d+$/.test(text.trim());
       let user;
 
       if (isNumeric) {
-        // Search by Telegram ID
         const telegramId = text.trim();
         user = await this.prisma.user.findFirst({
           where: { telegramId: telegramId },
         });
       } else {
-        // Parse username (remove @ if exists)
         const username = text.startsWith('@') ? text.substring(1) : text;
-        // Search by username
         user = await this.prisma.user.findFirst({
           where: { username: username },
         });
@@ -4434,7 +4276,6 @@ Qaysi rol berasiz?
         return;
       }
 
-      // Check if not blocked
       if (!user.isBlocked) {
         await ctx.reply(
           `⚠️ Bu foydalanuvchi bloklanmagan!\n\n` +
@@ -4446,7 +4287,6 @@ Qaysi rol berasiz?
         return;
       }
 
-      // Show confirmation
       await ctx.reply(
         `⚠️ **Tasdiqlash**\n\n` +
           `Haqiqatdan ham quyidagi foydalanuvchini blokdan ochasizmi?\n\n` +
@@ -4475,7 +4315,6 @@ Qaysi rol berasiz?
         },
       );
 
-      // Save user ID to session
       this.sessionService.updateSession(ctx.from.id, {
         state: AdminState.UNBLOCK_USER,
         data: { userId: user.id, username: user.username },
@@ -4491,7 +4330,6 @@ Qaysi rol berasiz?
     try {
       await ctx.answerCallbackQuery();
 
-      // Get session data
       const session = this.sessionService.getSession(ctx.from.id);
       if (!session || !session.data || !session.data.userId) {
         await ctx.reply("❌ Ma'lumot topilmadi. Qaytadan urinib ko'ring.");
@@ -4500,7 +4338,6 @@ Qaysi rol berasiz?
 
       const { userId, username } = session.data;
 
-      // Unblock user
       const user = await this.prisma.user.update({
         where: { id: userId },
         data: {
@@ -4510,10 +4347,8 @@ Qaysi rol berasiz?
         },
       });
 
-      // Clear session
       this.sessionService.clearSession(ctx.from.id);
 
-      // Edit message to remove buttons
       await ctx.editMessageReplyMarkup({
         reply_markup: { inline_keyboard: [] },
       });
@@ -4541,13 +4376,11 @@ Qaysi rol berasiz?
     }
   }
 
-  // ==================== PREMIUM BANNED USERS ====================
   private async showPremiumBannedUsersMenu(ctx: BotContext) {
     try {
       const admin = await this.getAdmin(ctx);
       if (!admin) return;
 
-      // Store context so we know where to go back
       if (ctx.from) {
         this.sessionService.updateSessionData(ctx.from.id, {
           menuContext: 'premium_banned',
@@ -4649,10 +4482,8 @@ Qaysi rol berasiz?
       const step = session.data?.step || 'search';
 
       if (step === 'search') {
-        // Search user by username or ID
         let user = null;
 
-        // Try to find by username (remove @ if present)
         const username = text.replace('@', '');
         user = await this.prisma.user.findFirst({
           where: {
@@ -4678,7 +4509,6 @@ Qaysi rol berasiz?
           return;
         }
 
-        // Show confirmation
         const username_display = user.username
           ? `@${user.username}`
           : "Username yo'q";
@@ -4710,7 +4540,6 @@ Qaysi rol berasiz?
           },
         );
 
-        // Update session
         this.sessionService.updateSessionData(ctx.from.id, {
           step: 'confirm',
           userId: user.id,
@@ -4728,7 +4557,6 @@ Qaysi rol berasiz?
     try {
       await ctx.answerCallbackQuery();
 
-      // Get session data
       const session = this.sessionService.getSession(ctx.from.id);
       if (!session || !session.data || !session.data.userId) {
         await ctx.reply("❌ Ma'lumot topilmadi. Qaytadan urinib ko'ring.");
@@ -4737,7 +4565,6 @@ Qaysi rol berasiz?
 
       const { userId, username } = session.data;
 
-      // Unban user from premium
       const user = await this.prisma.user.update({
         where: { id: userId },
         data: {
@@ -4747,7 +4574,6 @@ Qaysi rol berasiz?
         },
       });
 
-      // Notify user
       try {
         await this.grammyBot.bot.api.sendMessage(
           user.telegramId,
@@ -4760,10 +4586,8 @@ Qaysi rol berasiz?
         this.logger.error('Error notifying user:', error);
       }
 
-      // Clear session
       this.sessionService.clearSession(ctx.from.id);
 
-      // Edit message to remove buttons
       await ctx.editMessageReplyMarkup({
         reply_markup: { inline_keyboard: [] },
       });
@@ -4806,12 +4630,10 @@ Qaysi rol berasiz?
     }
   }
 
-  // ==================== DELETE CONTENT BY CODE ====================
   private async startDeleteContent(ctx: BotContext) {
     const admin = await this.getAdmin(ctx);
     if (!admin) return;
 
-    // Check permission
     if (admin.role !== 'SUPERADMIN' && !admin.canDeleteContent) {
       await ctx.reply("❌ Sizda kontent o'chirish huquqi yo'q!");
       return;
@@ -4838,7 +4660,6 @@ Qaysi rol berasiz?
     const text = ctx.message?.text?.trim();
     if (!text) return;
 
-    // Parse code: just a number
     const codeMatch = text.match(/^(\d+)$/);
 
     if (!codeMatch) {
@@ -4851,12 +4672,10 @@ Qaysi rol berasiz?
     const code = codeMatch[1];
 
     try {
-      // Check if movie exists
       const movie = await this.prisma.movie.findUnique({
         where: { code: parseInt(code) },
       });
 
-      // Check if serial exists
       const serial = await this.prisma.serial.findUnique({
         where: { code: parseInt(code) },
       });
@@ -4887,7 +4706,6 @@ Qaysi rol berasiz?
       return;
     }
 
-    // Confirmation
     const keyboard = new InlineKeyboard()
       .text(`✅ Ha, o'chirish`, `confirm_delete_movie_${code}`)
       .text('❌ Bekor qilish', 'cancel_delete_content');
@@ -4913,7 +4731,6 @@ Qaysi rol berasiz?
       return;
     }
 
-    // Confirmation
     const keyboard = new InlineKeyboard()
       .text(`✅ Ha, o'chirish`, `confirm_delete_serial_${code}`)
       .text('❌ Bekor qilish', 'cancel_delete_content');
@@ -4954,7 +4771,6 @@ Qaysi rol berasiz?
         return;
       }
 
-      // Delete message from field channel if exists
       if (movie.channelMessageId && movie.field?.channelId) {
         try {
           await ctx.api.deleteMessage(
@@ -4962,11 +4778,9 @@ Qaysi rol berasiz?
             movie.channelMessageId,
           );
         } catch (error) {
-          // Silently ignore error
         }
       }
 
-      // Delete message from database channel if exists
       if (movie.channelMessageId && movie.field?.databaseChannel?.channelId) {
         try {
           await ctx.api.deleteMessage(
@@ -4974,21 +4788,17 @@ Qaysi rol berasiz?
             movie.channelMessageId,
           );
         } catch (error) {
-          // Silently ignore error
         }
       }
 
-      // Delete all episodes
       await this.prisma.movieEpisode.deleteMany({
         where: { movieId: movie.id },
       });
 
-      // Delete watch history
       await this.prisma.watchHistory.deleteMany({
         where: { movieId: movie.id },
       });
 
-      // Delete the movie
       await this.prisma.movie.delete({
         where: { id: movie.id },
       });
@@ -5040,7 +4850,6 @@ Qaysi rol berasiz?
         return;
       }
 
-      // Delete message from field channel if exists
       if (serial.channelMessageId && serial.field?.channelId) {
         try {
           await ctx.api.deleteMessage(
@@ -5048,11 +4857,9 @@ Qaysi rol berasiz?
             serial.channelMessageId,
           );
         } catch (error) {
-          // Silently ignore error
         }
       }
 
-      // Delete message from database channel if exists
       if (serial.channelMessageId && serial.field?.databaseChannel?.channelId) {
         try {
           await ctx.api.deleteMessage(
@@ -5060,21 +4867,17 @@ Qaysi rol berasiz?
             serial.channelMessageId,
           );
         } catch (error) {
-          // Silently ignore error
         }
       }
 
-      // Delete all episodes
       await this.prisma.episode.deleteMany({
         where: { serialId: serial.id },
       });
 
-      // Delete watch history
       await this.prisma.watchHistory.deleteMany({
         where: { serialId: serial.id },
       });
 
-      // Delete the serial
       await this.prisma.serial.delete({
         where: { id: serial.id },
       });
@@ -5121,12 +4924,10 @@ Qaysi rol berasiz?
     }
   }
 
-  // ==================== CLEAR CHANNEL HISTORY ====================
   private async clearChannelHistory(ctx: BotContext) {
     const admin = await this.getAdmin(ctx);
     if (!admin) return;
 
-    // Only SuperAdmin can clear history
     if (admin.role !== 'SUPERADMIN') {
       await ctx.reply('❌ Faqat SuperAdmin tarixni tozalashi mumkin!');
       return;
@@ -5154,12 +4955,10 @@ Qaysi rol berasiz?
         reply_markup: { inline_keyboard: [] },
       });
 
-      // Delete all inactive channels
       const result = await this.prisma.mandatoryChannel.deleteMany({
         where: { isActive: false },
       });
 
-      // Reset active channels' member counts and pending requests
       await this.prisma.mandatoryChannel.updateMany({
         where: { isActive: true },
         data: {
@@ -5187,7 +4986,6 @@ Qaysi rol berasiz?
     }
   }
 
-  // ==================== SEND TO FIELD CHANNEL ====================
   private async sendToFieldChannel(ctx: any) {
     try {
       await ctx.answerCallbackQuery('📤 Field kanalga yuborilmoqda...');
@@ -5201,11 +4999,9 @@ Qaysi rol berasiz?
       const { contentType, code, caption, poster, fieldId, databaseChannelId } =
         session.data;
 
-      // First, try to get field channel
       let targetChannelId: string | null = null;
       let targetChannelName: string | null = null;
 
-      // Option 1: Use field's direct channelId
       if (fieldId) {
         const field = await this.prisma.field.findUnique({
           where: { id: fieldId },
@@ -5213,12 +5009,10 @@ Qaysi rol berasiz?
         });
 
         if (field) {
-          // Use database channel if exists
           if (field.databaseChannel) {
             targetChannelId = field.databaseChannel.channelId;
             targetChannelName = field.databaseChannel.channelName;
           }
-          // Otherwise use field's own channelId (this is for posting to field channel directly)
           else if (field.channelId) {
             targetChannelId = field.channelId;
             targetChannelName = field.name;
@@ -5233,13 +5027,10 @@ Qaysi rol berasiz?
         return;
       }
 
-      // Send to field channel
       try {
-        // Get bot username for deep link
         const botInfo = await ctx.api.getMe();
         const botUsername = botInfo.username || 'bot';
 
-        // Create deep link button
         const deepLink = `https://t.me/${botUsername}?start=${contentType === 'serial' ? 's' : ''}${code}`;
         const keyboard = new InlineKeyboard().url(
           '▶️ Tomosha qilish',
@@ -5290,7 +5081,6 @@ Qaysi rol berasiz?
     }
   }
 
-  // ==================== BROADCAST PREMIERE TO USERS ====================
   private async broadcastPremiereToUsers(ctx: any) {
     try {
       await ctx.answerCallbackQuery('📤 Foydalanuvchilarga yuborilmoqda...');
@@ -5306,16 +5096,13 @@ Qaysi rol berasiz?
 
       const { caption, poster, contentType, code } = session.data;
 
-      // Get all active users
       const users = await this.prisma.user.findMany({
         where: { isBlocked: false },
       });
 
-      // Get bot username
       const botInfo = await ctx.api.getMe();
       const botUsername = botInfo.username || 'bot';
 
-      // Send to all users
       let successCount = 0;
       let failCount = 0;
 
@@ -5325,7 +5112,6 @@ Qaysi rol berasiz?
 
       for (const user of users) {
         try {
-          // Create deep link button
           const deepLink = `https://t.me/${botUsername}?start=${contentType === 'serial' ? 's' : ''}${code}`;
           const keyboard = new InlineKeyboard().url(
             '▶️ Tomosha qilish',
@@ -5345,7 +5131,6 @@ Qaysi rol berasiz?
 
           successCount++;
 
-          // Update status every 50 users
           if (successCount % 50 === 0) {
             await ctx.api.editMessageText(
               statusMsg.chat.id,
@@ -5354,7 +5139,6 @@ Qaysi rol berasiz?
             );
           }
 
-          // Delay to avoid rate limits
           await new Promise((resolve) => setTimeout(resolve, 50));
         } catch (error) {
           failCount++;
@@ -5365,7 +5149,6 @@ Qaysi rol berasiz?
         }
       }
 
-      // Final status
       await ctx.api.editMessageText(
         statusMsg.chat.id,
         statusMsg.message_id,

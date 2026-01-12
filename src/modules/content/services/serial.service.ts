@@ -60,15 +60,12 @@ export class SerialService {
     const availableCodes: number[] = [];
     let offset = 1;
 
-    // Search for available codes near targetCode (both Movie and Serial)
     while (availableCodes.length < limit && offset <= 1000) {
-      // Check higher code
       const upperCode = targetCode + offset;
       if (await this.codeGenerator.isCodeAvailable(String(upperCode))) {
         availableCodes.push(upperCode);
       }
 
-      // Check lower code (only if positive)
       if (targetCode - offset > 0) {
         const lowerCode = targetCode - offset;
         if (await this.codeGenerator.isCodeAvailable(String(lowerCode))) {
@@ -81,7 +78,6 @@ export class SerialService {
 
     return availableCodes
       .sort((a, b) => {
-        // Sort by distance from requested code
         const distA = Math.abs(a - targetCode);
         const distB = Math.abs(b - targetCode);
         return distA - distB;
@@ -111,7 +107,6 @@ export class SerialService {
   }
 
   async delete(id: number) {
-    // This will cascade delete all episodes
     return this.prisma.serial.delete({
       where: { id },
     });
@@ -154,7 +149,6 @@ export class SerialService {
   }
 
   async search(query: string) {
-    // Try to parse query as number for code search
     const codeQuery = parseInt(query);
 
     return this.prisma.serial.findMany({
@@ -221,7 +215,6 @@ export class SerialService {
         callback_data: `episode_${serialCode}_${episode.episodeNumber}`,
       });
 
-      // 5 episodes per row
       if ((index + 1) % 5 === 0 || index === episodes.length - 1) {
         buttons.push([...row]);
         row.length = 0;

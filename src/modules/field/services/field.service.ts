@@ -23,7 +23,6 @@ export class FieldService {
       return '@' + match[1];
     }
 
-    // If user pasted only username without @
     if (/^[A-Za-z0-9_]{5,}$/.test(link)) {
       return '@' + link;
     }

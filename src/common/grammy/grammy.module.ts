@@ -25,10 +25,8 @@ export class GrammyModule {
   }
 }
 
-// Custom decorators for Grammy
 export function Update() {
   return (target: any) => {
-    // Mark class as update handler
     Reflect.defineMetadata('is:update:handler', true, target);
     return target;
   };
@@ -96,7 +94,6 @@ export function On(updateType: string) {
       if (updateType === 'video' && ctx.message?.video) {
         return original.apply(this, args);
       }
-      // Add more types as needed
     };
     return descriptor;
   };
@@ -104,12 +101,10 @@ export function On(updateType: string) {
 
 export function Ctx() {
   return (target: any, propertyKey: string, parameterIndex: number) => {
-    // Mark parameter as context
   };
 }
 
 export function InjectBot() {
   return (target: any, propertyKey: string | symbol, parameterIndex: number) => {
-    // This will inject the bot instance
   };
 }
