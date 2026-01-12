@@ -30,7 +30,6 @@ services:
     environment:
         NODE_ENV : production
         PORT : 3000
-        LOG_LEVEL : ${LOG_LEVEL}
       
         BOT_TOKEN: ${BOT_TOKEN}
         BOT_USERNAME: ${BOT_USERNAME}
