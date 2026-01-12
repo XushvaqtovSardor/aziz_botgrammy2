@@ -54,7 +54,7 @@ export class AdminHandler implements OnModuleInit {
   private registerHandlers() {
     const bot = this.grammyBot.bot;
 
-    // /admin command - ONLY for admins
+  
     bot.command('admin', async (ctx) => {
       if (!ctx.from) return;
 
