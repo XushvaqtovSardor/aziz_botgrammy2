@@ -7,69 +7,24 @@ services:
       dockerfile: Dockerfile
     container_name: aziz_bot_app
     restart: unless-stopped
-    ports:
-      - "3000:3000"
+    network_mode: "host"
     environment:
       - NODE_ENV=production
       - PORT=3000
       - BOT_TOKEN=${BOT_TOKEN}
       - BOT_USERNAME=${BOT_USERNAME}
       - DATABASE_URL=${DATABASE_URL}
-
       - PAYME_MERCHANT_ID=${PAYME_MERCHANT_ID}
       - PAYME_KEY=${PAYME_KEY}
       - PAYME_TEST_KEY=${PAYME_TEST_KEY}
       - PAYME_ENDPOINT=${PAYME_ENDPOINT:-https://checkout.paycom.uz}
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - bot-network
     volumes:
       - ./logs:/app/logs
-    healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
-      interval: 30s
-      timeout: 10s
-      start_period: 40s
-      retries: 3
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
-
-  postgres:
-    image: postgres:16-alpine
-    container_name: aziz_bot_postgres
-    restart: unless-stopped
-    environment:
-      - POSTGRES_USER=${DB_USER:-azizbot}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${DB_NAME:-aziz_bot_db}
-      - POSTGRES_INITDB_ARGS=-E UTF8 --locale=C
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "127.0.0.1:5433:5432"
-    networks:
-      - bot-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-azizbot}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-    shm_size: 128mb
-
-networks:
-  bot-network:
-    driver: bridge
-
 volumes:
   postgres_data:
     driver: local
