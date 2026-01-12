@@ -64,8 +64,7 @@ export class UserHandler implements OnModuleInit {
             where: { telegramId: String(ctx.from.id) },
             data: { hasTelegramPremium },
           });
-        } catch (error) {
-        }
+        } catch (error) {}
       }
       await next();
     });
@@ -103,11 +102,6 @@ export class UserHandler implements OnModuleInit {
       this.handlePremiumPurchase.bind(this),
     );
     bot.callbackQuery(/^upload_receipt$/, this.handleUploadReceipt.bind(this));
-    bot.callbackQuery(/^share_movie_(\d+)$/, this.handleShareMovie.bind(this));
-    bot.callbackQuery(
-      /^share_serial_(\d+)$/,
-      this.handleShareSerial.bind(this),
-    );
 
     bot.on('inline_query', this.handleInlineQuery.bind(this));
 
@@ -806,7 +800,7 @@ ${movieDeepLink}`.trim();
         if ((episodes.length + 1) % 5 !== 0) keyboard.row();
 
         keyboard
-          .text('📤 Ulashish', `share_movie_${movie.code}`)
+          .switchInline('📤 Ulashish', `${movie.code}`)
           .row()
           .text('🔙 Orqaga', 'back_to_main');
 
@@ -819,9 +813,9 @@ ${movieDeepLink}`.trim();
       } else {
         if (movie.videoFileId) {
           const movieDeepLink = `https://t.me/${botUsername}?start=${movie.code}`;
-          const shareKeyboard = new InlineKeyboard().text(
+          const shareKeyboard = new InlineKeyboard().switchInline(
             '📤 Ulashish',
-            `share_movie_${movie.code}`,
+            `${movie.code}`,
           );
 
           const videoCaption = `╭────────────────────
@@ -895,7 +889,7 @@ ${serialDeepLink}`.trim();
       if (episodes.length % 5 !== 0) keyboard.row();
 
       keyboard
-        .text('📤 Ulashish', `share_serial_${code}`)
+        .switchInline('📤 Ulashish', `${code}`)
         .row()
         .text('🔙 Orqaga', 'back_to_main');
 
@@ -991,8 +985,7 @@ ${serialDeepLink}`.trim();
             ctx.callbackQuery.message.message_id,
           );
         }
-      } catch (error) {
-      }
+      } catch (error) {}
 
       const hasRequested = result.statuses.some(
         (ch) => ch.status === ChannelStatus.requested,
@@ -1110,8 +1103,7 @@ ${serialDeepLink}`.trim();
             { parse_mode: 'HTML' },
           );
         }
-      } catch (error) {
-      }
+      } catch (error) {}
     }
   }
 
@@ -1363,58 +1355,6 @@ ${serialDeepLink}`.trim();
     }
   }
 
-  private async handleShareMovie(ctx: BotContext) {
-    if (!ctx.callbackQuery || !('data' in ctx.callbackQuery)) return;
-
-    const code = parseInt(ctx.callbackQuery.data.replace('share_movie_', ''));
-    const botUsername = (await ctx.api.getMe()).username;
-    const shareLink = `${code}`;
-
-    await ctx.answerCallbackQuery({
-      text: 'Pastdagi tugmani bosib ulashing!',
-    });
-
-    const keyboard = new InlineKeyboard().switchInline(
-      '📤 Ulashish',
-      shareLink,
-    );
-
-    await ctx.reply(
-      '📤 **Kinoni ulashish**\n\n' +
-        "Pastdagi tugmani bosing va o'zingiz xohlagan chatni tanlang:",
-      {
-        parse_mode: 'Markdown',
-        reply_markup: keyboard,
-      },
-    );
-  }
-
-  private async handleShareSerial(ctx: BotContext) {
-    if (!ctx.callbackQuery || !('data' in ctx.callbackQuery)) return;
-
-    const code = parseInt(ctx.callbackQuery.data.replace('share_serial_', ''));
-    const botUsername = (await ctx.api.getMe()).username;
-    const shareLink = `s${code}`;
-
-    await ctx.answerCallbackQuery({
-      text: 'Pastdagi tugmani bosib ulashing!',
-    });
-
-    const keyboard = new InlineKeyboard().switchInline(
-      '📤 Ulashish',
-      shareLink,
-    );
-
-    await ctx.reply(
-      '📤 **Serialni ulashish**\n\n' +
-        "Pastdagi tugmani bosing va o'zingiz xohlagan chatni tanlang:",
-      {
-        parse_mode: 'Markdown',
-        reply_markup: keyboard,
-      },
-    );
-  }
-
   private async handleInlineQuery(ctx: BotContext) {
     if (!ctx.inlineQuery) return;
 
@@ -1436,28 +1376,27 @@ ${serialDeepLink}`.trim();
 
           const field = await this.prisma.field.findUnique({
             where: { id: movie.fieldId },
-            select: { channelLink: true },
+            select: { channelLink: true, name: true },
           });
-          const channelLink = field?.channelLink || '@YourChannel';
+          const channelLink = field?.channelLink || '@Kanal';
 
           const messageText = `╭────────────────────
 ├‣  Kino nomi: ${movie.title}
 ├‣  Kino kodi: ${code}
 ├‣  Qism: ${movie.totalEpisodes || 1}
-├‣  Janrlari: ${movie.genre || 'N/A'}
+├‣  Janrlari: ${movie.genre || "Noma'lum"}
 ├‣  Kanal: ${channelLink}
 ╰────────────────────
-▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️
+▶️ Kinoni tomosha qilish uchun pastdagi havolaga bosing. ⬇️
 ${shareLink}`;
 
           results.push({
             type: 'article',
             id: `movie_${code}`,
             title: `🎬 ${movie.title}`,
-            description: movie.description || "Kinoni ko'rish",
+            description: `Kod: ${code} | ${movie.genre || "Janr: noma'lum"}`,
             input_message_content: {
               message_text: messageText,
-              parse_mode: undefined,
             },
             reply_markup: {
               inline_keyboard: [
@@ -1481,30 +1420,31 @@ ${shareLink}`;
           const botUsername = (await ctx.api.getMe()).username;
           const shareLink = `https://t.me/${botUsername}?start=s${code}`;
 
+          const episodes = await this.episodeService.findBySerialId(serial.id);
+
           const field = await this.prisma.field.findUnique({
             where: { id: serial.fieldId },
-            select: { channelLink: true },
+            select: { channelLink: true, name: true },
           });
-          const channelLink = field?.channelLink || '@YourChannel';
+          const channelLink = field?.channelLink || '@Kanal';
 
           const messageText = `╭────────────────────
 ├‣  Serial nomi: ${serial.title}
 ├‣  Serial kodi: ${code}
-├‣  Qism: ${serial.totalEpisodes}
-├‣  Janrlari: ${serial.genre || 'N/A'}
+├‣  Qism: ${serial.totalEpisodes || episodes.length || 1}
+├‣  Janrlari: ${serial.genre || "Noma'lum"}
 ├‣  Kanal: ${channelLink}
 ╰────────────────────
-▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️
+▶️ Serialni tomosha qilish uchun pastdagi havolaga bosing. ⬇️
 ${shareLink}`;
 
           results.push({
             type: 'article',
             id: `serial_${code}`,
             title: `📺 ${serial.title}`,
-            description: serial.description || "Serialni ko'rish",
+            description: `Kod: ${code} | ${serial.genre || "Janr: noma'lum"}`,
             input_message_content: {
               message_text: messageText,
-              parse_mode: undefined,
             },
             reply_markup: {
               inline_keyboard: [
