@@ -451,15 +451,18 @@ export class SerialManagementService {
   ) {
     if (!ctx.from) return;
 
-    const { nextEpisodeNumber, addedEpisodes } = session.data;
+    const { nextEpisodeNumber, addedEpisodes = [] } = session.data;
 
-    addedEpisodes.push({
-      episodeNumber: nextEpisodeNumber,
-      videoFileId,
-    });
+    const updatedEpisodes = [
+      ...addedEpisodes,
+      {
+        episodeNumber: nextEpisodeNumber,
+        videoFileId,
+      },
+    ];
 
     this.sessionService.updateSessionData(ctx.from.id, {
-      addedEpisodes,
+      addedEpisodes: updatedEpisodes,
       nextEpisodeNumber: nextEpisodeNumber + 1,
     });
 
