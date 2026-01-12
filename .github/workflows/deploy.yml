@@ -18,7 +18,6 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          timeout: 300
           script: |
             echo "Creating project folder if it doesn't exist!"
             mkdir -p /root
