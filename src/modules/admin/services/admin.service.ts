@@ -46,7 +46,6 @@ export class AdminService {
     if (!admin) return false;
     if (admin.role === AdminRole.SUPERADMIN) return true;
 
-    // Check specific permissions based on role
     if (admin.role === AdminRole.MANAGER) {
       return [
         'MANAGE_FIELDS',
@@ -56,7 +55,6 @@ export class AdminService {
       ].includes(permission);
     }
 
-    // Admin role has basic permissions
     return ['UPLOAD_CONTENT'].includes(permission);
   }
 

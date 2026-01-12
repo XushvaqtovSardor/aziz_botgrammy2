@@ -18,12 +18,10 @@ export class GrammyBotService implements OnModuleInit {
   }
 
   async onModuleInit() {
-    // Error handling
     this.bot.catch((err) => {
       this.logger.error('Grammy Bot error:', err);
     });
 
-    // Log middleware
     this.bot.use(async (ctx, next) => {
       if (ctx.message && 'text' in ctx.message) {
         this.logger.debug(
@@ -33,7 +31,6 @@ export class GrammyBotService implements OnModuleInit {
       await next();
     });
 
-    // Note: Don't start bot here - it will be started in main.ts after all handlers are registered
     this.logger.debug('Grammy Bot middleware configured');
   }
 

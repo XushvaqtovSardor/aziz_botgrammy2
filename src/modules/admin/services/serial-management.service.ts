@@ -384,7 +384,6 @@ export class SerialManagementService {
 
         posterMessageId = sentPoster.message_id;
 
-        // Update serial with poster message ID
         await this.serialService.update(serial.id, {
           channelMessageId: posterMessageId,
         });
@@ -406,11 +405,9 @@ export class SerialManagementService {
     }
   }
 
-  // ========== ADDING EPISODE TO EXISTING MOVIE/SERIAL ==========
   async handleAddEpisodeCode(ctx: BotContext, code: number) {
     if (!ctx.from) return;
 
-    // Check if code exists in movies or serials
     const movie = await this.movieService.findByCode(code.toString());
     const serial = await this.serialService.findByCode(code.toString());
 
