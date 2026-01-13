@@ -414,6 +414,7 @@ export class SerialManagementService {
         nextEpisodeNumber,
         addedEpisodes: [],
       });
+      this.sessionService.getSession(ctx.from.id).state = 'CREATING_SERIAL';
       this.sessionService.setStep(ctx.from.id, 7);
 
       await ctx.reply(
@@ -432,6 +433,7 @@ export class SerialManagementService {
         nextEpisodeNumber,
         addedEpisodes: [],
       });
+      this.sessionService.getSession(ctx.from.id).state = 'CREATING_SERIAL';
       this.sessionService.setStep(ctx.from.id, 7);
 
       await ctx.reply(
