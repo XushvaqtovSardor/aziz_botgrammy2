@@ -536,8 +536,10 @@ export class SerialManagementService {
         const allEpisodes = await this.movieEpisodeService.findByMovieId(
           movie.id,
         );
+        const totalEpisodes =
+          allEpisodes.length > 0 ? 1 + allEpisodes.length : 1;
         await this.movieService.update(movie.id, {
-          totalEpisodes: 1 + allEpisodes.length,
+          totalEpisodes: totalEpisodes,
         });
       } else {
         for (const ep of addedEpisodes) {
@@ -587,24 +589,25 @@ export class SerialManagementService {
         if (contentType === 'movie' && movie.channelMessageId) {
           const field = await this.fieldService.findOne(movie.fieldId);
           if (field) {
+            const updatedMovie = await this.movieService.findById(movie.id);
             const allEpisodes = await this.movieEpisodeService.findByMovieId(
               movie.id,
             );
-            const totalEpisodes = 1 + allEpisodes.length;
+            const totalEpisodes = updatedMovie.totalEpisodes;
             const caption = `
 ╭────────────────────
-├⁣  Kino nomi : ${movie.title}
-├⁣  Kino kodi: ${movie.code}
+├⁣  Kino nomi : ${updatedMovie.title}
+├⁣  Kino kodi: ${updatedMovie.code}
 ├⁣  Qismlar: ${totalEpisodes}
-├‣  Janrlari: ${movie.genre}
+├‣  Janrlari: ${updatedMovie.genre}
 ├‣  Kanal: ${field.channelLink || '@' + field.name}
 ╰────────────────────
-▶️ Kinoning to'liq qismlarini https://t.me/${this.grammyBot.botUsername}?start=${movie.code} dan tomosha qilishingiz mumkin!
+▶️ Kinoning to'liq qismlarini https://t.me/${this.grammyBot.botUsername}?start=${updatedMovie.code} dan tomosha qilishingiz mumkin!
             `.trim();
 
             const keyboard = new InlineKeyboard().url(
               '✨ Tomosha Qilish',
-              `https://t.me/${this.grammyBot.botUsername}?start=${movie.code}`,
+              `https://t.me/${this.grammyBot.botUsername}?start=${updatedMovie.code}`,
             );
 
             try {
@@ -626,23 +629,24 @@ export class SerialManagementService {
         } else if (contentType === 'serial' && serial.channelMessageId) {
           const field = await this.fieldService.findOne(serial.fieldId);
           if (field) {
+            const updatedSerial = await this.serialService.findById(serial.id);
             const allEpisodes = await this.episodeService.findBySerialId(
               serial.id,
             );
             const caption = `
 ╭────────────────────
-├‣  Serial nomi : ${serial.title}
-├‣  Serial kodi: ${serial.code}
-├‣  Qismlar: ${allEpisodes.length}
-├‣  Janrlari: ${serial.genre}
+├‣  Serial nomi : ${updatedSerial.title}
+├‣  Serial kodi: ${updatedSerial.code}
+├‣  Qismlar: ${updatedSerial.totalEpisodes}
+├‣  Janrlari: ${updatedSerial.genre}
 ├‣  Kanal: ${field.channelLink || '@' + field.name}
 ╰────────────────────
-▶️ Serialning to'liq qismlarini https://t.me/${this.grammyBot.botUsername}?start=s${serial.code} dan tomosha qilishingiz mumkin!
+▶️ Serialning to'liq qismlarini https://t.me/${this.grammyBot.botUsername}?start=s${updatedSerial.code} dan tomosha qilishingiz mumkin!
             `.trim();
 
             const keyboard = new InlineKeyboard().url(
               '✨ Tomosha Qilish',
-              `https://t.me/${this.grammyBot.botUsername}?start=s${serial.code}`,
+              `https://t.me/${this.grammyBot.botUsername}?start=s${updatedSerial.code}`,
             );
 
             try {
@@ -667,23 +671,20 @@ export class SerialManagementService {
       this.sessionService.clearSession(ctx.from.id);
 
       if (contentType === 'movie') {
-        const allEpisodes = await this.movieEpisodeService.findByMovieId(
-          movie.id,
-        );
-        const totalEpisodes = 1 + allEpisodes.length;
+        const updatedMovie = await this.movieService.findById(movie.id);
         await ctx.reply(
           `✅ Qismlar muvaffaqiyatli qo'shildi!\n\n` +
-            `🎬 ${movie.title}\n` +
-            `📹 Jami qismlar: ${totalEpisodes}\n` +
+            `🎬 ${updatedMovie.title}\n` +
+            `📹 Jami qismlar: ${updatedMovie.totalEpisodes}\n` +
             `➕ Qo'shildi: ${addedEpisodes.length} ta`,
           AdminKeyboard.getAdminMainMenu('ADMIN'),
         );
       } else {
-        const allEpisodes = await this.episodeService.findBySerialId(serial.id);
+        const updatedSerial = await this.serialService.findById(serial.id);
         await ctx.reply(
           `✅ Qismlar muvaffaqiyatli qo'shildi!\n\n` +
-            `📺 ${serial.title}\n` +
-            `📹 Jami qismlar: ${allEpisodes.length}\n` +
+            `📺 ${updatedSerial.title}\n` +
+            `📹 Jami qismlar: ${updatedSerial.totalEpisodes}\n` +
             `➕ Qo'shildi: ${addedEpisodes.length} ta`,
           AdminKeyboard.getAdminMainMenu('ADMIN'),
         );
