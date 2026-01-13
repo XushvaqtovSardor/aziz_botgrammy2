@@ -10,6 +10,7 @@ import { ChannelService } from '../../channel/services/channel.service';
 import { SessionService } from './session.service';
 import { AdminKeyboard } from '../keyboards/admin-menu.keyboard';
 import { GrammyBotService } from '../../../common/grammy/grammy-bot.module';
+import { AdminState } from '../types/session.interface';
 
 export enum SerialManagementStep {
   CODE = 'code',
@@ -414,7 +415,10 @@ export class SerialManagementService {
         nextEpisodeNumber,
         addedEpisodes: [],
       });
-      this.sessionService.getSession(ctx.from.id).state = 'CREATING_SERIAL';
+      const session = this.sessionService.getSession(ctx.from.id);
+      if (session) {
+        session.state = AdminState.CREATING_SERIAL;
+      }
       this.sessionService.setStep(ctx.from.id, 7);
 
       await ctx.reply(
@@ -433,7 +437,10 @@ export class SerialManagementService {
         nextEpisodeNumber,
         addedEpisodes: [],
       });
-      this.sessionService.getSession(ctx.from.id).state = 'CREATING_SERIAL';
+      const session = this.sessionService.getSession(ctx.from.id);
+      if (session) {
+        session.state = AdminState.CREATING_SERIAL;
+      }
       this.sessionService.setStep(ctx.from.id, 7);
 
       await ctx.reply(
