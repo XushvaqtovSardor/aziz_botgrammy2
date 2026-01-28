@@ -1040,7 +1040,24 @@ ${movieDeepLink}`.trim();
         await this.watchHistoryService.recordMovieWatch(user.id, movie.id);
       } else {
         if (movie.videoFileId) {
-          const shareText = `<blockquote>╭${'─'.repeat(20)}
+          // 1. Ulashish uchun oddiy matn (HTML-siz)
+          const shareText = `╭${'─'.repeat(20)}
+├‣ Serial nomi: ${movie.title}
+├‣ Serial kodi: ${movie.code}
+├‣ Qism: 1
+├‣ Janrlari: ${movie.genre || "Noma'lum"}
+├‣ Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}
+╰${'─'.repeat(20)}
+
+▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️
+
+https://t.me/${botUsername}?start=${movie.code}`;
+
+          const shareKeyboard = new InlineKeyboard().switchInline(
+            '📤 Ulashish',
+            shareText,
+          );
+          const videoCaption = `<blockquote>╭${'─'.repeat(20)}
 ├‣ Serial nomi: ${movie.title}
 ├‣ Serial kodi: ${movie.code}
 ├‣ Qism: 1
@@ -1051,24 +1068,10 @@ ${movieDeepLink}`.trim();
 ▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️
 
 https://t.me/${botUsername}?start=${movie.code}`;
-          const movieDeepLink = `https://t.me/${botUsername}?start=${movie.code}`;
-          const shareKeyboard = new InlineKeyboard().switchInline(
-            '📤 Ulashish',
-            `${shareText}`,
-          );
-
-          const videoCaption = `╭────────────────────
-├‣  Kino nomi: ${movie.title}
-├‣  Kino kodi: ${movie.code}
-├‣  Qism: 1
-├‣  Janrlari: ${movie.genre || "Noma'lum"}
-├‣  Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}
-╰────────────────────
-▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️
-${movieDeepLink}`.trim();
 
           await ctx.replyWithVideo(movie.videoFileId, {
             caption: videoCaption,
+            parse_mode: 'HTML',
             protect_content: true,
             reply_markup: shareKeyboard,
           });
