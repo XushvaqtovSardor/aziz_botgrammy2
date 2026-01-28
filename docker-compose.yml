@@ -1,4 +1,4 @@
-version: '3.9'
+version: "3.9"
 
 services:
   db:
@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: 12345
       POSTGRES_DB: aziz_grammydb
     ports:
-      - '5437:5432'
+      - "5437:5432"
     volumes:
       - baza_data:/var/lib/postgresql/data
   # redis:
@@ -26,7 +26,7 @@ services:
     env_file:
       - .env
     ports:
-      - '3001:3000'
+      - "3001:3000"
     depends_on:
       - db
       # - redis
@@ -34,24 +34,8 @@ services:
       sh -c "
         npx prisma generate &&
         npx prisma migrate deploy &&
-        pnpm run start:dev
+        pnpm run start:prod
       "
-    environment:
-      DATABASE_URL: postgres://postgres:12345@db:5432/aziz_grammydb
-      BOT_TOKEN: 8162127632:AAE8Br9w8j2igFzUcyhK_dty9FgaT5dz8cw
-      NODE_ENV: development
-      PORT: 3001
-      BOT_USERNAME: Kinolar_animelar_dramalar_bot
-      WEB_PANEL_URL: http:167.99.82.101:3001
-
-      PGADMIN_EMAIL: admin@admin.com
-      PGADMIN_PASSWORD: admin123
-      PAYME_MERCHANT_ID: your_payme_merchant_id
-      PAYME_KEY: your_payme_key
-      PAYME_TEST_KEY: your_payme_test_key
-      PAYME_ENDPOINT: https://checkout.paycom.uz
-      # REDIS_HOST: redis
-      # REDIS_PORT: 6379
 
 volumes:
   baza_data:
