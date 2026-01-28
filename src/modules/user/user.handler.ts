@@ -1104,21 +1104,32 @@ https://t.me/${botUsername}?start=${movie.code}`;
       if (!user) return;
 
       const episodes = await this.episodeService.findBySerialId(serial.id);
-
       const botUsername = (await ctx.api.getMe()).username;
-      const serialDeepLink = `https://t.me/${botUsername}?start=s${code}`;
       const field = await this.fieldService.findOne(serial.fieldId);
 
-      const caption = `╭────────────────────
-├‣  Serial nomi: ${serial.title}
-├‣  Serial kodi: ${serial.code}
-├‣  Qism: ${episodes.length}
-├‣  Janrlari: ${serial.genre || "Noma'lum"}
-├‣  Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}
-╰────────────────────
+      // 1. Rasmdagi formatda (HTML blockquote bilan)
+      const caption = `<blockquote>╭────────────────────
+├‣ Serial nomi: ${serial.title}
+├‣ Serial kodi: ${serial.code}
+├‣ Qismlar: ${episodes.length}
+├‣ Janrlari: ${serial.genre || "Noma'lum"}
+├‣ Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}
+╰────────────────────</blockquote>
+
 ▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️
-${serialDeepLink}`.trim();
-      const shareText = `<blockquote>╭────────────────────\n├‣  Kino nomi: ${serial.title}\n├‣  Kino kodi: ${serial.code}\n├‣  Qism: ${episodes.length}\n├‣  Janrlari: ${serial.genre || "Noma'lum"}\n├‣  Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}\n╰────────────────────\n▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️\nhttps://t.me/${botUsername}?start=${serial.code} </blockquote>`;
+
+https://t.me/${botUsername}?start=s${code}`;
+
+      // 2. Ulashish tugmasi uchun (Blockquote-siz, lekin chiroyli ramkada)
+      const shareText = `╭────────────────────
+├‣ Serial nomi: ${serial.title}
+├‣ Serial kodi: ${serial.code}
+├‣ Qismlar: ${episodes.length}
+├‣ Janrlari: ${serial.genre || "Noma'lum"}
+╰────────────────────
+
+▶️ Kinoni tomosha qilish uchun pastdagi linkka kiring:
+https://t.me/${botUsername}?start=s${code}`;
 
       const keyboard = new InlineKeyboard();
       episodes.forEach((episode, index) => {
@@ -1132,13 +1143,13 @@ ${serialDeepLink}`.trim();
       if (episodes.length % 5 !== 0) keyboard.row();
 
       keyboard
-        .switchInline('📤 Ulashish', `${shareText}`)
+        .switchInline('📤 Ulashish', shareText)
         .row()
         .text('🔙 Orqaga', 'back_to_main');
 
       await ctx.replyWithPhoto(serial.posterFileId, {
         caption,
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML', // Markdown-dan HTML-ga o'zgartirildi
         reply_markup: keyboard,
       });
     } catch (error) {

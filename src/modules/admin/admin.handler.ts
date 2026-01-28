@@ -2181,6 +2181,8 @@ export class AdminHandler implements OnModuleInit {
   }
 
   private async handleRoleSelection(ctx: BotContext) {
+    if (!ctx.from) return;
+
     const admin = await this.getAdmin(ctx);
     if (!admin || admin.role !== 'SUPERADMIN') {
       await ctx.answerCallbackQuery({
