@@ -1,59 +1,45 @@
-version: '3.8'
+version: '3.9'
 
 services:
   db:
-    image: postgres:16-alpine
-    container_name: postgres_db
+    image: postgres:16
+    container_name: aziz_db
+    restart: always
     environment:
-      POSTGRES_USER: azizbot
-      POSTGRES_PASSWORD: your_strong_password
-      POSTGRES_DB: aziz_bot_db
-      
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - aziz_bot_network
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345
+      POSTGRES_DB: aziz_grammydb
     ports:
-      - "5432:5432"
+      - '5437:5432'
+    volumes:
+      - baza_data:/var/lib/postgresql/data
+  # redis:
+  #   image: redis:7
+  #   container_name: payment_redis
+  #   restart: always
+  #   ports:
+  #     - '6381:6379'
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        NODE_ENV: production
-    container_name: aziz_bot_app
-    restart: unless-stopped
+    build: .
+    container_name: learning_app2
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - '3001:3000'
     depends_on:
       - db
-    ports:
-      - "9090:3000"
+      # - redis
+    command: >
+      sh -c "
+        npx prisma generate &&
+        npx prisma migrate deploy &&
+        pnpm run start:dev
+      "
     environment:
-        NODE_ENV : production
-        PORT : 3000
-      
-        BOT_TOKEN: ${BOT_TOKEN}
-        BOT_USERNAME: ${BOT_USERNAME}
-        DATABASE_URL: postgresql://azizbot:your_strong_password@db:5432/aziz_bot_db?schema=public
-        PAYME_MERCHANT_ID: ${PAYME_MERCHANT_ID:-}
-        PAYME_KEY: ${PAYME_KEY:-}
-        PAYME_TEST_KEY: ${PAYME_TEST_KEY:-}
-        PAYME_ENDPOINT: ${PAYME_ENDPOINT:-https://checkout.paycom.uz}
-      
-        WEB_PANEL_URL: ${WEB_PANEL_URL}
-    volumes:
-      - ./logs:/app/logs
-      - ./public:/app/public
-    networks:
-      - aziz_bot_network
-    command: sh -c "npx prisma db push && pnpm run start:dev"
-    
-
-networks:
-  aziz_bot_network:
-    driver: bridge
-    name: aziz_bot_network
+      DATABASE_URL: postgres://postgres:12345@db:5432/aziz_grammydb
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
 
 volumes:
-  postgres_data:
-    driver: local
-    name: aziz_bot_postgres_data
+  baza_data:
