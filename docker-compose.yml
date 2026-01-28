@@ -38,8 +38,8 @@ services:
       "
     environment:
       DATABASE_URL: postgres://postgres:12345@db:5432/aziz_grammydb
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+      # REDIS_HOST: redis
+      # REDIS_PORT: 6379
 
 volumes:
   baza_data:
