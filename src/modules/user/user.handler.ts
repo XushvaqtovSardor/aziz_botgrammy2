@@ -1040,17 +1040,17 @@ ${movieDeepLink}`.trim();
         await this.watchHistoryService.recordMovieWatch(user.id, movie.id);
       } else {
         if (movie.videoFileId) {
-          const shareText =
-            `\n` +
-            `> ╭${'─'.repeat(20)}\n` +
-            `> ├‣ Serial nomi: ${movie.title}\n` +
-            `> ├‣ Serial kodi: ${movie.code}\n` +
-            `> ├‣ Qism: 1\n` +
-            `> ├‣ Janrlari: ${movie.genre || "Noma'lum"}\n` +
-            `> ├‣ Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}\n` +
-            `> ╰${'─'.repeat(20)}\n\n` +
-            `▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️\n\n` +
-            `https://t.me/${botUsername}?start=${movie.code}`;
+          const shareText = `<blockquote>╭${'─'.repeat(20)}
+├‣ Serial nomi: ${movie.title}
+├‣ Serial kodi: ${movie.code}
+├‣ Qism: 1
+├‣ Janrlari: ${movie.genre || "Noma'lum"}
+├‣ Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}
+╰${'─'.repeat(20)}</blockquote>
+
+▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️
+
+https://t.me/${botUsername}?start=${movie.code}`;
           const movieDeepLink = `https://t.me/${botUsername}?start=${movie.code}`;
           const shareKeyboard = new InlineKeyboard().switchInline(
             '📤 Ulashish',
@@ -1115,7 +1115,7 @@ ${movieDeepLink}`.trim();
 ╰────────────────────
 ▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️
 ${serialDeepLink}`.trim();
-      const shareText = `╭────────────────────\n├‣  Kino nomi: ${serial.title}\n├‣  Kino kodi: ${serial.code}\n├‣  Qism: ${episodes.length}\n├‣  Janrlari: ${serial.genre || "Noma'lum"}\n├‣  Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}\n╰────────────────────\n▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️\nhttps://t.me/${botUsername}?start=${serial.code}`;
+      const shareText = `<blockquote>╭────────────────────\n├‣  Kino nomi: ${serial.title}\n├‣  Kino kodi: ${serial.code}\n├‣  Qism: ${episodes.length}\n├‣  Janrlari: ${serial.genre || "Noma'lum"}\n├‣  Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}\n╰────────────────────\n▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️\nhttps://t.me/${botUsername}?start=${serial.code} </blockquote>`;
 
       const keyboard = new InlineKeyboard();
       episodes.forEach((episode, index) => {
