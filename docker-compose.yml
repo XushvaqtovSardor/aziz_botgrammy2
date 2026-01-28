@@ -32,9 +32,10 @@ services:
         condition: service_healthy
     command: >
       sh -c "
+        pnpm run build
         npx prisma generate &&
         npx prisma migrate deploy &&
-        pnpm run start:dev
+        pnpm run start:prod
       "
 
 volumes:
