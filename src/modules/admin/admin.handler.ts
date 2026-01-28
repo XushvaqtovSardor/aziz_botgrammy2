@@ -48,104 +48,247 @@ export class AdminHandler implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    this.registerHandlers();
+    this.logger.log('🔧 AdminHandler initializing...');
+    try {
+      this.registerHandlers();
+      this.logger.log('✅ AdminHandler initialized successfully');
+    } catch (error) {
+      this.logger.error('❌ Failed to initialize AdminHandler');
+      this.logger.error(`Error: ${error.message}`);
+      this.logger.error('Stack:', error.stack);
+      throw error;
+    }
   }
 
   private registerHandlers() {
+    this.logger.log('📝 Registering admin handlers...');
     const bot = this.grammyBot.bot;
 
     bot.command('admin', async (ctx) => {
-      if (!ctx.from) return;
+      try {
+        if (!ctx.from) return;
 
-      const admin = await this.getAdmin(ctx);
-      if (admin) {
-        await this.handleAdminStart(ctx, admin);
-      } else {
-        await ctx.reply('❌ Siz admin emassiz!');
+        this.logger.log(
+          `🔐 Admin command from user ${ctx.from.id} (${ctx.from.username || ctx.from.first_name})`,
+        );
+
+        const admin = await this.getAdmin(ctx);
+        if (admin) {
+          this.logger.log(
+            `✅ User ${ctx.from.id} is admin (role: ${admin.role})`,
+          );
+          await this.handleAdminStart(ctx, admin);
+        } else {
+          this.logger.log(`❌ User ${ctx.from.id} is not an admin`);
+          await ctx.reply('❌ Siz admin emassiz!');
+        }
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in /admin command for user ${ctx.from?.id}`,
+        );
+        this.logger.error(`Error: ${error.message}`);
+        this.logger.error('Stack:', error.stack);
+        await ctx.reply('❌ Xatolik yuz berdi.').catch(() => {});
       }
     });
 
-    bot.hears(
-      '📊 Statistika',
-      this.withAdminCheck(this.showStatistics.bind(this)),
-    );
-    bot.hears('🔙 Orqaga', this.withAdminCheck(this.handleBack.bind(this)));
-    bot.hears(
-      '❌ Bekor qilish',
-      this.withAdminCheck(this.handleCancel.bind(this)),
-    );
-    bot.hears(
-      '🎬 Kino yuklash',
-      this.withAdminCheck(this.startMovieCreation.bind(this)),
-    );
-    bot.hears(
-      '📺 Serial yuklash',
-      this.withAdminCheck(this.startSerialCreation.bind(this)),
-    );
-    bot.hears(
-      '🆕 Yangi serial yaratish',
-      this.withAdminCheck(this.startNewSerialCreation.bind(this)),
-    );
-    bot.hears(
-      "➕ Mavjud kino/serialga qism qo'shish",
-      this.withAdminCheck(this.startAddingEpisode.bind(this)),
-    );
-    bot.hears(
-      '📹 Kinoga video biriktirish',
-      this.withAdminCheck(this.startVideoAttachment.bind(this)),
-    );
-    bot.hears(
-      '📁 Fieldlar',
-      this.withAdminCheck(this.openFieldsMenu.bind(this)),
-    );
-    bot.hears(
-      "➕ Field qo'shish",
-      this.withAdminCheck(this.startAddingField.bind(this)),
-    );
-    bot.hears(
-      "📋 Fieldlar ro'yxati",
-      this.withAdminCheck(this.showFieldsList.bind(this)),
-    );
-    bot.hears(
-      '📢 Majburiy kanallar',
-      this.withAdminCheck(this.showMandatoryChannels.bind(this)),
-    );
-    bot.hears(
-      "➕ Majburiy kanal qo'shish",
-      this.withAdminCheck(this.startAddMandatoryChannel.bind(this)),
-    );
-    bot.hears(
-      "📊 Tarixni ko'rish",
-      this.withAdminCheck(this.showChannelHistory.bind(this)),
-    );
-    bot.hears(
-      "📋 Hammasini ko'rish",
-      this.withAdminCheck(this.showAllChannelsHistory.bind(this)),
-    );
-    bot.hears(
-      "🔍 Link bo'yicha qidirish",
-      this.withAdminCheck(this.startSearchChannelByLink.bind(this)),
-    );
-    bot.hears(
-      '💾 Database kanallar',
-      this.withAdminCheck(this.showDatabaseChannels.bind(this)),
-    );
-    bot.hears(
-      "➕ Database kanal qo'shish",
-      this.withAdminCheck(this.startAddDatabaseChannel.bind(this)),
-    );
-    bot.hears(
-      "💳 To'lovlar",
-      this.withAdminCheck(this.showPaymentsMenu.bind(this)),
-    );
-    bot.hears(
-      "📥 Yangi to'lovlar",
-      this.withAdminCheck(this.showPendingPayments.bind(this)),
-    );
-    bot.hears(
-      '✅ Tasdiqlangan',
-      this.withAdminCheck(this.showApprovedPayments.bind(this)),
-    );
+    bot.hears('📊 Statistika', async (ctx) => {
+      try {
+        await this.withAdminCheck(this.showStatistics.bind(this))(ctx);
+      } catch (error) {
+        this.logger.error(`❌ Error in statistics handler: ${error.message}`);
+        await ctx.reply('❌ Xatolik yuz berdi.').catch(() => {});
+      }
+    });
+
+    bot.hears('🔙 Orqaga', async (ctx) => {
+      try {
+        await this.withAdminCheck(this.handleBack.bind(this))(ctx);
+      } catch (error) {
+        this.logger.error(`❌ Error in back handler: ${error.message}`);
+      }
+    });
+
+    bot.hears('❌ Bekor qilish', async (ctx) => {
+      try {
+        await this.withAdminCheck(this.handleCancel.bind(this))(ctx);
+      } catch (error) {
+        this.logger.error(`❌ Error in cancel handler: ${error.message}`);
+      }
+    });
+
+    bot.hears('🎬 Kino yuklash', async (ctx) => {
+      try {
+        await this.withAdminCheck(this.startMovieCreation.bind(this))(ctx);
+      } catch (error) {
+        this.logger.error(`❌ Error in movie upload handler: ${error.message}`);
+      }
+    });
+
+    bot.hears('📺 Serial yuklash', async (ctx) => {
+      try {
+        await this.withAdminCheck(this.startSerialCreation.bind(this))(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in serial upload handler: ${error.message}`,
+        );
+      }
+    });
+
+    bot.hears('🆕 Yangi serial yaratish', async (ctx) => {
+      try {
+        await this.withAdminCheck(this.startNewSerialCreation.bind(this))(ctx);
+      } catch (error) {
+        this.logger.error(`❌ Error in new serial handler: ${error.message}`);
+      }
+    });
+
+    bot.hears("➕ Mavjud kino/serialga qism qo'shish", async (ctx) => {
+      try {
+        await this.withAdminCheck(this.startAddingEpisode.bind(this))(ctx);
+      } catch (error) {
+        this.logger.error(`❌ Error in add episode handler: ${error.message}`);
+      }
+    });
+
+    bot.hears('📹 Kinoga video biriktirish', async (ctx) => {
+      try {
+        await this.withAdminCheck(this.startVideoAttachment.bind(this))(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in video attachment handler: ${error.message}`,
+        );
+      }
+    });
+
+    bot.hears('📁 Fieldlar', async (ctx) => {
+      try {
+        await this.withAdminCheck(this.openFieldsMenu.bind(this))(ctx);
+      } catch (error) {
+        this.logger.error(`❌ Error in fields menu handler: ${error.message}`);
+      }
+    });
+
+    bot.hears("➕ Field qo'shish", async (ctx) => {
+      try {
+        await this.withAdminCheck(this.startAddingField.bind(this))(ctx);
+      } catch (error) {
+        this.logger.error(`❌ Error in add field handler: ${error.message}`);
+      }
+    });
+
+    bot.hears("📋 Fieldlar ro'yxati", async (ctx) => {
+      try {
+        await this.withAdminCheck(this.showFieldsList.bind(this))(ctx);
+      } catch (error) {
+        this.logger.error(`❌ Error in fields list handler: ${error.message}`);
+      }
+    });
+
+    bot.hears('📢 Majburiy kanallar', async (ctx) => {
+      try {
+        await this.withAdminCheck(this.showMandatoryChannels.bind(this))(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in mandatory channels handler: ${error.message}`,
+        );
+      }
+    });
+
+    bot.hears("➕ Majburiy kanal qo'shish", async (ctx) => {
+      try {
+        await this.withAdminCheck(this.startAddMandatoryChannel.bind(this))(
+          ctx,
+        );
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in add mandatory channel handler: ${error.message}`,
+        );
+      }
+    });
+
+    bot.hears("📊 Tarixni ko'rish", async (ctx) => {
+      try {
+        await this.withAdminCheck(this.showChannelHistory.bind(this))(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in channel history handler: ${error.message}`,
+        );
+      }
+    });
+
+    bot.hears("📋 Hammasini ko'rish", async (ctx) => {
+      try {
+        await this.withAdminCheck(this.showAllChannelsHistory.bind(this))(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in all channels history handler: ${error.message}`,
+        );
+      }
+    });
+
+    bot.hears("🔍 Link bo'yicha qidirish", async (ctx) => {
+      try {
+        await this.withAdminCheck(this.startSearchChannelByLink.bind(this))(
+          ctx,
+        );
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in search channel handler: ${error.message}`,
+        );
+      }
+    });
+
+    bot.hears('💾 Database kanallar', async (ctx) => {
+      try {
+        await this.withAdminCheck(this.showDatabaseChannels.bind(this))(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in database channels handler: ${error.message}`,
+        );
+      }
+    });
+
+    bot.hears("➕ Database kanal qo'shish", async (ctx) => {
+      try {
+        await this.withAdminCheck(this.startAddDatabaseChannel.bind(this))(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in add database channel handler: ${error.message}`,
+        );
+      }
+    });
+
+    bot.hears("💳 To'lovlar", async (ctx) => {
+      try {
+        await this.withAdminCheck(this.showPaymentsMenu.bind(this))(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in payments menu handler: ${error.message}`,
+        );
+      }
+    });
+
+    bot.hears("📥 Yangi to'lovlar", async (ctx) => {
+      try {
+        await this.withAdminCheck(this.showPendingPayments.bind(this))(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in pending payments handler: ${error.message}`,
+        );
+      }
+    });
+
+    bot.hears('✅ Tasdiqlangan', async (ctx) => {
+      try {
+        await this.withAdminCheck(this.showApprovedPayments.bind(this))(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in approved payments handler: ${error.message}`,
+        );
+      }
+    });
+
     bot.hears(
       '❌ Rad etilgan',
       this.withAdminCheck(this.showRejectedPayments.bind(this)),

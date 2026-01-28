@@ -13,6 +13,7 @@ import {
   HttpException,
   HttpStatus,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { AdminApiGuard } from './admin-api.guard';
 import { AdminService } from '../admin/services/admin.service';
@@ -28,6 +29,8 @@ import { AdminRole } from '@prisma/client';
 @Controller('api/admin')
 @UseGuards(AdminApiGuard)
 export class AdminApiController {
+  private readonly logger = new Logger(AdminApiController.name);
+
   constructor(
     private adminService: AdminService,
     private userService: UserService,
@@ -41,32 +44,48 @@ export class AdminApiController {
 
   @Get('me')
   getMe(@Request() req: any) {
+    this.logger.log(`👤 Admin ${req.admin.telegramId} accessed /me endpoint`);
     return req.admin;
   }
 
   @Get('stats')
   async getStatistics() {
-    const [userStats, paymentStats] = await Promise.all([
-      this.userService.getUserStatistics(),
-      this.paymentService.getStatistics(),
-    ]);
+    this.logger.log('📊 Statistics endpoint accessed');
+    try {
+      const [userStats, paymentStats] = await Promise.all([
+        this.userService.getUserStatistics(),
+        this.paymentService.getStatistics(),
+      ]);
 
-    return {
-      users: userStats,
-      payments: paymentStats,
-    };
+      return {
+        users: userStats,
+        payments: paymentStats,
+      };
+    } catch (error) {
+      this.logger.error('❌ Error fetching statistics');
+      this.logger.error(`Error: ${error.message}`);
+      this.logger.error('Stack:', error.stack);
+      throw error;
+    }
   }
 
   @Get('admins')
   async getAdmins(@Request() req) {
-    const isSuperAdmin = req.admin.role === AdminRole.SUPERADMIN;
-    if (!isSuperAdmin) {
-      throw new HttpException(
-        'Only SuperAdmin can view admins',
-        HttpStatus.FORBIDDEN,
-      );
+    this.logger.log(`📋 Get admins requested by ${req.admin.telegramId}`);
+    try {
+      const isSuperAdmin = req.admin.role === AdminRole.SUPERADMIN;
+      if (!isSuperAdmin) {
+        this.logger.warn(`⚠️ Non-superadmin ${req.admin.telegramId} tried to view admins`);
+        throw new HttpException(
+          'Only SuperAdmin can view admins',
+          HttpStatus.FORBIDDEN,
+        );
+      }
+      return this.adminService.findAll();
+    } catch (error) {
+      this.logger.error(`❌ Error in getAdmins: ${error.message}`);
+      throw error;
     }
-    return this.adminService.findAll();
   }
 
   @Post('admins')
@@ -74,31 +93,44 @@ export class AdminApiController {
     @Request() req,
     @Body() body: { telegramId: string; username: string; role: AdminRole },
   ) {
-    const isSuperAdmin = req.admin.role === AdminRole.SUPERADMIN;
-    if (!isSuperAdmin) {
-      throw new HttpException(
-        'Only SuperAdmin can create admins',
-        HttpStatus.FORBIDDEN,
-      );
-    }
+    this.logger.log(`➕ Create admin requested: ${body.telegramId} by ${req.admin.telegramId}`);
+    try {
+      const isSuperAdmin = req.admin.role === AdminRole.SUPERADMIN;
+      if (!isSuperAdmin) {
+        this.logger.warn(`⚠️ Non-superadmin ${req.admin.telegramId} tried to create admin`);
+        throw new HttpException(
+          'Only SuperAdmin can create admins',
+          HttpStatus.FORBIDDEN,
+        );
+      }
 
-    return this.adminService.createAdmin({
-      telegramId: body.telegramId,
-      username: body.username,
-      role: body.role,
-      createdBy: req.admin.telegramId,
-    });
+      const result = await this.adminService.createAdmin({
+        telegramId: body.telegramId,
+        username: body.username,
+        role: body.role,
+        createdBy: req.admin.telegramId,
+      });
+      
+      this.logger.log(`✅ Admin ${body.telegramId} created successfully`);
+      return result;
+    } catch (error) {
+      this.logger.error(`❌ Error creating admin: ${error.message}`);
+      throw error;
+    }
   }
 
   @Delete('admins/:telegramId')
   async deleteAdmin(@Request() req, @Param('telegramId') telegramId: string) {
-    const isSuperAdmin = req.admin.role === AdminRole.SUPERADMIN;
-    if (!isSuperAdmin) {
-      throw new HttpException(
-        'Only SuperAdmin can delete admins',
-        HttpStatus.FORBIDDEN,
-      );
-    }
+    this.logger.log(`🗑️ Delete admin requested: ${telegramId} by ${req.admin.telegramId}`);
+    try {
+      const isSuperAdmin = req.admin.role === AdminRole.SUPERADMIN;
+      if (!isSuperAdmin) {
+        this.logger.warn(`⚠️ Non-superadmin ${req.admin.telegramId} tried to delete admin`);
+        throw new HttpException(
+          'Only SuperAdmin can delete admins',
+          HttpStatus.FORBIDDEN,
+        );
+      }
 
     if (telegramId === req.admin.telegramId) {
       throw new HttpException('Cannot delete yourself', HttpStatus.BAD_REQUEST);

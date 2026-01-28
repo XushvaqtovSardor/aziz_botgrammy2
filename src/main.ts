@@ -7,24 +7,53 @@ import { join } from 'path';
 import { GrammyBotService } from './common/grammy/grammy-bot.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    logger: loggerConfig,
-  });
-
-  app.enableCors();
-
-  app.useStaticAssets(join(__dirname, '..', 'public'));
-
-  const port = process.env.PORT ?? 3000;
-
-  await app.listen(port, '0.0.0.0');
-
   const logger = new Logger('Bootstrap');
 
-  const grammyBot = app.get(GrammyBotService);
-  await grammyBot.startBot();
+  try {
+    logger.log('🚀 Starting application...');
+    logger.log(`📦 Node Environment: ${process.env.NODE_ENV || 'development'}`);
+    logger.log(`🤖 Bot Token exists: ${!!process.env.BOT_TOKEN}`);
 
-  await initializeDefaultChannel(app);
+    const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+      logger: loggerConfig,
+    });
+    logger.log('✅ NestJS app created successfully');
+
+    app.enableCors();
+    logger.log('✅ CORS enabled');
+
+    app.useStaticAssets(join(__dirname, '..', 'public'));
+    logger.log('✅ Static assets configured');
+
+    const port = process.env.PORT ?? 3000;
+    logger.log(`🔌 Attempting to listen on port ${port}...`);
+
+    await app.listen(port, '0.0.0.0');
+    logger.log(`✅ Server is listening on port ${port}`);
+
+    logger.log('🤖 Initializing Telegram bot...');
+    const grammyBot = app.get(GrammyBotService);
+
+    try {
+      await grammyBot.startBot();
+      logger.log('✅ Telegram bot started successfully');
+      logger.log(`👤 Bot username: @${grammyBot.botUsername || 'Unknown'}`);
+    } catch (botError) {
+      logger.error('❌ Failed to start Telegram bot');
+      logger.error(`Bot Error: ${botError.message}`);
+      logger.error('Bot Stack:', botError.stack);
+      throw botError;
+    }
+
+    logger.log('🔧 Initializing default channel...');
+    await initializeDefaultChannel(app);
+    logger.log('✅ Application bootstrap completed successfully');
+  } catch (error) {
+    logger.error('❌ Critical error during bootstrap');
+    logger.error(`Error: ${error.message}`);
+    logger.error('Stack:', error.stack);
+    throw error;
+  }
 }
 
 async function initializeDefaultChannel(app: NestExpressApplication) {
@@ -36,8 +65,13 @@ async function initializeDefaultChannel(app: NestExpressApplication) {
       process.env.DEFAULT_DATABASE_CHANNEL_NAME || 'Default Database';
 
     if (!channelLink) {
+      logger.log(
+        'ℹ️ No default database channel configured (DEFAULT_DATABASE_CHANNEL_LINK not set)',
+      );
       return;
     }
+
+    logger.log(`🔍 Checking for default channel: ${channelName}`);
 
     const { ChannelService } =
       await import('./modules/channel/services/channel.service');
@@ -52,11 +86,15 @@ async function initializeDefaultChannel(app: NestExpressApplication) {
     );
 
     if (channelExists) {
+      logger.log('✅ Default database channel already exists');
       return;
     }
+
+    logger.log('✅ Database channel initialization completed');
   } catch (error) {
     const err = error as Error;
     logger.error(`❌ Failed to initialize database channel: ${err.message}`);
+    logger.error('Database channel error stack:', err.stack);
   }
 }
 

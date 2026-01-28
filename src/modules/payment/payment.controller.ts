@@ -31,8 +31,13 @@ export class PaymentController {
   async createPayment(
     @Body() body: { telegramId: string; amount: number; duration?: number },
   ) {
+    this.logger.log(
+      `📝 Creating payment for user ${body.telegramId}, amount: ${body.amount}`,
+    );
+
     try {
       if (!body.telegramId || !body.amount) {
+        this.logger.error('❌ Missing required fields: telegramId or amount');
         throw new BadRequestException('telegramId and amount are required');
       }
 
@@ -43,10 +48,14 @@ export class PaymentController {
         provider: 'payme',
       });
 
+      this.logger.log(`✅ Payment created with ID: ${payment.id}`);
+
       const paymentLink = this.paymeService.generatePaymentLink(
         payment.id,
         body.amount,
       );
+
+      this.logger.log(`✅ Payment link generated for payment ${payment.id}`);
 
       return {
         success: true,
@@ -56,7 +65,11 @@ export class PaymentController {
         duration: body.duration || 30,
       };
     } catch (error) {
-      this.logger.error('Error creating payment', error);
+      this.logger.error(
+        `❌ Error creating payment for user ${body.telegramId}`,
+      );
+      this.logger.error(`Error: ${error.message}`);
+      this.logger.error('Stack:', error.stack);
       throw error;
     }
   }
@@ -64,21 +77,34 @@ export class PaymentController {
   @Post('webhook/payme')
   @HttpCode(HttpStatus.OK)
   async handlePaymeWebhook(@Headers() headers: any, @Body() body: any) {
+    this.logger.log(
+      `📨 Received Payme webhook: ${body.method || 'Unknown method'}`,
+    );
+
     try {
       const isValid = this.paymeService.verifySignature({ headers });
       if (!isValid) {
+        this.logger.error('❌ Invalid Payme webhook signature');
         throw new BadRequestException('Invalid signature');
       }
+
+      this.logger.log('✅ Payme webhook signature verified');
 
       const result = await this.paymeService.handleWebhook(body);
 
       if (body.method === 'PerformTransaction') {
+        this.logger.log(
+          `💳 Processing PerformTransaction for order: ${body.params?.account?.order_id}`,
+        );
         await this.sendPaymentSuccessNotification(body.params.account.order_id);
       }
 
       return result;
     } catch (error) {
-      this.logger.error('Error handling Payme webhook', error);
+      this.logger.error('❌ Error handling Payme webhook');
+      this.logger.error(`Error: ${error.message}`);
+      this.logger.error('Stack:', error.stack);
+      this.logger.error(`Webhook body: ${JSON.stringify(body)}`);
       return {
         error: {
           code: -32400,
@@ -91,11 +117,19 @@ export class PaymentController {
   @Post('webhook/test')
   @HttpCode(HttpStatus.OK)
   async testWebhook(@Body() body: { paymentId: number; status: string }) {
+    this.logger.log(
+      `🧪 Test webhook: paymentId=${body.paymentId}, status=${body.status}`,
+    );
+
     try {
       if (body.status === 'success') {
         const payment = await this.paymentService.processSuccessfulPayment({
           paymentId: body.paymentId,
         });
+
+        this.logger.log(
+          `✅ Test payment ${body.paymentId} processed successfully`,
+        );
 
         await this.sendPaymentSuccessNotification(body.paymentId);
 

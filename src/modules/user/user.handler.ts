@@ -49,10 +49,20 @@ export class UserHandler implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    this.registerHandlers();
+    this.logger.log('🔧 UserHandler initializing...');
+    try {
+      this.registerHandlers();
+      this.logger.log('✅ UserHandler initialized successfully');
+    } catch (error) {
+      this.logger.error('❌ Failed to initialize UserHandler');
+      this.logger.error(`Error: ${error.message}`);
+      this.logger.error('Stack:', error.stack);
+      throw error;
+    }
   }
 
   private registerHandlers() {
+    this.logger.log('📝 Registering user handlers...');
     const bot = this.grammyBot.bot;
 
     bot.use(async (ctx, next) => {
@@ -64,129 +74,380 @@ export class UserHandler implements OnModuleInit {
             where: { telegramId: String(ctx.from.id) },
             data: { hasTelegramPremium },
           });
-        } catch (error) {}
+        } catch (error) {
+          this.logger.error(
+            `❌ Failed to update telegram premium status for user ${ctx.from.id}`,
+          );
+          this.logger.error(`Error: ${error.message}`);
+        }
       }
       await next();
     });
 
-    bot.command('start', this.handleStart.bind(this));
-
-    bot.hears("🔍 Kino kodi bo'yicha qidirish", this.handleSearch.bind(this));
-    bot.hears('💎 Premium sotib olish', this.showPremium.bind(this));
-    bot.hears('ℹ️ Bot haqida', this.showAbout.bind(this));
-    bot.hears('📞 Aloqa', this.showContact.bind(this));
-    bot.hears('🔙 Orqaga', this.handleBack.bind(this));
-
-    bot.callbackQuery(/^movie_\d+$/, this.handleMovieCallback.bind(this));
-    bot.callbackQuery(/^serial_\d+$/, this.handleSerialCallback.bind(this));
-    bot.callbackQuery(
-      /^episode_(\d+)_(\d+)$/,
-      this.handleEpisodeCallback.bind(this),
-    );
-    bot.callbackQuery(
-      /^movie_episode_(\d+)_(\d+)$/,
-      this.handleMovieEpisodeCallback.bind(this),
-    );
-    bot.callbackQuery(
-      /^field_channel_(\d+)$/,
-      this.handleFieldChannelCallback.bind(this),
-    );
-    bot.callbackQuery(
-      /^check_subscription$/,
-      this.handleCheckSubscription.bind(this),
-    );
-    bot.callbackQuery(/^show_premium$/, this.showPremium.bind(this));
-    bot.callbackQuery(/^back_to_main$/, this.handleBackCallback.bind(this));
-    bot.callbackQuery(
-      /^buy_premium_(\d+)$/,
-      this.handlePremiumPurchase.bind(this),
-    );
-    bot.callbackQuery(/^upload_receipt$/, this.handleUploadReceipt.bind(this));
-
-    bot.on('inline_query', this.handleInlineQuery.bind(this));
-
-    bot.on('chat_join_request', this.handleJoinRequest.bind(this));
-
-    bot.on('chat_member', this.handleChatMemberUpdate.bind(this));
-    bot.on('my_chat_member', this.handleChatMemberUpdate.bind(this));
-
-    bot.on('message:photo', this.handlePhotoMessage.bind(this));
-
-    bot.use(async (ctx, next) => {
-      if (ctx.message && 'text' in ctx.message) {
-        await this.handleTextMessage(ctx);
-        return;
-      } else {
-        await next();
+    bot.command('start', async (ctx) => {
+      try {
+        await this.handleStart(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in /start command for user ${ctx.from?.id}`,
+        );
+        this.logger.error(`Error: ${error.message}`);
+        this.logger.error('Stack:', error.stack);
+        await ctx
+          .reply("❌ Xatolik yuz berdi. Iltimos qaytadan urinib ko'ring.")
+          .catch((e) =>
+            this.logger.error('Failed to send error message:', e.message),
+          );
       }
     });
+
+    bot.hears("🔍 Kino kodi bo'yicha qidirish", async (ctx) => {
+      try {
+        await this.handleSearch(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in search handler for user ${ctx.from?.id}: ${error.message}`,
+        );
+        await ctx.reply('❌ Xatolik yuz berdi.').catch(() => {});
+      }
+    });
+
+    bot.hears('💎 Premium sotib olish', async (ctx) => {
+      try {
+        await this.showPremium(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in premium handler for user ${ctx.from?.id}: ${error.message}`,
+        );
+        await ctx.reply('❌ Xatolik yuz berdi.').catch(() => {});
+      }
+    });
+
+    bot.hears('ℹ️ Bot haqida', async (ctx) => {
+      try {
+        await this.showAbout(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in about handler for user ${ctx.from?.id}: ${error.message}`,
+        );
+        await ctx.reply('❌ Xatolik yuz berdi.').catch(() => {});
+      }
+    });
+
+    bot.hears('📞 Aloqa', async (ctx) => {
+      try {
+        await this.showContact(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in contact handler for user ${ctx.from?.id}: ${error.message}`,
+        );
+        await ctx.reply('❌ Xatolik yuz berdi.').catch(() => {});
+      }
+    });
+
+    bot.hears('🔙 Orqaga', async (ctx) => {
+      try {
+        await this.handleBack(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in back handler for user ${ctx.from?.id}: ${error.message}`,
+        );
+        await ctx.reply('❌ Xatolik yuz berdi.').catch(() => {});
+      }
+    });
+
+    bot.callbackQuery(/^movie_\d+$/, async (ctx) => {
+      try {
+        await this.handleMovieCallback(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in movie callback for user ${ctx.from?.id}: ${error.message}`,
+        );
+        this.logger.error('Stack:', error.stack);
+        await ctx
+          .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
+          .catch(() => {});
+      }
+    });
+
+    bot.callbackQuery(/^serial_\d+$/, async (ctx) => {
+      try {
+        await this.handleSerialCallback(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in serial callback for user ${ctx.from?.id}: ${error.message}`,
+        );
+        await ctx
+          .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
+          .catch(() => {});
+      }
+    });
+
+    bot.callbackQuery(/^episode_(\d+)_(\d+)$/, async (ctx) => {
+      try {
+        await this.handleEpisodeCallback(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in episode callback for user ${ctx.from?.id}: ${error.message}`,
+        );
+        await ctx
+          .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
+          .catch(() => {});
+      }
+    });
+
+    bot.callbackQuery(/^movie_episode_(\d+)_(\d+)$/, async (ctx) => {
+      try {
+        await this.handleMovieEpisodeCallback(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in movie episode callback for user ${ctx.from?.id}: ${error.message}`,
+        );
+        await ctx
+          .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
+          .catch(() => {});
+      }
+    });
+
+    bot.callbackQuery(/^field_channel_(\d+)$/, async (ctx) => {
+      try {
+        await this.handleFieldChannelCallback(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in field channel callback for user ${ctx.from?.id}: ${error.message}`,
+        );
+        await ctx
+          .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
+          .catch(() => {});
+      }
+    });
+
+    bot.callbackQuery(/^check_subscription$/, async (ctx) => {
+      try {
+        await this.handleCheckSubscription(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in check subscription callback for user ${ctx.from?.id}: ${error.message}`,
+        );
+        await ctx
+          .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
+          .catch(() => {});
+      }
+    });
+
+    bot.callbackQuery(/^show_premium$/, async (ctx) => {
+      try {
+        await this.showPremium(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in show premium callback for user ${ctx.from?.id}: ${error.message}`,
+        );
+        await ctx
+          .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
+          .catch(() => {});
+      }
+    });
+
+    bot.callbackQuery(/^back_to_main$/, async (ctx) => {
+      try {
+        await this.handleBackCallback(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in back callback for user ${ctx.from?.id}: ${error.message}`,
+        );
+        await ctx
+          .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
+          .catch(() => {});
+      }
+    });
+
+    bot.callbackQuery(/^buy_premium_(\d+)$/, async (ctx) => {
+      try {
+        await this.handlePremiumPurchase(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in premium purchase callback for user ${ctx.from?.id}: ${error.message}`,
+        );
+        await ctx
+          .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
+          .catch(() => {});
+      }
+    });
+
+    bot.callbackQuery(/^upload_receipt$/, async (ctx) => {
+      try {
+        await this.handleUploadReceipt(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in upload receipt callback for user ${ctx.from?.id}: ${error.message}`,
+        );
+        await ctx
+          .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
+          .catch(() => {});
+      }
+    });
+
+    bot.on('inline_query', async (ctx) => {
+      try {
+        await this.handleInlineQuery(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in inline query for user ${ctx.from?.id}: ${error.message}`,
+        );
+      }
+    });
+
+    bot.on('chat_join_request', async (ctx) => {
+      try {
+        await this.handleJoinRequest(ctx);
+      } catch (error) {
+        this.logger.error(`❌ Error in join request handler: ${error.message}`);
+      }
+    });
+
+    bot.on('chat_member', async (ctx) => {
+      try {
+        await this.handleChatMemberUpdate(ctx);
+      } catch (error) {
+        this.logger.error(`❌ Error in chat member handler: ${error.message}`);
+      }
+    });
+
+    bot.on('my_chat_member', async (ctx) => {
+      try {
+        await this.handleChatMemberUpdate(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in my_chat_member handler: ${error.message}`,
+        );
+      }
+    });
+
+    bot.on('message:photo', async (ctx) => {
+      try {
+        await this.handlePhotoMessage(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in photo message handler for user ${ctx.from?.id}: ${error.message}`,
+        );
+        await ctx.reply('❌ Xatolik yuz berdi.').catch(() => {});
+      }
+    });
+
+    bot.use(async (ctx, next) => {
+      try {
+        if (ctx.message && 'text' in ctx.message) {
+          await this.handleTextMessage(ctx);
+          return;
+        } else {
+          await next();
+        }
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in text message handler for user ${ctx.from?.id}: ${error.message}`,
+        );
+        this.logger.error('Stack:', error.stack);
+      }
+    });
+
+    this.logger.log('✅ All user handlers registered successfully');
   }
 
   private async handleStart(ctx: BotContext) {
     if (!ctx.from) return;
 
-    const payload = ctx.match;
-
-    const hasTelegramPremium = ctx.from.is_premium || false;
-
-    const user = await this.userService.findOrCreate(String(ctx.from.id), {
-      firstName: ctx.from.first_name || '',
-      lastName: ctx.from.last_name || '',
-      username: ctx.from.username || '',
-      languageCode: ctx.from.language_code || 'uz',
-    });
-
-    if (user.isBlocked) {
-      await ctx.reply(
-        '🚫 Siz botdan foydalanish huquqidan mahrum etilgansiz.\n\n' +
-          `Sana: ${user.blockedAt?.toLocaleString('uz-UZ') || "Noma'lum"}`,
-      );
-      return;
-    }
-
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { hasTelegramPremium },
-    });
-
-    const premiumStatus = await this.premiumService.checkPremiumStatus(user.id);
-    const isPremium = premiumStatus.isPremium && !premiumStatus.isExpired;
-
-    const admin = await this.adminService.getAdminByTelegramId(
-      String(ctx.from.id),
+    this.logger.log(
+      `👤 User ${ctx.from.id} (${ctx.from.username || ctx.from.first_name}) started the bot`,
     );
-    const isAdmin = !!admin; // If admin exists, skip channel check
 
-    if (!isPremium && !isAdmin) {
-      const hasSubscription = await this.checkSubscription(ctx, 0, 'start');
-      if (!hasSubscription) return; // Will show mandatory channels
-    }
+    try {
+      const payload = ctx.match;
 
-    if (typeof payload === 'string' && payload.length > 0) {
-      if (payload.startsWith('s')) {
-        const code = parseInt(payload.substring(1));
-        if (!isNaN(code)) {
-          await this.sendSerialToUser(ctx, code);
-          return;
-        }
-      } else {
-        const code = parseInt(payload);
-        if (!isNaN(code)) {
-          await this.sendMovieToUser(ctx, code);
+      const hasTelegramPremium = ctx.from.is_premium || false;
+
+      const user = await this.userService.findOrCreate(String(ctx.from.id), {
+        firstName: ctx.from.first_name || '',
+        lastName: ctx.from.last_name || '',
+        username: ctx.from.username || '',
+        languageCode: ctx.from.language_code || 'uz',
+      });
+
+      this.logger.log(`✅ User ${ctx.from.id} found/created in database`);
+
+      if (user.isBlocked) {
+        this.logger.log(`🚫 User ${ctx.from.id} is blocked`);
+        await ctx.reply(
+          '🚫 Siz botdan foydalanish huquqidan mahrum etilgansiz.\n\n' +
+            `Sana: ${user.blockedAt?.toLocaleString('uz-UZ') || "Noma'lum"}`,
+        );
+        return;
+      }
+
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { hasTelegramPremium },
+      });
+
+      const premiumStatus = await this.premiumService.checkPremiumStatus(
+        user.id,
+      );
+      const isPremium = premiumStatus.isPremium && !premiumStatus.isExpired;
+
+      const admin = await this.adminService.getAdminByTelegramId(
+        String(ctx.from.id),
+      );
+      const isAdmin = !!admin;
+
+      this.logger.log(
+        `User ${ctx.from.id} - isPremium: ${isPremium}, isAdmin: ${isAdmin}`,
+      );
+
+      if (!isPremium && !isAdmin) {
+        const hasSubscription = await this.checkSubscription(ctx, 0, 'start');
+        if (!hasSubscription) {
+          this.logger.log(
+            `User ${ctx.from.id} needs to subscribe to mandatory channels`,
+          );
           return;
         }
       }
-    }
 
-    const welcomeMessage =
-      `👋 Assalomu alaykum, ${ctx.from.first_name} botimizga xush kelibsiz.
+      if (typeof payload === 'string' && payload.length > 0) {
+        this.logger.log(`User ${ctx.from.id} has payload: ${payload}`);
+        if (payload.startsWith('s')) {
+          const code = parseInt(payload.substring(1));
+          if (!isNaN(code)) {
+            await this.sendSerialToUser(ctx, code);
+            return;
+          }
+        } else {
+          const code = parseInt(payload);
+          if (!isNaN(code)) {
+            await this.sendMovieToUser(ctx, code);
+            return;
+          }
+        }
+      }
+
+      const welcomeMessage =
+        `👋 Assalomu alaykum, ${ctx.from.first_name} botimizga xush kelibsiz.
 
 ✍🏻 Kino kodini yuboring.`.trim();
 
-    await ctx.reply(
-      welcomeMessage,
-      MainMenuKeyboard.getMainMenu(isPremium, user.isPremiumBanned),
-    );
+      await ctx.reply(
+        welcomeMessage,
+        MainMenuKeyboard.getMainMenu(isPremium, user.isPremiumBanned),
+      );
+
+      this.logger.log(
+        `✅ Start command completed successfully for user ${ctx.from.id}`,
+      );
+    } catch (error) {
+      this.logger.error(`❌ Error in handleStart for user ${ctx.from.id}`);
+      this.logger.error(`Error: ${error.message}`);
+      this.logger.error('Stack:', error.stack);
+      throw error;
+    }
   }
 
   private async showMovies(ctx: BotContext) {

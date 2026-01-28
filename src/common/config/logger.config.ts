@@ -54,7 +54,7 @@ export const loggerConfig = WinstonModule.createLogger({
   transports: [
     new winston.transports.Console({
       format: consoleFormat,
-      level: process.env.NODE_ENV === 'production' ? 'error' : 'debug',
+      level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
     }),
     errorFileTransport,
     combinedFileTransport,
