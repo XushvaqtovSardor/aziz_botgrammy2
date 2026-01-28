@@ -21,7 +21,7 @@ services:
   #     - '6381:6379'
   app:
     build: .
-    container_name: learning_app2
+    container_name: aziz_bot
     restart: always
     env_file:
       - .env
@@ -38,6 +38,7 @@ services:
       "
     environment:
       DATABASE_URL: postgres://postgres:12345@db:5432/aziz_grammydb
+      BOT_TOKEN: 8162127632:AAE8Br9w8j2igFzUcyhK_dty9FgaT5dz8cw
       # REDIS_HOST: redis
       # REDIS_PORT: 6379
 
