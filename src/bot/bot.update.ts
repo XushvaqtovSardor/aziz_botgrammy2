@@ -13,13 +13,13 @@ export class BotUpdate implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    this.logger.log('🔧 BotUpdate initializing...');
+    
     try {
       this.grammyBot.bot.callbackQuery(
         'check_subscription',
         this.checkSubscription.bind(this),
       );
-      this.logger.log('✅ BotUpdate initialized successfully');
+      
     } catch (error) {
       this.logger.error('❌ Failed to initialize BotUpdate');
       this.logger.error(`Error: ${error.message}`);
@@ -31,7 +31,7 @@ export class BotUpdate implements OnModuleInit {
   private async checkSubscription(ctx: BotContext) {
     if (!ctx.from) return;
 
-    this.logger.log(`📋 Checking subscription for user ${ctx.from.id}`);
+    
 
     try {
       await ctx.answerCallbackQuery();
@@ -41,7 +41,7 @@ export class BotUpdate implements OnModuleInit {
         orderBy: { order: 'asc' },
       });
 
-      this.logger.log(`Found ${channels.length} active mandatory channels`);
+      
 
       if (channels.length === 0) {
         await ctx.reply("✅ Hech qanday majburiy kanal yo'q!");
@@ -70,7 +70,7 @@ export class BotUpdate implements OnModuleInit {
       }
 
       if (notJoined.length === 0) {
-        this.logger.log(`✅ User ${ctx.from.id} is subscribed to all channels`);
+        
         await ctx.editMessageText("✅ Siz barcha kanallarga obuna bo'lgansiz!");
       } else {
         this.logger.log(

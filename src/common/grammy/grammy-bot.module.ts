@@ -9,19 +9,14 @@ export class GrammyBotService implements OnModuleInit {
   public botUsername: string;
 
   constructor() {
-    this.logger.log('🔧 Initializing GrammyBotService...');
-
     const token = process.env.BOT_TOKEN;
     if (!token) {
       this.logger.error('❌ BOT_TOKEN is not defined in environment variables');
       throw new Error('BOT_TOKEN is not defined in  environment variables');
     }
 
-    this.logger.log(`✅ Bot token found (length: ${token.length})`);
-
     try {
       this.bot = new Bot<BotContext>(token);
-      this.logger.log('✅ Grammy Bot instance created successfully');
     } catch (error) {
       this.logger.error('❌ Failed to create Grammy Bot instance');
       this.logger.error(`Error: ${error.message}`);
@@ -31,8 +26,6 @@ export class GrammyBotService implements OnModuleInit {
   }
 
   async onModuleInit() {
-    this.logger.log('🔧 GrammyBotService module initializing...');
-
     try {
       this.bot.catch((err) => {
         this.logger.error('❌ Grammy Bot error caught:');
@@ -45,9 +38,6 @@ export class GrammyBotService implements OnModuleInit {
 
       this.bot.use(async (ctx, next) => {
         try {
-          this.logger.debug(
-            `📨 Received update: ${JSON.stringify(ctx.update).slice(0, 200)}...`,
-          );
           await next();
         } catch (error) {
           this.logger.error('❌ Error in middleware:');
@@ -59,8 +49,6 @@ export class GrammyBotService implements OnModuleInit {
           throw error;
         }
       });
-
-      this.logger.log('✅ GrammyBotService module initialized successfully');
     } catch (error) {
       this.logger.error('❌ Failed to initialize GrammyBotService module');
       this.logger.error(`Error: ${error.message}`);
@@ -70,21 +58,13 @@ export class GrammyBotService implements OnModuleInit {
   }
 
   async startBot() {
-    this.logger.log('🚀 Starting Grammy Bot...');
-
     try {
-      this.logger.log('📡 Attempting to connect to Telegram API...');
-
-      console.log('✅ Bot is now starting...');
-
       // Start polling in background without blocking
       // Don't await - let it run in background
       this.bot
         .start({
           onStart: ({ username }) => {
             this.botUsername = username;
-            this.logger.log(`✅ Bot started successfully!`);
-            this.logger.log(`👤 Bot username: @${username}`);
           },
           drop_pending_updates: false,
           allowed_updates: [],
@@ -97,14 +77,11 @@ export class GrammyBotService implements OnModuleInit {
 
           // Retry after 5 seconds
           setTimeout(() => {
-            this.logger.log('🔄 Retrying bot connection...');
             this.startBot().catch(() => {
               this.logger.error('❌ Retry failed');
             });
           }, 5000);
         });
-
-      this.logger.log('✅ Bot polling started (non-blocking)');
     } catch (error) {
       this.logger.error('❌ Failed to start Grammy Bot');
       this.logger.error(`Error type: ${error.constructor.name}`);

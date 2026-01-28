@@ -48,14 +48,14 @@ export class PaymentController {
         provider: 'payme',
       });
 
-      this.logger.log(`✅ Payment created with ID: ${payment.id}`);
+      
 
       const paymentLink = this.paymeService.generatePaymentLink(
         payment.id,
         body.amount,
       );
 
-      this.logger.log(`✅ Payment link generated for payment ${payment.id}`);
+      
 
       return {
         success: true,
@@ -88,7 +88,7 @@ export class PaymentController {
         throw new BadRequestException('Invalid signature');
       }
 
-      this.logger.log('✅ Payme webhook signature verified');
+      
 
       const result = await this.paymeService.handleWebhook(body);
 

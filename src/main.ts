@@ -10,63 +10,41 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
   try {
-    logger.log('🚀 Starting application...');
-    logger.log(`📦 Node Environment: ${process.env.NODE_ENV || 'development'}`);
-    logger.log(`🤖 Bot Token exists: ${!!process.env.BOT_TOKEN}`);
-
     const app = await NestFactory.create<NestExpressApplication>(AppModule, {
       logger: loggerConfig,
     });
-    logger.log('✅ NestJS app created successfully');
 
     app.enableCors();
-    logger.log('✅ CORS enabled');
 
     app.useStaticAssets(join(__dirname, '..', 'public'));
-    logger.log('✅ Static assets configured');
 
     const port = process.env.PORT ?? 3000;
-    logger.log(`🔌 Attempting to listen on port ${port}...`);
 
     await app.listen(port, '0.0.0.0');
-    logger.log(`✅ Server is listening on port ${port}`);
 
-    logger.log('🤖 Initializing Telegram bot...');
     const grammyBot = app.get(GrammyBotService);
 
     // Start bot in background - don't await
     grammyBot.startBot().catch((botError) => {
       logger.error('❌ Failed to initialize Telegram bot');
       logger.error(`Bot Error: ${botError.message}`);
-      logger.warn('⚠️ Bot will retry automatically in background');
     });
 
-    logger.log('✅ Telegram bot initialization started in background');
-    logger.log('🔄 Bot will connect when network is available...');
-
-    logger.log('🔧 Initializing default channel...');
     await initializeDefaultChannel(app);
-    logger.log('✅ Application bootstrap completed successfully');
 
     // Handle graceful shutdown
     process.on('SIGINT', async () => {
-      logger.log('🛑 Received SIGINT, gracefully shutting down...');
       try {
         await grammyBot.bot.stop();
-      } catch (error) {
-        logger.warn('⚠️ Bot was not running');
-      }
+      } catch (error) {}
       await app.close();
       process.exit(0);
     });
 
     process.on('SIGTERM', async () => {
-      logger.log('🛑 Received SIGTERM, gracefully shutting down...');
       try {
         await grammyBot.bot.stop();
-      } catch (error) {
-        logger.warn('⚠️ Bot was not running');
-      }
+      } catch (error) {}
       await app.close();
       process.exit(0);
     });
@@ -87,13 +65,8 @@ async function initializeDefaultChannel(app: NestExpressApplication) {
       process.env.DEFAULT_DATABASE_CHANNEL_NAME || 'Default Database';
 
     if (!channelLink) {
-      logger.log(
-        'ℹ️ No default database channel configured (DEFAULT_DATABASE_CHANNEL_LINK not set)',
-      );
       return;
     }
-
-    logger.log(`🔍 Checking for default channel: ${channelName}`);
 
     const { ChannelService } =
       await import('./modules/channel/services/channel.service');
@@ -108,11 +81,8 @@ async function initializeDefaultChannel(app: NestExpressApplication) {
     );
 
     if (channelExists) {
-      logger.log('✅ Default database channel already exists');
       return;
     }
-
-    logger.log('✅ Database channel initialization completed');
   } catch (error) {
     const err = error as Error;
     logger.error(`❌ Failed to initialize database channel: ${err.message}`);

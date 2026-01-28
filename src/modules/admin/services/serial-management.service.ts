@@ -470,7 +470,13 @@ export class SerialManagementService {
   ) {
     if (!ctx.from) return;
 
-    const { nextEpisodeNumber = 1, addedEpisodes = [] } = session.data || {};
+    const {
+      nextEpisodeNumber = 1,
+      addedEpisodes = [],
+      contentType,
+      movieId,
+      serialId,
+    } = session.data || {};
 
     const updatedEpisodes = [
       ...addedEpisodes,
@@ -484,6 +490,24 @@ export class SerialManagementService {
       addedEpisodes: updatedEpisodes,
       nextEpisodeNumber: nextEpisodeNumber + 1,
     });
+
+    const episodesAdded = updatedEpisodes.length;
+
+    let totalExistingEpisodes = 0;
+    if (contentType === 'movie' && movieId) {
+      const movie = await this.movieService.findById(movieId);
+      totalExistingEpisodes = movie?.totalEpisodes || 0;
+    } else if (contentType === 'serial' && serialId) {
+      const serial = await this.serialService.findById(serialId);
+      totalExistingEpisodes = serial?.totalEpisodes || 0;
+    }
+    if (totalExistingEpisodes === 2 && episodesAdded === 1) {
+      await ctx.reply(
+        `✅ ${nextEpisodeNumber}-qism yuklandi!\n\n📹 ${nextEpisodeNumber + 1}-qism videosini yuboring:`,
+        AdminKeyboard.getCancelButton(),
+      );
+      return;
+    }
 
     const keyboard = new Keyboard()
       .text(`➕ ${nextEpisodeNumber + 1}-qism yuklash`)

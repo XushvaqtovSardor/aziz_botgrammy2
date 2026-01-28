@@ -173,7 +173,7 @@ export class PaymentService {
     }
 
     if (payment.status === PaymentStatus.SUCCESS) {
-      this.logger.warn(`Payment ${payment.id} already processed`);
+      
       return payment;
     }
 

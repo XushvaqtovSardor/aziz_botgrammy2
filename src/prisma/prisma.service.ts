@@ -48,19 +48,12 @@ export class PrismaService
   }
 
   async onModuleInit() {
-    this.logger.log('🔧 Connecting to database...');
-    this.logger.log(
-      `Database URL is ${process.env.DATABASE_URL ? 'SET' : 'NOT SET'}`,
-    );
-
     try {
       await this.$connect();
-      this.logger.log('✅ Database connected successfully');
 
       // Test the connection
       try {
         await this.$queryRaw`SELECT 1`;
-        this.logger.log('✅ Database query test successful');
       } catch (queryError) {
         this.logger.error('❌ Database query test failed');
         this.logger.error(`Error: ${queryError.message}`);
@@ -77,11 +70,9 @@ export class PrismaService
   }
 
   async onModuleDestroy() {
-    this.logger.log('🔌 Disconnecting from database...');
     try {
       await this.$disconnect();
       await this.pool.end();
-      this.logger.log('✅ Database disconnected successfully');
     } catch (error) {
       this.logger.error('❌ Error disconnecting database:', error);
     }

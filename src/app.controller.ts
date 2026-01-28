@@ -7,13 +7,13 @@ export class AppController {
 
   @Get()
   root(@Res() res: Response) {
-    this.logger.log('📍 Root endpoint accessed, redirecting to /admin/');
+    
     return res.redirect('/admin/');
   }
 
   @Get('health')
   health() {
-    this.logger.log('🏥 Health check endpoint accessed');
+    
     return {
       status: 'ok',
       timestamp: new Date().toISOString(),

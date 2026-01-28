@@ -49,10 +49,8 @@ export class UserHandler implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    this.logger.log('🔧 UserHandler initializing...');
     try {
       this.registerHandlers();
-      this.logger.log('✅ UserHandler initialized successfully');
     } catch (error) {
       this.logger.error('❌ Failed to initialize UserHandler');
       this.logger.error(`Error: ${error.message}`);
@@ -62,7 +60,6 @@ export class UserHandler implements OnModuleInit {
   }
 
   private registerHandlers() {
-    this.logger.log('📝 Registering user handlers...');
     const bot = this.grammyBot.bot;
 
     bot.use(async (ctx, next) => {
@@ -349,8 +346,6 @@ export class UserHandler implements OnModuleInit {
         this.logger.error('Stack:', error.stack);
       }
     });
-
-    this.logger.log('✅ All user handlers registered successfully');
   }
 
   private async handleStart(ctx: BotContext) {
@@ -372,10 +367,7 @@ export class UserHandler implements OnModuleInit {
         languageCode: ctx.from.language_code || 'uz',
       });
 
-      this.logger.log(`✅ User ${ctx.from.id} found/created in database`);
-
       if (user.isBlocked) {
-        this.logger.log(`🚫 User ${ctx.from.id} is blocked`);
         await ctx.reply(
           '🚫 Siz botdan foydalanish huquqidan mahrum etilgansiz.\n\n' +
             `Sana: ${user.blockedAt?.toLocaleString('uz-UZ') || "Noma'lum"}`,
@@ -413,7 +405,6 @@ export class UserHandler implements OnModuleInit {
       }
 
       if (typeof payload === 'string' && payload.length > 0) {
-        this.logger.log(`User ${ctx.from.id} has payload: ${payload}`);
         if (payload.startsWith('s')) {
           const code = parseInt(payload.substring(1));
           if (!isNaN(code)) {
@@ -1411,13 +1402,16 @@ ${serialDeepLink}`.trim();
       const serial = await this.serialService.findById(serialId);
       const botUsername = (await ctx.api.getMe()).username;
       const field = await this.fieldService.findOne(serial.fieldId);
-      const shareLink = `https://t.me/share/url?url=https://t.me/${botUsername}?start=s${serial.code}&text=📺 ${encodeURIComponent(serial.title)}\n\n📊 Qismlar: ${serial.totalEpisodes}\n📖 Kod: ${serial.code}\n\n👇 Serialni tomosha qilish uchun bosing:`;
+
+      // Share message text
+      const shareText = `╭────────────────────\n├‣  Serial nomi: ${serial.title}\n├‣  Serial kodi: ${serial.code}\n├‣  Qism: ${episodeNumber}\n├‣  Janrlari: ${serial.genre || "Noma'lum"}\n├‣  Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}\n╰────────────────────\n▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️\nhttps://t.me/${botUsername}?start=s${serial.code}`;
+
       const serialDeepLink = `https://t.me/${botUsername}?start=s${serial.code}`;
 
       const shareKeyboard = new InlineKeyboard()
         .url(`📺 Serial kodi: ${serial.code}`, serialDeepLink)
         .row()
-        .url('📤 Share qilish', shareLink);
+        .switchInline('📤 Ulashish', shareText);
 
       const videoCaption = `
 ╭────────────────────
@@ -1484,13 +1478,16 @@ ${serialDeepLink}`.trim();
 
       const botUsername = (await ctx.api.getMe()).username;
       const field = await this.fieldService.findOne(movie.fieldId);
-      const shareLink = `https://t.me/share/url?url=https://t.me/${botUsername}?start=${movie.code}&text=🎬 ${encodeURIComponent(movie.title)}\n\n📊 Qismlar: ${movie.totalEpisodes}\n📖 Kod: ${movie.code}\n\n👇 Kinoni tomosha qilish uchun bosing:`;
+
+      // Share message text
+      const shareText = `╭────────────────────\n├‣  Kino nomi: ${movie.title}\n├‣  Kino kodi: ${movie.code}\n├‣  Qism: ${episodeNumber}\n├‣  Janrlari: ${movie.genre || "Noma'lum"}\n├‣  Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}\n╰────────────────────\n▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️\nhttps://t.me/${botUsername}?start=${movie.code}`;
+
       const movieDeepLink = `https://t.me/${botUsername}?start=${movie.code}`;
 
       const shareKeyboard = new InlineKeyboard()
         .url(`🎬 Kino kodi: ${movie.code}`, movieDeepLink)
         .row()
-        .url('📤 Share qilish', shareLink);
+        .switchInline('📤 Ulashish', shareText);
 
       const videoCaption = `
 ╭────────────────────

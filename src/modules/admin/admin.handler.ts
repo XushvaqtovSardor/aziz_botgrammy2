@@ -48,10 +48,8 @@ export class AdminHandler implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    this.logger.log('🔧 AdminHandler initializing...');
     try {
       this.registerHandlers();
-      this.logger.log('✅ AdminHandler initialized successfully');
     } catch (error) {
       this.logger.error('❌ Failed to initialize AdminHandler');
       this.logger.error(`Error: ${error.message}`);
@@ -61,25 +59,16 @@ export class AdminHandler implements OnModuleInit {
   }
 
   private registerHandlers() {
-    this.logger.log('📝 Registering admin handlers...');
     const bot = this.grammyBot.bot;
 
     bot.command('admin', async (ctx) => {
       try {
         if (!ctx.from) return;
 
-        this.logger.log(
-          `🔐 Admin command from user ${ctx.from.id} (${ctx.from.username || ctx.from.first_name})`,
-        );
-
         const admin = await this.getAdmin(ctx);
         if (admin) {
-          this.logger.log(
-            `✅ User ${ctx.from.id} is admin (role: ${admin.role})`,
-          );
           await this.handleAdminStart(ctx, admin);
         } else {
-          this.logger.log(`❌ User ${ctx.from.id} is not an admin`);
           await ctx.reply('❌ Siz admin emassiz!');
         }
       } catch (error) {
@@ -3168,39 +3157,37 @@ Qaysi rol berasiz?
     }
 
     if (session.step === 7) {
-      if (text.includes('qism yuklash') || text === '✅ Tugatish') {
-        if (text === '✅ Tugatish') {
-          const keyboard = new Keyboard()
-            .text('✅ Ha, field kanalga yangilash')
-            .row()
-            .text("❌ Yo'q, faqat saqlash")
-            .resized();
+      if (text.includes('qism yuklash')) {
+        const session = this.sessionService.getSession(ctx.from.id);
+        if (!session) return;
+        const data = session.data;
+        const currentEpisodeNumber =
+          data.nextEpisodeNumber ||
+          (data.addedEpisodes?.length || 0) +
+            (data.contentType === 'movie'
+              ? data.movie?.totalEpisodes || 0
+              : data.serial?.totalEpisodes || 0);
+        await ctx.reply(
+          `📹 ${currentEpisodeNumber}-qism videosini yuboring:`,
+          AdminKeyboard.getCancelButton(),
+        );
+        return;
+      } else if (text === '✅ Tugatish') {
+        const keyboard = new Keyboard()
+          .text('✅ Ha')
+          .row()
+          .text("❌ Yo'q")
+          .resized();
 
-          await ctx.reply(
-            '📺 Qismlar tayyorlandi!\n\nField kanaldagi posterni yangilashmi?',
-            { reply_markup: keyboard },
-          );
-          return;
-        } else {
-          const session = this.sessionService.getSession(ctx.from.id);
-          if (!session) return;
-          const data = session.data;
-          const currentEpisodeNumber =
-            data.nextEpisodeNumber ||
-            (data.addedEpisodes?.length || 0) +
-              (data.contentType === 'movie'
-                ? data.movie.totalEpisodes
-                : data.serial.totalEpisodes);
-          await ctx.reply(
-            `📹 ${currentEpisodeNumber}-qism videosini yuboring:`,
-            AdminKeyboard.getCancelButton(),
-          );
-          return;
-        }
-      } else if (text === '✅ Ha, field kanalga yangilash') {
+        await ctx.reply(
+          '📺 Qismlar tayyorlandi!\n\nField kanalga tashlansinmi?',
+          { reply_markup: keyboard },
+        );
+        return;
+      } else if (text === '✅ Ha') {
         await this.serialManagementService.finalizeAddingEpisodes(ctx, true);
         return;
-      } else if (text === "❌ Yo'q, faqat saqlash") {
+      } else if (text === "❌ Yo'q") {
         await this.serialManagementService.finalizeAddingEpisodes(ctx, false);
         return;
       }
@@ -3231,10 +3218,15 @@ Qaysi rol berasiz?
         }
 
         if (existingMovie) {
-          await ctx.reply(
-            `❌ ${code} kodi kino uchun ishlatilgan!\n\n🎬 ${existingMovie.title}\n\n⚠️ Serial uchun boshqa kod tanlang:`,
-            AdminKeyboard.getCancelButton(),
-          );
+          const nearestCodes =
+            await this.movieService.findNearestAvailableCodes(code, 5);
+          let message = `❌ ${code} kodi kino uchun ishlatilgan!\n\n🎬 ${existingMovie.title}\n\n`;
+          if (nearestCodes.length > 0) {
+            message += "✅ Bo'sh kodlar:\n";
+            nearestCodes.forEach((c, i) => (message += `${i + 1}. ${c}\n`));
+          }
+          message += '\n⚠️ Serial uchun boshqa kod tanlang:';
+          await ctx.reply(message, AdminKeyboard.getCancelButton());
           return;
         }
 
