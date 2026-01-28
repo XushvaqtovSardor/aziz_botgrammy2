@@ -82,7 +82,7 @@ export class GrammyBotService implements OnModuleInit {
           this.logger.log(`✅ Bot started successfully!`);
           this.logger.log(`👤 Bot username: @${username}`);
         },
-        drop_pending_updates: false,
+        drop_pending_updates: true,
       });
 
       this.logger.log('✅ Bot is now polling for updates');
