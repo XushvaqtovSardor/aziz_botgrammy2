@@ -34,7 +34,7 @@ droplet_2.pub
 *.launch
 .settings/
 *.sublime-workspace
-
+logs
 # IDE - VSCode
 .vscode/*
 !.vscode/settings.json

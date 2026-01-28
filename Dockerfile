@@ -6,6 +6,8 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 
 COPY package.json pnpm-lock.yaml* ./
+
+COPY prisma ./prisma
 RUN pnpm install --shamefully-hoist
 
 
