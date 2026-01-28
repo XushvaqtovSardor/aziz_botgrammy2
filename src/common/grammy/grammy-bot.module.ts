@@ -75,17 +75,14 @@ export class GrammyBotService implements OnModuleInit {
     try {
       this.logger.log('📡 Attempting to connect to Telegram API...');
 
-      // Get bot info first to verify connection
-      const me = await this.bot.api.getMe();
-      this.botUsername = me.username;
-      this.logger.log(`✅ Bot connected: @${this.botUsername}`);
-
-      console.log('✅ Bot is now polling for updates');
+      console.log('✅ Bot is now starting...');
 
       // Start polling in background without blocking
+      // Don't await - let it run in background
       this.bot
         .start({
           onStart: ({ username }) => {
+            this.botUsername = username;
             this.logger.log(`✅ Bot started successfully!`);
             this.logger.log(`👤 Bot username: @${username}`);
           },
@@ -95,7 +92,16 @@ export class GrammyBotService implements OnModuleInit {
         .catch((error) => {
           this.logger.error('❌ Bot polling error:');
           this.logger.error(`Error: ${error.message}`);
-          // Don't throw - let bot retry
+          this.logger.error(`Error type: ${error.constructor.name}`);
+          // Don't throw - let bot retry automatically
+
+          // Retry after 5 seconds
+          setTimeout(() => {
+            this.logger.log('🔄 Retrying bot connection...');
+            this.startBot().catch(() => {
+              this.logger.error('❌ Retry failed');
+            });
+          }, 5000);
         });
 
       this.logger.log('✅ Bot polling started (non-blocking)');
