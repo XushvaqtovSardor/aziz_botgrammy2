@@ -1049,10 +1049,22 @@ ${movieDeepLink}`.trim();
           );
           if ((index + 2) % 5 === 0) keyboard.row(); // +2 because we started with episode 1
         });
+        // const shareText =
+        //   `\n` +
+        //   `> ╭${'─'.repeat(20)}\n` +
+        //   `> ├‣ Serial nomi: ${episodes.title}\n` +
+        //   `> ├‣ Serial kodi: ${episodes.code}\n` +
+        //   `> ├‣ Qism: ${}\n` +
+        //   `> ├‣ Janrlari: ${movie.genre || "Noma'lum"}\n` +
+        //   `> ├‣ Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}\n` +
+        //   `> ╰${'─'.repeat(20)}\n\n` +
+        //   `▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️\n\n` +
+        //   `https://t.me/${botUsername}?start=${movie.code}`;
+
         if ((episodes.length + 1) % 5 !== 0) keyboard.row();
 
         keyboard
-          .switchInline('📤 Ulashish', `${movie.code}`)
+          .switchInline('📤 Ulashish', `${caption}`)
           .row()
           .text('🔙 Orqaga', 'back_to_main');
 
@@ -1128,6 +1140,7 @@ ${movieDeepLink}`.trim();
 ╰────────────────────
 ▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️
 ${serialDeepLink}`.trim();
+      const shareText = `╭────────────────────\n├‣  Kino nomi: ${serial.title}\n├‣  Kino kodi: ${serial.code}\n├‣  Qism: ${episodes.length}\n├‣  Janrlari: ${serial.genre || "Noma'lum"}\n├‣  Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}\n╰────────────────────\n▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️\nhttps://t.me/${botUsername}?start=${serial.code}`;
 
       const keyboard = new InlineKeyboard();
       episodes.forEach((episode, index) => {
@@ -1141,7 +1154,7 @@ ${serialDeepLink}`.trim();
       if (episodes.length % 5 !== 0) keyboard.row();
 
       keyboard
-        .switchInline('📤 Ulashish', `${code}`)
+        .switchInline('📤 Ulashish', `${shareText}`)
         .row()
         .text('🔙 Orqaga', 'back_to_main');
 
