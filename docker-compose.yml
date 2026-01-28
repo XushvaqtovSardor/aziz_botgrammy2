@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: 12345
       POSTGRES_DB: aziz_grammydb
     ports:
-      - "5437:5432"
+      - "5432:5432"
     volumes:
       - baza_data:/var/lib/postgresql/data
     healthcheck:
@@ -26,7 +26,7 @@ services:
     env_file:
       - .env
     ports:
-      - "3001:3000"
+      - "3000:3000"
     depends_on:
       db:
         condition: service_healthy
