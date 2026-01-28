@@ -75,6 +75,7 @@ export class GrammyBotService implements OnModuleInit {
     try {
       this.logger.log('📡 Attempting to connect to Telegram API...');
 
+      console.log('✅ Bot is now polling for updates');
       await this.bot.start({
         onStart: ({ username }) => {
           this.botUsername = username;
