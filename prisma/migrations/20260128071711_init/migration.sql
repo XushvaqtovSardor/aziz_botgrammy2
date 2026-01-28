@@ -19,6 +19,9 @@ CREATE TYPE "BroadcastStatus" AS ENUM ('PENDING', 'IN_PROGRESS', 'COMPLETED', 'F
 -- CreateEnum
 CREATE TYPE "ChannelType" AS ENUM ('PUBLIC', 'PRIVATE', 'EXTERNAL');
 
+-- CreateEnum
+CREATE TYPE "ChannelStatus" AS ENUM ('joined', 'requested', 'left');
+
 -- CreateTable
 CREATE TABLE "User" (
     "id" SERIAL NOT NULL,
@@ -257,6 +260,17 @@ CREATE TABLE "Broadcast" (
     CONSTRAINT "Broadcast_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "UserChannelStatus" (
+    "id" SERIAL NOT NULL,
+    "userId" INTEGER NOT NULL,
+    "channelId" INTEGER NOT NULL,
+    "status" "ChannelStatus" NOT NULL DEFAULT 'left',
+    "lastUpdated" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "UserChannelStatus_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_telegramId_key" ON "User"("telegramId");
 
@@ -359,6 +373,18 @@ CREATE INDEX "Broadcast_createdAt_idx" ON "Broadcast"("createdAt");
 -- CreateIndex
 CREATE INDEX "Broadcast_status_idx" ON "Broadcast"("status");
 
+-- CreateIndex
+CREATE INDEX "UserChannelStatus_userId_idx" ON "UserChannelStatus"("userId");
+
+-- CreateIndex
+CREATE INDEX "UserChannelStatus_channelId_idx" ON "UserChannelStatus"("channelId");
+
+-- CreateIndex
+CREATE INDEX "UserChannelStatus_status_idx" ON "UserChannelStatus"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UserChannelStatus_userId_channelId_key" ON "UserChannelStatus"("userId", "channelId");
+
 -- AddForeignKey
 ALTER TABLE "Field" ADD CONSTRAINT "Field_databaseChannelId_fkey" FOREIGN KEY ("databaseChannelId") REFERENCES "DatabaseChannel"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
@@ -375,13 +401,19 @@ ALTER TABLE "Serial" ADD CONSTRAINT "Serial_fieldId_fkey" FOREIGN KEY ("fieldId"
 ALTER TABLE "Episode" ADD CONSTRAINT "Episode_serialId_fkey" FOREIGN KEY ("serialId") REFERENCES "Serial"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "WatchHistory" ADD CONSTRAINT "WatchHistory_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "WatchHistory" ADD CONSTRAINT "WatchHistory_movieId_fkey" FOREIGN KEY ("movieId") REFERENCES "Movie"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "WatchHistory" ADD CONSTRAINT "WatchHistory_serialId_fkey" FOREIGN KEY ("serialId") REFERENCES "Serial"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "WatchHistory" ADD CONSTRAINT "WatchHistory_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Payment" ADD CONSTRAINT "Payment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserChannelStatus" ADD CONSTRAINT "UserChannelStatus_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserChannelStatus" ADD CONSTRAINT "UserChannelStatus_channelId_fkey" FOREIGN KEY ("channelId") REFERENCES "MandatoryChannel"("id") ON DELETE CASCADE ON UPDATE CASCADE;

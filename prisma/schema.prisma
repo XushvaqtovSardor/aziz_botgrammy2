@@ -5,33 +5,31 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
-  id                 Int                   @id @default(autoincrement())
-  telegramId         String                @unique
+  id                 Int                 @id @default(autoincrement())
+  telegramId         String              @unique
   username           String?
   firstName          String?
   lastName           String?
-  language           Language              @default(UZ)
-  isPremium          Boolean               @default(false)
+  language           Language            @default(UZ)
+  isPremium          Boolean             @default(false)
   premiumTill        DateTime?
   premiumExpiresAt   DateTime?
-  hasTelegramPremium Boolean               @default(false)
-  isBlocked          Boolean               @default(false)
+  hasTelegramPremium Boolean             @default(false)
+  isBlocked          Boolean             @default(false)
   blockedAt          DateTime?
   blockReason        String?
-  warningCount       Int                   @default(0)
-  premiumBanCount    Int                   @default(0)
-  isPremiumBanned    Boolean               @default(false)
+  warningCount       Int                 @default(0)
+  premiumBanCount    Int                 @default(0)
+  isPremiumBanned    Boolean             @default(false)
   premiumBannedAt    DateTime?
-  createdAt          DateTime              @default(now())
-  lastActivity       DateTime              @default(now())
+  createdAt          DateTime            @default(now())
+  lastActivity       DateTime            @default(now())
   payments           Payment[]
   watchHistory       WatchHistory[]
   channelStatuses    UserChannelStatus[]
-  chats              UserChat[]
 
   @@index([telegramId])
   @@index([isPremium])
