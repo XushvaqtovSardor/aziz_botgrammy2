@@ -36,18 +36,35 @@ async function bootstrap() {
 
     try {
       await grammyBot.startBot();
-      logger.log('✅ Telegram bot started successfully');
+      logger.log('✅ Telegram bot initialized');
       logger.log(`👤 Bot username: @${grammyBot.botUsername || 'Unknown'}`);
+      logger.log('🔄 Bot is polling for updates in background...');
     } catch (botError) {
       logger.error('❌ Failed to start Telegram bot');
       logger.error(`Bot Error: ${botError.message}`);
       logger.error('Bot Stack:', botError.stack);
-      throw botError;
+      // Don't throw - let the app continue
+      logger.warn('⚠️ Application will continue without bot');
     }
 
     logger.log('🔧 Initializing default channel...');
     await initializeDefaultChannel(app);
     logger.log('✅ Application bootstrap completed successfully');
+
+    // Handle graceful shutdown
+    process.on('SIGINT', async () => {
+      logger.log('🛑 Received SIGINT, gracefully shutting down...');
+      await grammyBot.bot.stop();
+      await app.close();
+      process.exit(0);
+    });
+
+    process.on('SIGTERM', async () => {
+      logger.log('🛑 Received SIGTERM, gracefully shutting down...');
+      await grammyBot.bot.stop();
+      await app.close();
+      process.exit(0);
+    });
   } catch (error) {
     logger.error('❌ Critical error during bootstrap');
     logger.error(`Error: ${error.message}`);
