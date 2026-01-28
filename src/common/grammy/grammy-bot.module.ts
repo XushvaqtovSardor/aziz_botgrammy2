@@ -71,37 +71,25 @@ export class GrammyBotService implements OnModuleInit {
 
   async startBot() {
     this.logger.log('🚀 Starting Grammy Bot...');
-
     try {
       this.logger.log('📡 Attempting to connect to Telegram API...');
+      // Pollingni backgroundda ishga tushuramiz
+      this.bot
+        .start({
+          onStart: ({ username }) => {
+            this.botUsername = username;
+            this.logger.log(`✅ Bot started successfully!`);
+            this.logger.log(`👤 Bot username: @${username}`);
+          },
+          drop_pending_updates: true,
+        })
+        .catch((err) => {
+          this.logger.error('❌ Grammy Bot polling failed:', err);
+        });
 
-      console.log('✅ Bot is now polling for updates');
-      await this.bot.start({
-        onStart: ({ username }) => {
-          this.botUsername = username;
-          this.logger.log(`✅ Bot started successfully!`);
-          this.logger.log(`👤 Bot username: @${username}`);
-        },
-        drop_pending_updates: true,
-      });
-
-      this.logger.log('✅ Bot is now polling for updates');
+      this.logger.log('✅ Bot polling started in background');
     } catch (error) {
-      this.logger.error('❌ Failed to start Grammy Bot');
-      this.logger.error(`Error type: ${error.constructor.name}`);
-      this.logger.error(`Error message: ${error.message}`);
-      this.logger.error('Full error:', JSON.stringify(error, null, 2));
-      this.logger.error('Stack:', error.stack);
-
-      if (error.description) {
-        this.logger.error(`Telegram API description: ${error.description}`);
-      }
-
-      if (error.error_code) {
-        this.logger.error(`Telegram API error code: ${error.error_code}`);
-      }
-
-      throw error;
+      this.logger.error('❌ Failed to start Grammy Bot', error);
     }
   }
 
