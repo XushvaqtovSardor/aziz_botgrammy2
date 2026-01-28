@@ -75,7 +75,9 @@ export class AdminApiController {
     try {
       const isSuperAdmin = req.admin.role === AdminRole.SUPERADMIN;
       if (!isSuperAdmin) {
-        this.logger.warn(`⚠️ Non-superadmin ${req.admin.telegramId} tried to view admins`);
+        this.logger.warn(
+          `⚠️ Non-superadmin ${req.admin.telegramId} tried to view admins`,
+        );
         throw new HttpException(
           'Only SuperAdmin can view admins',
           HttpStatus.FORBIDDEN,
@@ -93,11 +95,15 @@ export class AdminApiController {
     @Request() req,
     @Body() body: { telegramId: string; username: string; role: AdminRole },
   ) {
-    this.logger.log(`➕ Create admin requested: ${body.telegramId} by ${req.admin.telegramId}`);
+    this.logger.log(
+      `➕ Create admin requested: ${body.telegramId} by ${req.admin.telegramId}`,
+    );
     try {
       const isSuperAdmin = req.admin.role === AdminRole.SUPERADMIN;
       if (!isSuperAdmin) {
-        this.logger.warn(`⚠️ Non-superadmin ${req.admin.telegramId} tried to create admin`);
+        this.logger.warn(
+          `⚠️ Non-superadmin ${req.admin.telegramId} tried to create admin`,
+        );
         throw new HttpException(
           'Only SuperAdmin can create admins',
           HttpStatus.FORBIDDEN,
@@ -110,7 +116,7 @@ export class AdminApiController {
         role: body.role,
         createdBy: req.admin.telegramId,
       });
-      
+
       this.logger.log(`✅ Admin ${body.telegramId} created successfully`);
       return result;
     } catch (error) {
@@ -121,48 +127,62 @@ export class AdminApiController {
 
   @Delete('admins/:telegramId')
   async deleteAdmin(@Request() req, @Param('telegramId') telegramId: string) {
-    this.logger.log(`🗑️ Delete admin requested: ${telegramId} by ${req.admin.telegramId}`);
+    this.logger.log(
+      `🗑️ Delete admin requested: ${telegramId} by ${req.admin.telegramId}`,
+    );
     try {
       const isSuperAdmin = req.admin.role === AdminRole.SUPERADMIN;
       if (!isSuperAdmin) {
-        this.logger.warn(`⚠️ Non-superadmin ${req.admin.telegramId} tried to delete admin`);
+        this.logger.warn(
+          `⚠️ Non-superadmin ${req.admin.telegramId} tried to delete admin`,
+        );
         throw new HttpException(
           'Only SuperAdmin can delete admins',
           HttpStatus.FORBIDDEN,
         );
       }
 
-    if (telegramId === req.admin.telegramId) {
-      throw new HttpException('Cannot delete yourself', HttpStatus.BAD_REQUEST);
-    }
+      if (telegramId === req.admin.telegramId) {
+        throw new HttpException(
+          'Cannot delete yourself',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
 
-    const adminToDelete =
-      await this.adminService.getAdminByTelegramId(telegramId);
+      const adminToDelete =
+        await this.adminService.getAdminByTelegramId(telegramId);
 
-    if (!adminToDelete) {
-      throw new HttpException('Admin not found', HttpStatus.NOT_FOUND);
-    }
+      if (!adminToDelete) {
+        throw new HttpException('Admin not found', HttpStatus.NOT_FOUND);
+      }
 
-    const currentAdmin = await this.adminService.getAdminByTelegramId(
-      req.admin.telegramId,
-    );
-
-    if (!currentAdmin) {
-      throw new HttpException('Current admin not found', HttpStatus.NOT_FOUND);
-    }
-
-    const canDelete =
-      adminToDelete.createdBy === req.admin.telegramId ||
-      adminToDelete.createdAt > currentAdmin.createdAt;
-
-    if (!canDelete) {
-      throw new HttpException(
-        'You can only delete admins you created or admins created after you',
-        HttpStatus.FORBIDDEN,
+      const currentAdmin = await this.adminService.getAdminByTelegramId(
+        req.admin.telegramId,
       );
-    }
 
-    return this.adminService.deleteAdmin(telegramId);
+      if (!currentAdmin) {
+        throw new HttpException(
+          'Current admin not found',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      const canDelete =
+        adminToDelete.createdBy === req.admin.telegramId ||
+        adminToDelete.createdAt > currentAdmin.createdAt;
+
+      if (!canDelete) {
+        throw new HttpException(
+          'You can only delete admins you created or admins created after you',
+          HttpStatus.FORBIDDEN,
+        );
+      }
+
+      return this.adminService.deleteAdmin(telegramId);
+    } catch (error) {
+      this.logger.error(`❌ Error deleting admin: ${error.message}`);
+      throw error;
+    }
   }
 
   @Get('users')
@@ -361,16 +381,14 @@ export class AdminApiController {
     if (movie.channelMessageId && movie.field?.channelId) {
       try {
         deletedFromFieldChannel = true;
-      } catch (error) {
-      }
+      } catch (error) {}
     }
 
     let deletedFromDatabaseChannel = false;
     if (movie.channelMessageId && movie.field?.databaseChannel?.channelId) {
       try {
         deletedFromDatabaseChannel = true;
-      } catch (error) {
-      }
+      } catch (error) {}
     }
 
     await this.prisma.movieEpisode.deleteMany({
