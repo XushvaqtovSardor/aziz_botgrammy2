@@ -560,42 +560,6 @@ export class UserHandler implements OnModuleInit {
     });
   }
 
-  private async showProfile(ctx: BotContext) {
-    if (!ctx.from) return;
-
-    const user = await this.userService.findByTelegramId(String(ctx.from.id));
-    if (!user) {
-      await ctx.reply('❌ Foydalanuvchi topilmadi.');
-      return;
-    }
-
-    const premiumStatus = await this.premiumService.checkPremiumStatus(user.id);
-    const watchHistory = await this.watchHistoryService.getUserHistory(
-      user.id,
-      100,
-    );
-
-    let message = `👤 **Profil**\n\n`;
-    message += `📝 Ism: ${user.firstName}\n`;
-    message += `🆔 ID: ${user.telegramId}\n`;
-    message += `📅 Ro'yxatdan o'tgan: ${new Date(user.createdAt).toLocaleDateString()}\n`;
-    message += `🎬 Ko'rilgan: ${watchHistory.length}\n\n`;
-
-    if (
-      premiumStatus.isPremium &&
-      !premiumStatus.isExpired &&
-      premiumStatus.expiresAt
-    ) {
-      const endDate = new Date(premiumStatus.expiresAt);
-      message += `💎 Premium: Faol\n`;
-      message += `📅 Tugash sanasi: ${endDate.toLocaleDateString()}\n`;
-    } else {
-      message += `❌ Premium: Yo'q\n`;
-    }
-
-    await ctx.reply(message, { parse_mode: 'Markdown' });
-  }
-
   private async showPremium(ctx: BotContext) {
     if (!ctx.from) return;
 
@@ -1047,7 +1011,7 @@ ${movieDeepLink}`.trim();
             `${episode.episodeNumber}`,
             `movie_episode_${movie.id}_${episode.episodeNumber}`,
           );
-          if ((index + 2) % 5 === 0) keyboard.row(); // +2 because we started with episode 1
+          if ((index + 2) % 5 === 0) keyboard.row();
         });
         // const shareText =
         //   `\n` +
@@ -1076,10 +1040,21 @@ ${movieDeepLink}`.trim();
         await this.watchHistoryService.recordMovieWatch(user.id, movie.id);
       } else {
         if (movie.videoFileId) {
+          const shareText =
+            `\n` +
+            `> ╭${'─'.repeat(20)}\n` +
+            `> ├‣ Serial nomi: ${movie.title}\n` +
+            `> ├‣ Serial kodi: ${movie.code}\n` +
+            `> ├‣ Qism: 1\n` +
+            `> ├‣ Janrlari: ${movie.genre || "Noma'lum"}\n` +
+            `> ├‣ Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}\n` +
+            `> ╰${'─'.repeat(20)}\n\n` +
+            `▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️\n\n` +
+            `https://t.me/${botUsername}?start=${movie.code}`;
           const movieDeepLink = `https://t.me/${botUsername}?start=${movie.code}`;
           const shareKeyboard = new InlineKeyboard().switchInline(
             '📤 Ulashish',
-            `${movie.code}`,
+            `${shareText}`,
           );
 
           const videoCaption = `╭────────────────────
@@ -1416,7 +1391,6 @@ ${serialDeepLink}`.trim();
       const botUsername = (await ctx.api.getMe()).username;
       const field = await this.fieldService.findOne(serial.fieldId);
 
-      // Share message text
       const shareText = `╭────────────────────\n├‣  Serial nomi: ${serial.title}\n├‣  Serial kodi: ${serial.code}\n├‣  Qism: ${episodeNumber}\n├‣  Janrlari: ${serial.genre || "Noma'lum"}\n├‣  Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}\n╰────────────────────\n▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️\nhttps://t.me/${botUsername}?start=s${serial.code}`;
 
       const serialDeepLink = `https://t.me/${botUsername}?start=s${serial.code}`;
