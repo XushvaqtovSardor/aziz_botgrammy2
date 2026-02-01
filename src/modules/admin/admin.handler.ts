@@ -21,6 +21,7 @@ import {
   AdminState,
   MovieCreateStep,
   SerialCreateStep,
+  AddEpisodeStep,
 } from './types/session.interface';
 import { AdminKeyboard } from './keyboards/admin-menu.keyboard';
 
@@ -836,7 +837,8 @@ export class AdminHandler implements OnModuleInit {
       return;
     }
 
-    if (session.state === AdminState.CREATING_SERIAL && session.step === 7) {
+    // Handle adding episodes to existing content
+    if (session.state === AdminState.ADDING_EPISODES && session.step === 1) {
       await this.serialManagementService.handleExistingContentEpisodeVideo(
         ctx,
         ctx.message.video.file_id,
@@ -1035,6 +1037,9 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         break;
       case AdminState.CREATING_SERIAL:
         await this.handleSerialCreationSteps(ctx, text, session);
+        break;
+      case AdminState.ADDING_EPISODES:
+        await this.handleAddingEpisodesSteps(ctx, text, session);
         break;
       case AdminState.ATTACHING_VIDEO:
         await this.handleVideoAttachmentSteps(ctx, text, session);
@@ -1271,13 +1276,14 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       return;
     }
 
-    this.sessionService.createSession(ctx.from.id, AdminState.CREATING_SERIAL);
+    this.sessionService.createSession(ctx.from.id, AdminState.ADDING_EPISODES);
+    this.sessionService.setStep(ctx.from.id, AddEpisodeStep.CODE);
     this.sessionService.updateSessionData(ctx.from.id, {
       isAddingEpisode: true,
     });
 
     await ctx.reply(
-      "� Kino yoki Serialga qism qo'shish\n\n" +
+      "📺 Kino yoki Serialga qism qo'shish\n\n" +
       '🔢 Kino yoki serial kodini kiriting:\n' +
       "⚠️ Kod raqamlardan iborat bo'lishi kerak",
       AdminKeyboard.getCancelButton(),
@@ -3150,7 +3156,7 @@ Qaysi rol berasiz?
     }
   }
 
-  private async handleSerialCreationSteps(
+  private async handleAddingEpisodesSteps(
     ctx: BotContext,
     text: string,
     session: any,
@@ -3158,30 +3164,26 @@ Qaysi rol berasiz?
     const admin = await this.getAdmin(ctx);
     if (!admin || !ctx.from) return;
 
-    if (session.step === 6) {
-      if (text.includes('qism yuklash') || text === '✅ Tugatish') {
-        await this.serialManagementService.handleContinueOrFinish(ctx, text);
-        return;
-      } else if (text === '✅ Ha, field kanalga tashla') {
-        await this.serialManagementService.finalizNewSerial(ctx, true);
-        return;
-      } else if (text === "❌ Yo'q, faqat saqlash") {
-        await this.serialManagementService.finalizNewSerial(ctx, false);
+    // Handle CODE step
+    if (session.step === AddEpisodeStep.CODE) {
+      const code = parseInt(text);
+      if (isNaN(code) || code <= 0) {
+        await ctx.reply(
+          "❌ Kod faqat raqamlardan iborat bo'lishi kerak!\nMasalan: 12345\n\nIltimos, qaytadan kiriting:",
+          AdminKeyboard.getCancelButton(),
+        );
         return;
       }
+
+      await this.serialManagementService.handleAddEpisodeCode(ctx, code);
+      return;
     }
 
-    if (session.step === 7) {
+    // Handle VIDEO step (step 1)
+    if (session.step === AddEpisodeStep.VIDEO) {
       if (text.includes('qism yuklash')) {
-        const session = this.sessionService.getSession(ctx.from.id);
-        if (!session) return;
         const data = session.data;
-        const currentEpisodeNumber =
-          data.nextEpisodeNumber ||
-          (data.addedEpisodes?.length || 0) +
-          (data.contentType === 'movie'
-            ? data.movie?.totalEpisodes || 0
-            : data.serial?.totalEpisodes || 0);
+        const currentEpisodeNumber = data.nextEpisodeNumber;
         await ctx.reply(
           `📹 ${currentEpisodeNumber}-qism videosini yuboring:`,
           AdminKeyboard.getCancelButton(),
@@ -3207,6 +3209,29 @@ Qaysi rol berasiz?
         return;
       }
     }
+  }
+
+  private async handleSerialCreationSteps(
+    ctx: BotContext,
+    text: string,
+    session: any,
+  ) {
+    const admin = await this.getAdmin(ctx);
+    if (!admin || !ctx.from) return;
+
+    // Handle new serial creation flow (step 6)
+    if (session.step === 6) {
+      if (text.includes('qism yuklash') || text === '✅ Tugatish') {
+        await this.serialManagementService.handleContinueOrFinish(ctx, text);
+        return;
+      } else if (text === '✅ Ha, field kanalga tashla') {
+        await this.serialManagementService.finalizNewSerial(ctx, true);
+        return;
+      } else if (text === "❌ Yo'q, faqat saqlash") {
+        await this.serialManagementService.finalizNewSerial(ctx, false);
+        return;
+      }
+    }
 
     switch (session.step) {
       case SerialCreateStep.CODE:
@@ -3227,11 +3252,6 @@ Qaysi rol berasiz?
           code.toString(),
         );
 
-        if (existingMovie && session.data?.isAddingEpisode) {
-          await this.serialManagementService.handleAddEpisodeCode(ctx, code);
-          return;
-        }
-
         if (existingMovie) {
           const nearestCodes =
             await this.movieService.findNearestAvailableCodes(code, 5);
@@ -3242,11 +3262,6 @@ Qaysi rol berasiz?
           }
           message += '\n⚠️ Serial uchun boshqa kod tanlang:';
           await ctx.reply(message, AdminKeyboard.getCancelButton());
-          return;
-        }
-
-        if (existingSerial && session.data?.isAddingEpisode) {
-          await this.serialManagementService.handleAddEpisodeCode(ctx, code);
           return;
         }
 
@@ -3753,22 +3768,10 @@ Qaysi rol berasiz?
       let contentType: string;
 
       if (isSerial) {
-        content = await this.prisma.serial.findUnique({
-          where: { code: codeNumber },
-          include: {
-            episodes: true,
-            field: true,
-          },
-        });
+        content = await this.serialService.findByCode(code);
         contentType = 'serial';
       } else {
-        content = await this.prisma.movie.findUnique({
-          where: { code: codeNumber },
-          include: {
-            episodes: true,
-            field: true,
-          },
-        });
+        content = await this.movieService.findByCode(code);
         contentType = 'movie';
       }
 
@@ -3779,11 +3782,19 @@ Qaysi rol berasiz?
         return;
       }
 
-      const field =
-        content.field ||
-        (await this.prisma.field.findUnique({
-          where: { id: content.fieldId },
-        }));
+      // Get field and episodes
+      const field = await this.fieldService.findOne(content.fieldId);
+
+      let episodesCount = content.totalEpisodes || 0;
+      if (isSerial && episodesCount === 0) {
+        episodesCount = await this.prisma.episode.count({
+          where: { serialId: content.id }
+        });
+      } else if (!isSerial && episodesCount === 0) {
+        episodesCount = await this.prisma.movieEpisode.count({
+          where: { movieId: content.id }
+        });
+      }
 
       const botInfo = await ctx.api.getMe();
       const botUsername = botInfo.username || 'bot';
@@ -3812,7 +3823,7 @@ Qaysi rol berasiz?
         '╭────────────────────\n' +
         `├‣  ${isSerial ? 'Serial' : 'Kino'} nomi : ${content.title}\n` +
         `├‣  ${isSerial ? 'Serial' : 'Kino'} kodi: ${isSerial ? 's' : ''}${content.code}\n` +
-        `├‣  Qism: ${content.episodes?.length || 0}\n` +
+        `├‣  Qism: ${episodesCount}\n` +
         `├‣  Janrlari: ${content.genre || "Noma'lum"}\n` +
         `├‣  Kanal: ${channelLink}\n` +
         '╰────────────────────\n' +
@@ -3845,12 +3856,17 @@ Qaysi rol berasiz?
           caption,
           poster: content.posterFileId,
           fieldId: content.fieldId,
+          title: content.title,
+          genre: content.genre,
           fieldChannelId: field?.channelId,
+          fieldChannelLink: field?.channelLink,
           databaseChannelId: field?.databaseChannelId,
         },
       });
     } catch (error) {
-      this.logger.error('Error handling premiere broadcast steps:', error);
+      this.logger.error('Error handling premiere broadcast steps:', error?.message || 'Unknown error');
+      this.logger.error('Error stack:', error?.stack);
+      this.logger.error('Full error:', error);
       await ctx.reply("❌ Xatolik yuz berdi. Qaytadan urinib ko'ring.");
       this.sessionService.clearSession(ctx.from.id);
     }
@@ -5053,7 +5069,6 @@ Qaysi rol berasiz?
       );
     } catch (error) {
       this.logger.error('Error confirming delete serial:', error);
-      await ctx.reply('❌ Xatolik yuz berdi: ' + error.message);
     }
   }
 
@@ -5249,7 +5264,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         return;
       }
 
-      const { caption, poster, contentType, code } = session.data;
+      const { poster, contentType, code, title, genre, fieldChannelLink } = session.data;
 
       const users = await this.prisma.user.findMany({
         where: { isBlocked: false },
@@ -5257,6 +5272,22 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
       const botInfo = await ctx.api.getMe();
       const botUsername = botInfo.username || 'bot';
+
+      // Format caption with new structure
+      const formattedCaption = `╭────────────────────
+├‣ ${contentType === 'serial' ? 'Serial' : 'Kino'} nomi : ${title || 'Noma\'lum'}
+├‣ ${contentType === 'serial' ? 'Serial' : 'Kino'} kodi: ${code}
+├‣ Janrlari: ${genre || 'Janr ko\'rsatilmadi'}
+├‣ Kanal: ${fieldChannelLink || '@Kanal'}
+╰────────────────────
+
+▶️ ${contentType === 'serial' ? 'Serialni' : 'Kinoni'} to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!
+
+<blockquote expandable>⚠️ ESLATMA:
+Biz yuklayotgan kinolar turli saytlardan olinadi. 
+🎰 Ba'zi kinolarda kazino, qimor yoki "pulni ko'paytirib beramiz" degan reklama chiqishi mumkin. 
+🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi. 
+🔞 Ba'zi sahnalar 18+ bo'lishi mumkin – agar noqulay bo'lsa, ko'rishni to'xtating.</blockquote>`;
 
       let successCount = 0;
       let failCount = 0;
@@ -5267,7 +5298,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
       for (const user of users) {
         try {
-          const deepLink = `https://t.me/${botUsername}?start=${contentType === 'serial' ? '' : ''}${code}`;
+          const deepLink = `https://t.me/${botUsername}?start=${contentType === 'serial' ? 's' : ''}${code}`;
           const keyboard = new InlineKeyboard().url(
             '▶️ Tomosha qilish',
             deepLink,
@@ -5275,12 +5306,14 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
           if (poster) {
             await ctx.api.sendPhoto(user.telegramId, poster, {
-              caption: caption,
+              caption: formattedCaption,
               reply_markup: keyboard,
+              parse_mode: 'HTML',
             });
           } else {
-            await ctx.api.sendMessage(user.telegramId, caption, {
+            await ctx.api.sendMessage(user.telegramId, formattedCaption, {
               reply_markup: keyboard,
+              parse_mode: 'HTML',
             });
           }
 

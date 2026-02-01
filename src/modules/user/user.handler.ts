@@ -1005,17 +1005,24 @@ ${movieDeepLink}`.trim();
 
         const keyboard = new InlineKeyboard();
 
-        keyboard.text('1', `movie_episode_${movie.id}_1`);
+        // Add first episode button (if movie.videoFileId exists)
+        if (movie.videoFileId) {
+          keyboard.text('1', `movie_episode_${movie.id}_1`);
+        }
 
+        // Add episode buttons from database
         episodes.forEach((episode, index) => {
+          const buttonIndex = movie.videoFileId ? index + 2 : index + 1;
           keyboard.text(
             `${episode.episodeNumber}`,
             `movie_episode_${movie.id}_${episode.episodeNumber}`,
           );
-          if ((index + 2) % 5 === 0) keyboard.row();
+          if (buttonIndex % 5 === 0) keyboard.row();
         });
 
-        if ((episodes.length + 1) % 5 !== 0) keyboard.row();
+        // Add new row if needed
+        const totalButtons = (movie.videoFileId ? 1 : 0) + episodes.length;
+        if (totalButtons % 5 !== 0) keyboard.row();
 
         // Ulashish uchun oddiy matn (HTML-siz)
         const shareText = `╭────────────────────
@@ -1034,10 +1041,16 @@ ${movieDeepLink}`;
           .row()
           .text('🔙 Orqaga', 'back_to_main');
 
-        await ctx.replyWithPhoto(movie.posterFileId, {
-          caption,
-          reply_markup: keyboard,
-        });
+        if (movie.posterFileId) {
+          await ctx.replyWithPhoto(movie.posterFileId, {
+            caption,
+            reply_markup: keyboard,
+          });
+        } else {
+          await ctx.reply(caption, {
+            reply_markup: keyboard,
+          });
+        }
 
         await this.watchHistoryService.recordMovieWatch(user.id, movie.id);
       } else {
@@ -1092,8 +1105,10 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         }
       }
     } catch (error) {
-      this.logger.error(`Error sending movie ${code}:`, error);
-      this.logger.error(`Error stack:`, error.stack);
+      this.logger.error(`Error sending movie ${code}:`, error?.message || 'No error message');
+      this.logger.error(`Error name:`, error?.name || 'No error name');
+      this.logger.error(`Error stack:`, error?.stack || 'No stack trace');
+      this.logger.error(`Full error object:`, JSON.stringify(error, Object.getOwnPropertyNames(error)));
       await ctx.reply(
         "❌ Kino yuklashda xatolik yuz berdi. Iltimos admin bilan bog'laning.",
       );
@@ -1104,69 +1119,159 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     if (!ctx.from) return;
 
     try {
+      this.logger.log(`[sendSerialToUser] Starting for code: ${code}`);
+
+      // 1. Serial ma'lumotlarini olish
       const serial = await this.serialService.findByCode(String(code));
       if (!serial) {
+        this.logger.warn(`[sendSerialToUser] Serial not found: ${code}`);
         await ctx.reply(`❌ ${code} kodli serial topilmadi.`);
         return;
       }
+      this.logger.log(`[sendSerialToUser] Serial found: ${serial.title}`);
 
+      // 2. User ma'lumotlarini olish
       const user = await this.userService.findByTelegramId(String(ctx.from.id));
-      if (!user) return;
+      if (!user) {
+        this.logger.warn(`[sendSerialToUser] User not found: ${ctx.from.id}`);
+        await ctx.reply('❌ Foydalanuvchi topilmadi.');
+        return;
+      }
+      this.logger.log(`[sendSerialToUser] User found: ${user.id}`);
 
+      // 3. Serial qismlarini olish
       const episodes = await this.episodeService.findBySerialId(serial.id);
-      const botUsername = (await ctx.api.getMe()).username;
-      const field = await this.fieldService.findOne(serial.fieldId);
+      this.logger.log(`[sendSerialToUser] Episodes found: ${episodes.length}`);
 
-      // 1. Rasmdagi formatda (HTML blockquote bilan)
-      const caption = `<blockquote>╭────────────────────
+      // 4. Bot va field ma'lumotlarini olish
+      const botInfo = await ctx.api.getMe();
+      const botUsername = botInfo.username || 'bot';
+      const field = await this.fieldService.findOne(serial.fieldId);
+      this.logger.log(`[sendSerialToUser] Bot: ${botUsername}, Field: ${field?.name || 'N/A'}`);
+
+      // 5. Deep link yaratish
+      const serialDeepLink = `https://t.me/${botUsername}?start=s${serial.code}`;
+
+      // 6. Field kanal linki
+      let channelLink = field?.channelLink || '';
+      if (!channelLink && field?.name) {
+        channelLink = `@${field.name}`;
+      } else if (!channelLink) {
+        channelLink = '@Kanal';
+      }
+
+      // 7. Caption - oddiy matn + expandable ESLATMA
+      const caption = `╭────────────────────
 ├‣ Serial nomi: ${serial.title}
 ├‣ Serial kodi: ${serial.code}
-├‣ Qismlar: ${episodes.length}
+├‣ Qismlar: ${episodes.length || serial.totalEpisodes || 0}
 ├‣ Janrlari: ${serial.genre || "Noma'lum"}
-├‣ Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}
-╰────────────────────</blockquote>
+├‣ Kanal: ${channelLink}
+╰────────────────────
 
-▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️
+▶️ Serialning barcha qismlarini tomosha qiling! 👇
 
-https://t.me/${botUsername}?start=s${code}`;
+<blockquote expandable>⚠️ ESLATMA:
+Biz yuklayotgan kinolar turli saytlardan olinadi.
+🎰 Ba'zi kinolarda kazino, qimor yoki "pulni ko'paytirib beramiz" degan reklama chiqishi mumkin.
+🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi.
+🔞 Ba'zi sahnalar 18+ bo'lishi mumkin – agar noqulay bo'lsa, ko'rishni to'xtating.</blockquote>`;
 
-      // 2. Ulashish tugmasi uchun (Blockquote-siz, lekin chiroyli ramkada)
+      // 8. Ulashish uchun oddiy matn (HTML-siz)
       const shareText = `╭────────────────────
 ├‣ Serial nomi: ${serial.title}
 ├‣ Serial kodi: ${serial.code}
-├‣ Qismlar: ${episodes.length}
+├‣ Qismlar: ${episodes.length || serial.totalEpisodes || 0}
 ├‣ Janrlari: ${serial.genre || "Noma'lum"}
+├‣ Kanal: ${channelLink}
 ╰────────────────────
 
-▶️ Kinoni tomosha qilish uchun pastdagi linkka kiring:
-https://t.me/${botUsername}?start=s${code}`;
+▶️ Serialning barcha qismlarini tomosha qilish uchun:
+${serialDeepLink}
 
+⚠️ ESLATMA:
+Biz yuklayotgan kinolar turli saytlardan olinadi.
+🎰 Ba'zi kinolarda kazino, qimor yoki "pulni ko'paytirib beramiz" degan reklama chiqishi mumkin.
+🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi.
+🔞 Ba'zi sahnalar 18+ bo'lishi mumkin – agar noqulay bo'lsa, ko'rishni to'xtating.`;
+
+      // 9. Keyboard - qismlar tugmalari
       const keyboard = new InlineKeyboard();
-      episodes.forEach((episode, index) => {
-        keyboard.text(
-          `${episode.episodeNumber}`,
-          `episode_${serial.id}_${episode.episodeNumber}`,
-        );
-        if ((index + 1) % 5 === 0) keyboard.row();
-      });
 
-      if (episodes.length % 5 !== 0) keyboard.row();
+      if (episodes.length > 0) {
+        episodes.forEach((episode, index) => {
+          keyboard.text(
+            `${episode.episodeNumber}`,
+            `episode_${serial.id}_${episode.episodeNumber}`,
+          );
+          // Har 5 ta tugmadan keyin yangi qator
+          if ((index + 1) % 5 === 0) {
+            keyboard.row();
+          }
+        });
 
+        // Agar oxirgi qatorda 5 ta bo'lmasa, yangi qator qo'shish
+        if (episodes.length % 5 !== 0) {
+          keyboard.row();
+        }
+      }
+
+      // 10. Ulashish va orqaga tugmalari
       keyboard
         .switchInline('📤 Ulashish', shareText)
         .row()
         .text('🔙 Orqaga', 'back_to_main');
 
-      await ctx.replyWithPhoto(serial.posterFileId, {
-        caption,
-        parse_mode: 'HTML', // Markdown-dan HTML-ga o'zgartirildi
-        reply_markup: keyboard,
-      });
+      this.logger.log(`[sendSerialToUser] Keyboard created with ${episodes.length} episodes`);
+
+      // 11. Poster bilan yuborish
+      if (serial.posterFileId) {
+        // Check poster type by file ID or database field
+        // Video file IDs start with "BAAC", photo file IDs usually start with "AgAC"
+        const isVideoFile = serial.posterFileId.startsWith('BAAC');
+        const posterType = (serial as any).posterType || (isVideoFile ? 'video' : 'photo');
+
+        if (posterType === 'video' || isVideoFile) {
+          this.logger.log(`[sendSerialToUser] Sending with video poster: ${serial.posterFileId}`);
+          await ctx.replyWithVideo(serial.posterFileId, {
+            caption,
+            parse_mode: 'HTML',
+            reply_markup: keyboard,
+          });
+        } else {
+          this.logger.log(`[sendSerialToUser] Sending with photo poster: ${serial.posterFileId}`);
+          await ctx.replyWithPhoto(serial.posterFileId, {
+            caption,
+            parse_mode: 'HTML',
+            reply_markup: keyboard,
+          });
+        }
+      } else {
+        this.logger.log(`[sendSerialToUser] Sending without poster`);
+        await ctx.reply(caption, {
+          parse_mode: 'HTML',
+          reply_markup: keyboard,
+        });
+      }
+
+      this.logger.log(`[sendSerialToUser] Message sent successfully`);
+
+      // 12. Tarix yozish
+      await this.watchHistoryService.recordSerialWatch(user.id, serial.id);
+      this.logger.log(`[sendSerialToUser] Watch history recorded`);
+
     } catch (error) {
-      this.logger.error(`Error sending serial ${code}:`, error);
+      this.logger.error(`❌ [sendSerialToUser] Error sending serial ${code}:`);
+      this.logger.error(`Message: ${error?.message || 'No error message'}`);
+      this.logger.error(`Name: ${error?.name || 'No error name'}`);
+      this.logger.error(`Stack: ${error?.stack || 'No stack trace'}`);
+      this.logger.error(`Full error: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`);
+
       await ctx.reply(
         "❌ Serial yuklashda xatolik yuz berdi. Iltimos admin bilan bog'laning.",
-      );
+      ).catch(err => {
+        this.logger.error(`Failed to send error message to user:`, err);
+      });
     }
   }
 
@@ -1574,6 +1679,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
             caption: videoCaption,
             protect_content: true,
             reply_markup: shareKeyboard,
+            parse_mode: 'HTML',
           });
         } else if (episode.videoMessageId) {
           try {
@@ -1587,6 +1693,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
                   protect_content: true,
                   reply_markup: shareKeyboard,
                   caption: videoCaption,
+                  parse_mode: 'HTML',
                 },
               );
             }

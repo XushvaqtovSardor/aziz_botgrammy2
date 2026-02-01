@@ -10,6 +10,7 @@ export enum AdminState {
   CREATING_FIELD = 'CREATING_FIELD',
   CREATING_MOVIE = 'CREATING_MOVIE',
   CREATING_SERIAL = 'CREATING_SERIAL',
+  ADDING_EPISODES = 'ADDING_EPISODES',
   CREATING_CHANNEL = 'CREATING_CHANNEL',
   CREATING_ADMIN = 'CREATING_ADMIN',
   ADD_DATABASE_CHANNEL = 'add_database_channel',
@@ -46,6 +47,11 @@ export enum MovieCreateStep {
   FIELD = 4,
   PHOTO = 5,
   VIDEO = 6,
+}
+
+export enum AddEpisodeStep {
+  CODE = 0,
+  VIDEO = 1,
 }
 
 export enum SerialCreateStep {
