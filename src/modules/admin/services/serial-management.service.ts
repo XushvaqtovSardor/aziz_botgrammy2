@@ -36,7 +36,7 @@ export class SerialManagementService {
     private channelService: ChannelService,
     private sessionService: SessionService,
     private grammyBot: GrammyBotService,
-  ) {}
+  ) { }
 
   async handleNewSerialCode(ctx: BotContext, code: number) {
     if (!ctx.from) return;
@@ -269,26 +269,34 @@ export class SerialManagementService {
       const botInfo = await ctx.api.getMe();
       const botUsername = botInfo.username;
 
+      // ... (oldingi kodlar)
       for (const ep of episodes) {
         const videoMessages = [];
         for (const dbChannel of dbChannels) {
           try {
+            // ASOSIY QISM: Rasmdagi format
             const caption = `╭────────────────────
-├‣  Serial nomi : ${title}
-├‣  Serial kodi: ${code}
-├‣  Qism: ${ep.episodeNumber}
-├‣  Janrlari: ${genre}
-├‣  Kanal: ${selectedField.channelLink || `https://t.me/${selectedField.channelId?.replace('@', '').replace('-100', '')}`}
+├‣ Serial nomi : ${title}
+├‣ Serial kodi: ${code}
+├‣ Qism: ${ep.episodeNumber}
+├‣ Janrlari: ${genre}
+├‣ Kanal: ${selectedField.channelLink || `https://t.me/${selectedField.channelId?.replace('@', '').replace('-100', '')}`}
 ╰────────────────────
-▶️ Serialning to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!`;
+
+▶️ Kinoning to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!
+
+<blockquote expandable>⚠️ ESLATMA:
+Biz yuklayotgan kinolar turli saytlardan olinadi.
+🎰 Ba'zi kinolarda kazino, qimor yoki "pulni ko'paytirib beramiz" degan reklama chiqishi mumkin.
+🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi.
+🔞 Ba'zi sahnalar 18+ bo'lishi mumkin – agar noqulay bo'lsa, ko'rishni to'xtating.</blockquote>`;
 
             const sentVideo = await ctx.api.sendVideo(
               dbChannel.channelId,
               ep.videoFileId,
-              {
-                caption,
-              },
+              { caption, parse_mode: "HTML" }, // parse_mode qo'shish tavsiya etiladi
             );
+            // ... (davomi)
             videoMessages.push({
               channelId: dbChannel.channelId,
               messageId: sentVideo.message_id,
@@ -330,16 +338,21 @@ export class SerialManagementService {
 
       let posterMessageId = 0;
       if (postToField) {
-        const caption = `
-╭────────────────────
-├‣  Serial nomi : ${title}
-├‣  Serial kodi: ${code}
-├‣  Qismlar: ${episodes.length}
-├‣  Janrlari: ${genre}
-├‣  Kanal: ${selectedField.channelLink || `https://t.me/${selectedField.channelId?.replace('@', '').replace('-100', '')}`}
-╰────────────────────
+        const caption = `╭────────────────────
+├‣ Serial nomi : ${title}
+├‣ Serial kodi: ${code}
+├‣ Qismlar: ${episodes.length}
+├‣ Janrlari: ${genre}
+├‣ Kanal: ${selectedField.channelLink || `https://t.me/${selectedField.channelId?.replace('@', '').replace('-100', '')}`}
+⁰────────────────────
+
 ▶️ Serialning to'liq qismlarini @${botUsername} dan tomosha qilishingiz mumkin!
-        `.trim();
+
+<blockquote expandable>⚠️ ESLATMA:
+Biz yuklayotgan kinolar turli saytlardan olinadi.
+🎰 Ba'zi kinolarda kazino, qimor yoki "pulni ko'paytirib beramiz" degan reklama chiqishi mumkin.
+🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi.
+🔞 Ba'zi sahnalar 18+ bo'lishi mumkin – agar noqulay bo'lsa, ko'rishni to'xtating.</blockquote>`;
 
         const keyboard = new InlineKeyboard().url(
           '✨ Tomosha Qilish',
@@ -356,6 +369,7 @@ export class SerialManagementService {
             {
               caption,
               reply_markup: keyboard,
+              parse_mode: 'HTML',
             },
           );
         } else {
@@ -365,6 +379,7 @@ export class SerialManagementService {
             {
               caption,
               reply_markup: keyboard,
+              parse_mode: 'HTML',
             },
           );
         }
@@ -380,10 +395,10 @@ export class SerialManagementService {
 
       await ctx.reply(
         `✅ Serial muvaffaqiyatli yaratildi!\n\n` +
-          `📺 ${title}\n` +
-          `📹 Qismlar: ${episodes.length}\n` +
-          `📦 Field: ${selectedField.name}\n` +
-          (posterMessageId ? `🔗 Poster Message ID: ${posterMessageId}\n` : ''),
+        `📺 ${title}\n` +
+        `📹 Qismlar: ${episodes.length}\n` +
+        `📦 Field: ${selectedField.name}\n` +
+        (posterMessageId ? `🔗 Poster Message ID: ${posterMessageId}\n` : ''),
         AdminKeyboard.getAdminMainMenu('ADMIN'),
       );
     } catch (error) {
@@ -428,9 +443,9 @@ export class SerialManagementService {
 
       await ctx.reply(
         `🎬 Kino topildi!\n\n` +
-          `🏷 ${movie.title}\n` +
-          `📹 Mavjud qismlar: ${movie.totalEpisodes}\n\n` +
-          `📹 ${nextEpisodeNumber}-qism videosini yuboring:`,
+        `🏷 ${movie.title}\n` +
+        `📹 Mavjud qismlar: ${movie.totalEpisodes}\n\n` +
+        `📹 ${nextEpisodeNumber}-qism videosini yuboring:`,
         AdminKeyboard.getCancelButton(),
       );
     } else if (serial) {
@@ -455,9 +470,9 @@ export class SerialManagementService {
 
       await ctx.reply(
         `📺 Serial topildi!\n\n` +
-          `🏷 ${serial.title}\n` +
-          `📹 Mavjud qismlar: ${serial.totalEpisodes}\n\n` +
-          `📹 ${nextEpisodeNumber}-qism videosini yuboring:`,
+        `🏷 ${serial.title}\n` +
+        `📹 Mavjud qismlar: ${serial.totalEpisodes}\n\n` +
+        `📹 ${nextEpisodeNumber}-qism videosini yuboring:`,
         AdminKeyboard.getCancelButton(),
       );
     }
@@ -574,18 +589,25 @@ export class SerialManagementService {
           for (const dbChannel of dbChannels) {
             try {
               const caption = `╭────────────────────
-├‣  Kino nomi: ${movieTitle}
-├‣  Kino kodi: ${movieCode}
-├‣  Qism: ${ep.episodeNumber}
-├‣  Janrlari: ${movieGenre || "Noma'lum"}
-├‣  Kanal: ${dbChannel.channelLink || 'https://t.me/' + dbChannel.channelName}
-╰────────────────────
-▶️ Kinoning to'liq qismini https://t.me/${botUsername}?start=${movieCode} dan tomosha qilishingiz mumkin!`;
+├‣ Kino nomi: ${movieTitle}
+├‣ Kino kodi: ${movieCode}
+├‣ Qism: ${ep.episodeNumber}
+├‣ Janrlari: ${movieGenre || "Noma'lum"}
+├‣ Kanal: ${dbChannel.channelLink || 'https://t.me/' + dbChannel.channelName}
+⁰────────────────────
+
+▶️ Kinoning to'liq qismini https://t.me/${botUsername}?start=${movieCode} dan tomosha qilishingiz mumkin!
+
+<blockquote expandable>⚠️ ESLATMA:
+Biz yuklayotgan kinolar turli saytlardan olinadi.
+🎰 Ba'zi kinolarda kazino, qimor yoki "pulni ko'paytirib beramiz" degan reklama chiqishi mumkin.
+🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi.
+🔞 Ba'zi sahnalar 18+ bo'lishi mumkin – agar noqulay bo'lsa, ko'rishni to'xtating.</blockquote>`;
 
               const sentVideo = await ctx.api.sendVideo(
                 dbChannel.channelId,
                 ep.videoFileId,
-                { caption },
+                { caption, parse_mode: 'HTML' },
               );
               videoMessages.push({
                 channelId: dbChannel.channelId,
@@ -616,13 +638,20 @@ export class SerialManagementService {
           const field = await this.fieldService.findOne(movieFieldId);
           if (field) {
             const caption = `╭────────────────────
-├‣  Kino nomi: ${movieTitle}
-├‣  Kino kodi: ${movieCode}
-├‣  Qismlar: ${totalEpisodes}
-├‣  Janrlari: ${movieGenre || "Noma'lum"}
-├‣  Kanal: ${field.channelLink || '@' + field.name}
-╰────────────────────
-▶️ Kinoning to'liq qismlarini https://t.me/${this.grammyBot.botUsername}?start=${movieCode} dan tomosha qilishingiz mumkin!`;
+├‣ Kino nomi: ${movieTitle}
+├‣ Kino kodi: ${movieCode}
+├‣ Qismlar: ${totalEpisodes}
+├‣ Janrlari: ${movieGenre || "Noma'lum"}
+├‣ Kanal: ${field.channelLink || '@' + field.name}
+⁰────────────────────
+
+▶️ Kinoning to'liq qismlarini https://t.me/${this.grammyBot.botUsername}?start=${movieCode} dan tomosha qilishingiz mumkin!
+
+<blockquote expandable>⚠️ ESLATMA:
+Biz yuklayotgan kinolar turli saytlardan olinadi.
+🎰 Ba'zi kinolarda kazino, qimor yoki "pulni ko'paytirib beramiz" degan reklama chiqishi mumkin.
+🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi.
+🔞 Ba'zi sahnalar 18+ bo'lishi mumkin – agar noqulay bo'lsa, ko'rishni to'xtating.</blockquote>`;
 
             const keyboard = new InlineKeyboard().url(
               '✨ Tomosha Qilish',
@@ -633,7 +662,7 @@ export class SerialManagementService {
               await ctx.api.editMessageCaption(
                 field.channelId,
                 movieChannelMessageId,
-                { caption, reply_markup: keyboard },
+                { caption, reply_markup: keyboard, parse_mode: 'HTML' },
               );
             } catch (error) {
               this.logger.error(
@@ -647,9 +676,9 @@ export class SerialManagementService {
         this.sessionService.clearSession(ctx.from.id);
         await ctx.reply(
           `✅ Qismlar muvaffaqiyatli qo'shildi!\n\n` +
-            `🎬 ${movieTitle}\n` +
-            `📹 Jami qismlar: ${totalEpisodes}\n` +
-            `➕ Qo'shildi: ${addedEpisodes.length} ta`,
+          `🎬 ${movieTitle}\n` +
+          `📹 Jami qismlar: ${totalEpisodes}\n` +
+          `➕ Qo'shildi: ${addedEpisodes.length} ta`,
           AdminKeyboard.getAdminMainMenu('ADMIN'),
         );
       } else if (contentType === 'serial') {
@@ -664,18 +693,25 @@ export class SerialManagementService {
           for (const dbChannel of dbChannels) {
             try {
               const caption = `╭────────────────────
-├‣  Serial nomi: ${serialTitle}
-├‣  Serial kodi: ${serialCode}
-├‣  Qism: ${ep.episodeNumber}
-├‣  Janrlari: ${serialGenre || "Noma'lum"}
-├‣  Kanal: ${dbChannel.channelLink || 'https://t.me/' + dbChannel.channelName}
-╰────────────────────
-▶️ Serialning to'liq qismini https://t.me/${botUsername}?start=s${serialCode} dan tomosha qilishingiz mumkin!`;
+├‣ Serial nomi: ${serialTitle}
+├‣ Serial kodi: ${serialCode}
+├‣ Qism: ${ep.episodeNumber}
+├‣ Janrlari: ${serialGenre || "Noma'lum"}
+├‣ Kanal: ${dbChannel.channelLink || 'https://t.me/' + dbChannel.channelName}
+⁰────────────────────
+
+▶️ Serialning to'liq qismini https://t.me/${botUsername}?start=s${serialCode} dan tomosha qilishingiz mumkin!
+
+<blockquote expandable>⚠️ ESLATMA:
+Biz yuklayotgan kinolar turli saytlardan olinadi.
+🎰 Ba'zi kinolarda kazino, qimor yoki "pulni ko'paytirib beramiz" degan reklama chiqishi mumkin.
+🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi.
+🔞 Ba'zi sahnalar 18+ bo'lishi mumkin – agar noqulay bo'lsa, ko'rishni to'xtating.</blockquote>`;
 
               const sentVideo = await ctx.api.sendVideo(
                 dbChannel.channelId,
                 ep.videoFileId,
-                { caption },
+                { caption, parse_mode: 'HTML' },
               );
               videoMessages.push({
                 channelId: dbChannel.channelId,
@@ -704,13 +740,20 @@ export class SerialManagementService {
           const field = await this.fieldService.findOne(serialFieldId);
           if (field) {
             const caption = `╭────────────────────
-├‣  Serial nomi: ${serialTitle}
-├‣  Serial kodi: ${serialCode}
-├‣  Qismlar: ${totalEpisodes}
-├‣  Janrlari: ${serialGenre || "Noma'lum"}
-├‣  Kanal: ${field.channelLink || '@' + field.name}
-╰────────────────────
-▶️ Serialning to'liq qismlarini https://t.me/${this.grammyBot.botUsername}?start=s${serialCode} dan tomosha qilishingiz mumkin!`;
+├‣ Serial nomi: ${serialTitle}
+├‣ Serial kodi: ${serialCode}
+├‣ Qismlar: ${totalEpisodes}
+├‣ Janrlari: ${serialGenre || "Noma'lum"}
+├‣ Kanal: ${field.channelLink || '@' + field.name}
+⁰────────────────────
+
+▶️ Serialning to'liq qismlarini https://t.me/${this.grammyBot.botUsername}?start=s${serialCode} dan tomosha qilishingiz mumkin!
+
+<blockquote expandable>⚠️ ESLATMA:
+Biz yuklayotgan kinolar turli saytlardan olinadi.
+🎰 Ba'zi kinolarda kazino, qimor yoki "pulni ko'paytirib beramiz" degan reklama chiqishi mumkin.
+🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi.
+🔞 Ba'zi sahnalar 18+ bo'lishi mumkin – agar noqulay bo'lsa, ko'rishni to'xtating.</blockquote>`;
 
             const keyboard = new InlineKeyboard().url(
               '✨ Tomosha Qilish',
@@ -721,7 +764,7 @@ export class SerialManagementService {
               await ctx.api.editMessageCaption(
                 field.channelId,
                 serialChannelMessageId,
-                { caption, reply_markup: keyboard },
+                { caption, reply_markup: keyboard, parse_mode: 'HTML' },
               );
             } catch (error) {
               this.logger.error(
@@ -735,9 +778,9 @@ export class SerialManagementService {
         this.sessionService.clearSession(ctx.from.id);
         await ctx.reply(
           `✅ Qismlar muvaffaqiyatli qo'shildi!\n\n` +
-            `📺 ${serialTitle}\n` +
-            `📹 Jami qismlar: ${totalEpisodes}\n` +
-            `➕ Qo'shildi: ${addedEpisodes.length} ta`,
+          `📺 ${serialTitle}\n` +
+          `📹 Jami qismlar: ${totalEpisodes}\n` +
+          `➕ Qo'shildi: ${addedEpisodes.length} ta`,
           AdminKeyboard.getAdminMainMenu('ADMIN'),
         );
       } else {

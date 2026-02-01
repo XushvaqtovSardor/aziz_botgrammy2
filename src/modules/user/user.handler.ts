@@ -46,7 +46,7 @@ export class UserHandler implements OnModuleInit {
     private adminService: AdminService,
     private grammyBot: GrammyBotService,
     private prisma: PrismaService,
-  ) {}
+  ) { }
 
   onModuleInit() {
     try {
@@ -105,7 +105,7 @@ export class UserHandler implements OnModuleInit {
         this.logger.error(
           `❌ Error in search handler for user ${ctx.from?.id}: ${error.message}`,
         );
-        await ctx.reply('❌ Xatolik yuz berdi.').catch(() => {});
+        await ctx.reply('❌ Xatolik yuz berdi.').catch(() => { });
       }
     });
 
@@ -116,7 +116,7 @@ export class UserHandler implements OnModuleInit {
         this.logger.error(
           `❌ Error in premium handler for user ${ctx.from?.id}: ${error.message}`,
         );
-        await ctx.reply('❌ Xatolik yuz berdi.').catch(() => {});
+        await ctx.reply('❌ Xatolik yuz berdi.').catch(() => { });
       }
     });
 
@@ -127,7 +127,7 @@ export class UserHandler implements OnModuleInit {
         this.logger.error(
           `❌ Error in about handler for user ${ctx.from?.id}: ${error.message}`,
         );
-        await ctx.reply('❌ Xatolik yuz berdi.').catch(() => {});
+        await ctx.reply('❌ Xatolik yuz berdi.').catch(() => { });
       }
     });
 
@@ -138,7 +138,7 @@ export class UserHandler implements OnModuleInit {
         this.logger.error(
           `❌ Error in contact handler for user ${ctx.from?.id}: ${error.message}`,
         );
-        await ctx.reply('❌ Xatolik yuz berdi.').catch(() => {});
+        await ctx.reply('❌ Xatolik yuz berdi.').catch(() => { });
       }
     });
 
@@ -149,7 +149,7 @@ export class UserHandler implements OnModuleInit {
         this.logger.error(
           `❌ Error in back handler for user ${ctx.from?.id}: ${error.message}`,
         );
-        await ctx.reply('❌ Xatolik yuz berdi.').catch(() => {});
+        await ctx.reply('❌ Xatolik yuz berdi.').catch(() => { });
       }
     });
 
@@ -163,7 +163,7 @@ export class UserHandler implements OnModuleInit {
         this.logger.error('Stack:', error.stack);
         await ctx
           .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
-          .catch(() => {});
+          .catch(() => { });
       }
     });
 
@@ -176,7 +176,7 @@ export class UserHandler implements OnModuleInit {
         );
         await ctx
           .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
-          .catch(() => {});
+          .catch(() => { });
       }
     });
 
@@ -189,7 +189,7 @@ export class UserHandler implements OnModuleInit {
         );
         await ctx
           .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
-          .catch(() => {});
+          .catch(() => { });
       }
     });
 
@@ -202,7 +202,7 @@ export class UserHandler implements OnModuleInit {
         );
         await ctx
           .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
-          .catch(() => {});
+          .catch(() => { });
       }
     });
 
@@ -215,7 +215,7 @@ export class UserHandler implements OnModuleInit {
         );
         await ctx
           .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
-          .catch(() => {});
+          .catch(() => { });
       }
     });
 
@@ -228,7 +228,7 @@ export class UserHandler implements OnModuleInit {
         );
         await ctx
           .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
-          .catch(() => {});
+          .catch(() => { });
       }
     });
 
@@ -241,7 +241,7 @@ export class UserHandler implements OnModuleInit {
         );
         await ctx
           .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
-          .catch(() => {});
+          .catch(() => { });
       }
     });
 
@@ -254,7 +254,7 @@ export class UserHandler implements OnModuleInit {
         );
         await ctx
           .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
-          .catch(() => {});
+          .catch(() => { });
       }
     });
 
@@ -267,7 +267,7 @@ export class UserHandler implements OnModuleInit {
         );
         await ctx
           .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
-          .catch(() => {});
+          .catch(() => { });
       }
     });
 
@@ -280,7 +280,7 @@ export class UserHandler implements OnModuleInit {
         );
         await ctx
           .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
-          .catch(() => {});
+          .catch(() => { });
       }
     });
 
@@ -327,7 +327,7 @@ export class UserHandler implements OnModuleInit {
         this.logger.error(
           `❌ Error in photo message handler for user ${ctx.from?.id}: ${error.message}`,
         );
-        await ctx.reply('❌ Xatolik yuz berdi.').catch(() => {});
+        await ctx.reply('❌ Xatolik yuz berdi.').catch(() => { });
       }
     });
 
@@ -370,7 +370,7 @@ export class UserHandler implements OnModuleInit {
       if (user.isBlocked) {
         await ctx.reply(
           '🚫 Siz botdan foydalanish huquqidan mahrum etilgansiz.\n\n' +
-            `Sana: ${user.blockedAt?.toLocaleString('uz-UZ') || "Noma'lum"}`,
+          `Sana: ${user.blockedAt?.toLocaleString('uz-UZ') || "Noma'lum"}`,
         );
         return;
       }
@@ -473,8 +473,8 @@ export class UserHandler implements OnModuleInit {
 
     await ctx.reply(
       '🔍 **Qidirish**\n\n' +
-        'Kino yoki serial kodini kiriting:\n' +
-        'Masalan: 12345',
+      'Kino yoki serial kodini kiriting:\n' +
+      'Masalan: 12345',
       { parse_mode: 'Markdown' },
     );
   }
@@ -493,11 +493,11 @@ export class UserHandler implements OnModuleInit {
       );
       await ctx.reply(
         'ℹ️ **Bot haqida**\n\n' +
-          'Bu bot orqali minglab kino va seriallarni tomosha qilishingiz mumkin.\n\n' +
-          '🎬 Kino va seriallar har kuni yangilanadi\n' +
-          '📱 Mobil va kompyuterda ishlaydi\n' +
-          "💎 Premium obuna bilan reklama yo'q\n\n" +
-          "❌ Hozircha field kanallar yo'q.",
+        'Bu bot orqali minglab kino va seriallarni tomosha qilishingiz mumkin.\n\n' +
+        '🎬 Kino va seriallar har kuni yangilanadi\n' +
+        '📱 Mobil va kompyuterda ishlaydi\n' +
+        "💎 Premium obuna bilan reklama yo'q\n\n" +
+        "❌ Hozircha field kanallar yo'q.",
         {
           parse_mode: 'Markdown',
           reply_markup: emptyKeyboard,
@@ -570,8 +570,8 @@ export class UserHandler implements OnModuleInit {
     if (user?.isPremiumBanned) {
       await ctx.reply(
         "🚫 Sizda Premium sotib olish imkoniyati yo'q.\n\n" +
-          "Sabab: Yolg'on to'lov ma'lumotlaridan foydalanganingiz uchun bloklangansiz.\n\n" +
-          'ℹ️ Blokni faqat admin ochishi mumkin.',
+        "Sabab: Yolg'on to'lov ma'lumotlaridan foydalanganingiz uchun bloklangansiz.\n\n" +
+        'ℹ️ Blokni faqat admin ochishi mumkin.',
       );
       return;
     }
@@ -716,8 +716,8 @@ To'lov qilgandan keyin chekni botga yuboring.
 
     await ctx.reply(
       '📸 **Chekni yuborish**\n\n' +
-        "To'lov chekini rasm sifatida yuboring.\n\n" +
-        "💡 Chek aniq va tushunarli bo'lishi kerak.",
+      "To'lov chekini rasm sifatida yuboring.\n\n" +
+      "💡 Chek aniq va tushunarli bo'lishi kerak.",
       { parse_mode: 'Markdown' },
     );
   }
@@ -754,10 +754,10 @@ To'lov qilgandan keyin chekni botga yuboring.
 
       await ctx.reply(
         '✅ **Chek qabul qilindi!**\n\n' +
-          `📝 To'lov ID: ${payment.id}\n` +
-          `💰 Summa: ${paymentInfo.amount.toLocaleString()} UZS\n` +
-          `⏱ Muddati: ${paymentInfo.months} oy\n\n` +
-          "⏳ Chekingiz ko'rib chiqilmoqda. Tez orada javob beramiz!",
+        `📝 To'lov ID: ${payment.id}\n` +
+        `💰 Summa: ${paymentInfo.amount.toLocaleString()} UZS\n` +
+        `⏱ Muddati: ${paymentInfo.months} oy\n\n` +
+        "⏳ Chekingiz ko'rib chiqilmoqda. Tez orada javob beramiz!",
         { parse_mode: 'Markdown' },
       );
 
@@ -993,12 +993,13 @@ Savollaringiz bo'lsa murojaat qiling:
         const movieDeepLink = `https://t.me/${botUsername}?start=${movie.code}`;
 
         const caption = `╭────────────────────
-├‣  Kino nomi: ${movie.title}
-├‣  Kino kodi: ${movie.code}
-├‣  Qism: ${movie.totalEpisodes}
-├‣  Janrlari: ${movie.genre || "Noma'lum"}
-├‣  Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}
-╰────────────────────
+├‣ Kino nomi: ${movie.title}
+├‣ Kino kodi: ${movie.code}
+├‣ Qism: ${movie.totalEpisodes}
+├‣ Janrlari: ${movie.genre || "Noma'lum"}
+├‣ Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}
+⁰────────────────────
+
 ▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️
 ${movieDeepLink}`.trim();
 
@@ -1013,22 +1014,23 @@ ${movieDeepLink}`.trim();
           );
           if ((index + 2) % 5 === 0) keyboard.row();
         });
-        // const shareText =
-        //   `\n` +
-        //   `> ╭${'─'.repeat(20)}\n` +
-        //   `> ├‣ Serial nomi: ${episodes.title}\n` +
-        //   `> ├‣ Serial kodi: ${episodes.code}\n` +
-        //   `> ├‣ Qism: ${}\n` +
-        //   `> ├‣ Janrlari: ${movie.genre || "Noma'lum"}\n` +
-        //   `> ├‣ Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}\n` +
-        //   `> ╰${'─'.repeat(20)}\n\n` +
-        //   `▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️\n\n` +
-        //   `https://t.me/${botUsername}?start=${movie.code}`;
 
         if ((episodes.length + 1) % 5 !== 0) keyboard.row();
 
+        // Ulashish uchun oddiy matn (HTML-siz)
+        const shareText = `╭────────────────────
+├‣ Kino nomi: ${movie.title}
+├‣ Kino kodi: ${movie.code}
+├‣ Qismlar: ${movie.totalEpisodes}
+├‣ Janrlari: ${movie.genre || "Noma'lum"}
+├‣ Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}
+╰────────────────────
+
+▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️
+${movieDeepLink}`;
+
         keyboard
-          .switchInline('📤 Ulashish', `${caption}`)
+          .switchInline('📤 Ulashish', shareText)
           .row()
           .text('🔙 Orqaga', 'back_to_main');
 
@@ -1041,33 +1043,41 @@ ${movieDeepLink}`.trim();
       } else {
         if (movie.videoFileId) {
           // 1. Ulashish uchun oddiy matn (HTML-siz)
-          const shareText = `╭${'─'.repeat(20)}
-├‣ Serial nomi: ${movie.title}
-├‣ Serial kodi: ${movie.code}
+          const shareText = `╭────────────────────
+├‣ Kino nomi : ${movie.title}
+├‣ Kino kodi: ${movie.code}
 ├‣ Qism: 1
 ├‣ Janrlari: ${movie.genre || "Noma'lum"}
 ├‣ Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}
-╰${'─'.repeat(20)}
+╰────────────────────
 
-▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️
+▶️ Kinoning to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!
 
-https://t.me/${botUsername}?start=${movie.code}`;
+⚠️ ESLATMA:
+Biz yuklayotgan kinolar turli saytlardan olinadi.
+🎰 Ba'zi kinolarda kazino, qimor yoki "pulni ko'paytirib beramiz" degan reklama chiqishi mumkin.
+🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi.
+🔞 Ba'zi sahnalar 18+ bo'lishi mumkin – agar noqulay bo'lsa, ko'rishni to'xtating.`;
 
           const shareKeyboard = new InlineKeyboard().switchInline(
             '📤 Ulashish',
             shareText,
           );
-          const videoCaption = `<blockquote>╭${'─'.repeat(20)}
-├‣ Serial nomi: ${movie.title}
-├‣ Serial kodi: ${movie.code}
+          const videoCaption = `<blockquote>╭────────────────────
+├‣ Kino nomi : ${movie.title}
+├‣ Kino kodi: ${movie.code}
 ├‣ Qism: 1
 ├‣ Janrlari: ${movie.genre || "Noma'lum"}
 ├‣ Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}
-╰${'─'.repeat(20)}</blockquote>
+╰────────────────────</blockquote>
 
-▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️
+▶️ Kinoning to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!
 
-https://t.me/${botUsername}?start=${movie.code}`;
+<blockquote expandable>⚠️ ESLATMA:
+Biz yuklayotgan kinolar turli saytlardan olinadi.
+🎰 Ba'zi kinolarda kazino, qimor yoki "pulni ko'paytirib beramiz" degan reklama chiqishi mumkin.
+🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi.
+🔞 Ba'zi sahnalar 18+ bo'lishi mumkin – agar noqulay bo'lsa, ko'rishni to'xtating.</blockquote>`;
 
           await ctx.replyWithVideo(movie.videoFileId, {
             caption: videoCaption,
@@ -1239,7 +1249,7 @@ https://t.me/${botUsername}?start=s${code}`;
             ctx.callbackQuery.message.message_id,
           );
         }
-      } catch (error) {}
+      } catch (error) { }
 
       const hasRequested = result.statuses.some(
         (ch) => ch.status === ChannelStatus.requested,
@@ -1352,12 +1362,12 @@ https://t.me/${botUsername}?start=s${code}`;
           await ctx.api.sendMessage(
             userId,
             `⚠️ Siz <b>${channel.channelName}</b> kanaldan chiqib ketdingiz.\n\n` +
-              `Botdan foydalanishda davom etish uchun qayta join request yuboring yoki obuna bo'ling.\n\n` +
-              `Kanal: ${channel.channelLink}`,
+            `Botdan foydalanishda davom etish uchun qayta join request yuboring yoki obuna bo'ling.\n\n` +
+            `Kanal: ${channel.channelLink}`,
             { parse_mode: 'HTML' },
           );
         }
-      } catch (error) {}
+      } catch (error) { }
     }
   }
 
@@ -1414,21 +1424,27 @@ https://t.me/${botUsername}?start=s${code}`;
         .row()
         .switchInline('📤 Ulashish', shareText);
 
-      const videoCaption = `
-╭────────────────────
-├‣  Serial nomi : ${serial.title}
-├‣  Serial kodi: ${serial.code}
-├‣  Qism: ${episodeNumber}
-├‣  Janrlari: ${serial.genre || "Noma'lum"}
-├‣  Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}
+      const videoCaption = `╭────────────────────
+├‣ Serial nomi : ${serial.title}
+├‣ Serial kodi: ${serial.code}
+├‣ Qism: ${episodeNumber}
+├‣ Janrlari: ${serial.genre || "Noma'lum"}
+├‣ Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}
 ╰────────────────────
+
 ▶️ Serialning to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!
-      `.trim();
+
+<blockquote expandable>⚠️ ESLATMA:
+Biz yuklayotgan kinolar turli saytlardan olinadi.
+🎰 Ba'zi kinolarda kazino, qimor yoki "pulni ko'paytirib beramiz" degan reklama chiqishi mumkin.
+🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi.
+🔞 Ba'zi sahnalar 18+ bo'lishi mumkin – agar noqulay bo'lsa, ko'rishni to'xtating.</blockquote>`.trim();
 
       if (episode.videoFileId) {
         await ctx.replyWithVideo(episode.videoFileId, {
           caption: videoCaption,
           protect_content: true,
+          parse_mode: 'HTML',
           reply_markup: shareKeyboard,
         });
       } else if (episode.videoMessageId) {
@@ -1481,7 +1497,16 @@ https://t.me/${botUsername}?start=s${code}`;
       const field = await this.fieldService.findOne(movie.fieldId);
 
       // Share message text
-      const shareText = `╭────────────────────\n├‣  Kino nomi: ${movie.title}\n├‣  Kino kodi: ${movie.code}\n├‣  Qism: ${episodeNumber}\n├‣  Janrlari: ${movie.genre || "Noma'lum"}\n├‣  Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}\n╰────────────────────\n▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️\nhttps://t.me/${botUsername}?start=${movie.code}`;
+      const shareText = `╭────────────────────
+├‣ Kino nomi: ${movie.title}
+├‣ Kino kodi: ${movie.code}
+├‣ Qism: ${episodeNumber}
+├‣ Janrlari: ${movie.genre || "Noma'lum"}
+├‣ Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}
+⁰────────────────────
+
+▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️
+https://t.me/${botUsername}?start=${movie.code}`;
 
       const movieDeepLink = `https://t.me/${botUsername}?start=${movie.code}`;
 
@@ -1490,16 +1515,21 @@ https://t.me/${botUsername}?start=s${code}`;
         .row()
         .switchInline('📤 Ulashish', shareText);
 
-      const videoCaption = `
-╭────────────────────
-├‣  Kino nomi : ${movie.title}
-├‣  Kino kodi: ${movie.code}
-├‣  Qism: ${episodeNumber}
-├‣  Janrlari: ${movie.genre || "Noma'lum"}
-├‣  Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}
-╰────────────────────
+      const videoCaption = `╭────────────────────
+├‣ Kino nomi : ${movie.title}
+├‣ Kino kodi: ${movie.code}
+├‣ Qism: ${episodeNumber}
+├‣ Janrlari: ${movie.genre || "Noma'lum"}
+├‣ Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}
+⁰────────────────────
+
 ▶️ Kinoning to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!
-      `.trim();
+
+<blockquote expandable>⚠️ ESLATMA:
+Biz yuklayotgan kinolar turli saytlardan olinadi.
+🎰 Ba'zi kinolarda kazino, qimor yoki "pulni ko'paytirib beramiz" degan reklama chiqishi mumkin.
+🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi.
+🔞 Ba'zi sahnalar 18+ bo'lishi mumkin – agar noqulay bo'lsa, ko'rishni to'xtating.</blockquote>`.trim();
 
       if (episodeNumber === 1) {
         if (movie.videoFileId) {
@@ -1507,6 +1537,7 @@ https://t.me/${botUsername}?start=s${code}`;
             caption: videoCaption,
             protect_content: true,
             reply_markup: shareKeyboard,
+            parse_mode: 'HTML',
           });
         } else if (movie.videoMessageId) {
           try {
@@ -1599,7 +1630,7 @@ https://t.me/${botUsername}?start=s${code}`;
 
       await ctx.reply(
         `📁 **${field.name}**\n\n` +
-          `Kanalga o'tish uchun quyidagi tugmani bosing:`,
+        `Kanalga o'tish uchun quyidagi tugmani bosing:`,
         {
           parse_mode: 'Markdown',
           reply_markup: keyboard,
@@ -1640,12 +1671,13 @@ https://t.me/${botUsername}?start=s${code}`;
           const channelLink = field?.channelLink || '@Kanal';
 
           const messageText = `╭────────────────────
-├‣  Kino nomi: ${movie.title}
-├‣  Kino kodi: ${code}
-├‣  Qism: ${movie.totalEpisodes || 1}
-├‣  Janrlari: ${movie.genre || "Noma'lum"}
-├‣  Kanal: ${channelLink}
-╰────────────────────
+├‣ Kino nomi: ${movie.title}
+├‣ Kino kodi: ${code}
+├‣ Qism: ${movie.totalEpisodes || 1}
+├‣ Janrlari: ${movie.genre || "Noma'lum"}
+├‣ Kanal: ${channelLink}
+⁰────────────────────
+
 ▶️ Kinoni tomosha qilish uchun pastdagi havolaga bosing. ⬇️
 ${shareLink}`;
 
@@ -1688,12 +1720,13 @@ ${shareLink}`;
           const channelLink = field?.channelLink || '@Kanal';
 
           const messageText = `╭────────────────────
-├‣  Serial nomi: ${serial.title}
-├‣  Serial kodi: ${code}
-├‣  Qism: ${serial.totalEpisodes || episodes.length || 1}
-├‣  Janrlari: ${serial.genre || "Noma'lum"}
-├‣  Kanal: ${channelLink}
-╰────────────────────
+├‣ Serial nomi: ${serial.title}
+├‣ Serial kodi: ${code}
+├‣ Qism: ${serial.totalEpisodes || episodes.length || 1}
+├‣ Janrlari: ${serial.genre || "Noma'lum"}
+├‣ Kanal: ${channelLink}
+⁰────────────────────
+
 ▶️ Serialni tomosha qilish uchun pastdagi havolaga bosing. ⬇️
 ${shareLink}`;
 

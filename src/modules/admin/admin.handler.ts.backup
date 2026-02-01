@@ -883,28 +883,25 @@ export class AdminHandler implements OnModuleInit {
           const field = data.selectedField;
           const botInfo = await ctx.api.getMe();
           const botUsername = botInfo.username || 'bot';
-          const dbCaption = `╭────────────────────
-├‣ Kino nomi : ${data.title}
-├‣ Kino kodi: ${data.code}
-├‣ Qism: ${data.episodeCount || 1}
-├‣ Janrlari: ${data.genre}
-├‣ Kanal: ${field.channelLink || `https://t.me/${field.channelId?.replace('@', '').replace('-100', '')}`}
-╰────────────────────
+          const dbCaption = `▸ Kino nomi : ${data.title}
+▸ Kino kodi: ${data.code}
+▸ Qism: ${data.episodeCount || 1}
+▸ Janrlari: ${data.genre}
+▸ Kanal: ${field.channelLink || `https://t.me/${field.channelId?.replace('@', '').replace('-100', '')}`}
 
 ▶️ Kinoning to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!
 
-<blockquote expandable>⚠️ ESLATMA:
+⚠️ ESLATMA:
 Biz yuklayotgan kinolar turli saytlardan olinadi.
 🎰 Ba'zi kinolarda kazino, qimor yoki "pulni ko'paytirib beramiz" degan reklama chiqishi mumkin.
 🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi.
-🔞 Ba'zi sahnalar 18+ bo'lishi mumkin – agar noqulay bo'lsa, ko'rishni to'xtating.</blockquote>`;
+🔞 Ba'zi sahnalar 18+ bo'lishi mumkin – agar noqulay bo'lsa, ko'rishni to'xtating.`;
 
           const sentVideo = await ctx.api.sendVideo(
             dbChannel.channelId,
             video.file_id,
             {
               caption: dbCaption,
-              parse_mode: 'HTML',
             },
           );
           videoMessages.push({
@@ -930,21 +927,19 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       const botInfo = await ctx.api.getMe();
       const botUsername = botInfo.username || 'bot';
 
-      const caption = `╭────────────────────
-├‣ Kino nomi : ${data.title}
-├‣ Kino kodi: ${data.code}
-├‣ Qism: ${data.episodeCount || 1}
-├‣ Janrlari: ${data.genre}
-├‣ Kanal: ${field.channelLink || `https://t.me/${field.channelId?.replace('@', '').replace('-100', '')}`}
-╰────────────────────
+      const caption = `▸ Kino nomi : ${data.title}
+▸ Kino kodi: ${data.code}
+▸ Qism: ${data.episodeCount || 1}
+▸ Janrlari: ${data.genre}
+▸ Kanal: ${field.channelLink || `https://t.me/${field.channelId?.replace('@', '').replace('-100', '')}`}
 
 ▶️ Kinoning to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!
 
-<blockquote expandable>⚠️ ESLATMA:
+⚠️ ESLATMA:
 Biz yuklayotgan kinolar turli saytlardan olinadi.
 🎰 Ba'zi kinolarda kazino, qimor yoki "pulni ko'paytirib beramiz" degan reklama chiqishi mumkin.
 🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi.
-🔞 Ba'zi sahnalar 18+ bo'lishi mumkin – agar noqulay bo'lsa, ko'rishni to'xtating.</blockquote>`;
+🔞 Ba'zi sahnalar 18+ bo'lishi mumkin – agar noqulay bo'lsa, ko'rishni to'xtating.`;
 
       const keyboard = new InlineKeyboard().url(
         '✨ Tomosha Qilish',
@@ -959,7 +954,6 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
           {
             caption,
             reply_markup: keyboard,
-            parse_mode: 'HTML',
           },
         );
       } else {
@@ -969,7 +963,6 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
           {
             caption,
             reply_markup: keyboard,
-            parse_mode: 'HTML',
           },
         );
       }
@@ -5180,22 +5173,22 @@ Qaysi rol berasiz?
 
         // --- FORMATLASH QISMI ---
         const formattedCaption = `╭────────────────────
-├‣ ${contentType === 'serial' ? 'Serial' : 'Kino'} nomi : ${title || 'Noma\'lum'}
-├‣ ${contentType === 'serial' ? 'Serial' : 'Kino'} kodi: ${code}
-├‣ Janrlari: ${genre || 'Janr ko\'rsatilmadi'}
-├‣ Kanal: ${targetChannelLink}
+├‣  ${contentType === 'serial' ? 'Serial' : 'Kino'} nomi : ${title || 'Noma\'lum'}
+├‣  ${contentType === 'serial' ? 'Serial' : 'Kino'} kodi: ${code}
+├‣  Janrlari: ${genre || 'Janr ko\'rsatilmadi'}
+├‣  Kanal: ${targetChannelLink}
 ╰────────────────────
 
 ▶️ ${contentType === 'serial' ? 'Serialni' : 'Kinoni'} to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!
 
-<blockquote expandable>⚠️ ESLATMA:
+⚠️ ESLATMA:
 Biz yuklayotgan kinolar turli saytlardan olinadi. 
 🎰 Ba’zi kinolarda kazino, qimor yoki “pulni ko‘paytirib beramiz” degan reklama chiqishi mumkin. 
 🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi. 
 🔞 Ba’zi sahnalar 18+ bo‘lishi mumkin – agar noqulay bo‘lsa, ko‘rishni to‘xtating.`;
         // ------------------------
 
-        const deepLink = `https://t.me/${botUsername}?start=${code}`;
+        const deepLink = `https://t.me/${botUsername}?start=${contentType === 'serial' ? 's' : ''}${code}`;
         const keyboard = new InlineKeyboard().url('▶️ Tomosha qilish', deepLink);
 
         if (poster) {

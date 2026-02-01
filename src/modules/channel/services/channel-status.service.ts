@@ -135,7 +135,7 @@ export class ChannelStatusService {
           channelName: s.channelName,
           channelLink: s.channelLink,
           channelType: s.channelType,
-          status: ChannelStatus.left, // Always show as not joined for external
+          status: ChannelStatus.left,
         })),
       ],
     };

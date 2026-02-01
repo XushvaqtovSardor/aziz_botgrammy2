@@ -59,8 +59,6 @@ export class GrammyBotService implements OnModuleInit {
 
   async startBot() {
     try {
-      // Start polling in background without blocking
-      // Don't await - let it run in background
       this.bot
         .start({
           onStart: ({ username }) => {
