@@ -1085,13 +1085,13 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
             '📤 Ulashish',
             shareText,
           );
-          const videoCaption = `<blockquote>╭────────────────────
+          const videoCaption = `╭────────────────────
 ├‣ Kino nomi : ${movie.title}
 ├‣ Kino kodi: ${movie.code}
 ├‣ Qism: 1
 ├‣ Janrlari: ${movie.genre || "Noma'lum"}
 ├‣ Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}
-╰────────────────────</blockquote>
+╰────────────────────
 
 ▶️ Kinoning to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!
 
@@ -1187,7 +1187,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 ├‣ Kanal: ${channelLink}
 ╰────────────────────
 
-▶️ Serialning barcha qismlarini tomosha qiling! 👇
+▶️ Kinoning to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!
 
 <blockquote expandable>⚠️ ESLATMA:
 Biz yuklayotgan kinolar turli saytlardan olinadi.
@@ -1941,7 +1941,7 @@ https://t.me/${botUsername}?start=${movie.code}`;
 ├‣ Qism: ${episodeNumber}
 ├‣ Janrlari: ${movie.genre || "Noma'lum"}
 ├‣ Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}
-⁰────────────────────
+╰────────────────────
 
 ▶️ Kinoning to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!
 
