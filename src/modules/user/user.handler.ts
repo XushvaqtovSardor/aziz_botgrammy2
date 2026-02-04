@@ -2071,7 +2071,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 ├‣ Qism: ${movie.totalEpisodes || 1}
 ├‣ Janrlari: ${movie.genre || "Noma'lum"}
 ├‣ Kanal: ${channelLink}
-⁰────────────────────
+╰────────────────────
 
 ▶️ Kinoni tomosha qilish uchun pastdagi havolaga bosing. ⬇️
 ${shareLink}`;
@@ -2120,7 +2120,7 @@ ${shareLink}`;
 ├‣ Qism: ${serial.totalEpisodes || episodes.length || 1}
 ├‣ Janrlari: ${serial.genre || "Noma'lum"}
 ├‣ Kanal: ${channelLink}
-⁰────────────────────
+╰────────────────────
 
 ▶️ Serialni tomosha qilish uchun pastdagi havolaga bosing. ⬇️
 ${shareLink}`;
