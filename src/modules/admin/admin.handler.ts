@@ -1818,10 +1818,10 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       return;
     }
 
-    let message = '🗑 **Database kanallarni o\'chirish:**\n\n';
+    let message = '🗑 Database kanallarni o\'chirish:\n\n';
     channels.forEach((ch, i) => {
-      message += `${i + 1}. **${ch.channelName}**\n`;
-      message += `   🆔 ID: \`${ch.channelId}\`\n`;
+      message += `${i + 1}. ${ch.channelName}\n`;
+      message += `   🆔 ID: ${ch.channelId}\n`;
       if (ch.channelLink) {
         message += `   🔗 Link: ${ch.channelLink}\n`;
       }
@@ -1839,7 +1839,6 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     inlineKeyboard.text('🔙 Orqaga', 'show_db_channels_menu').row();
 
     await ctx.reply(message, {
-      parse_mode: 'Markdown',
       reply_markup: inlineKeyboard,
     });
   }
