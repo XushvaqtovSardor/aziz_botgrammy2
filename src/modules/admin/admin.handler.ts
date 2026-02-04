@@ -241,11 +241,18 @@ export class AdminHandler implements OnModuleInit {
 
     bot.hears('💾 Database kanallar', async (ctx) => {
       try {
-        await this.withAdminCheck(this.showDatabaseChannels.bind(this))(ctx);
+        this.logger.log(`📢 Database channels requested by ${ctx.from?.id}`);
+        const admin = await this.getAdmin(ctx);
+        if (!admin) {
+          this.logger.warn(`⚠️ Non-admin ${ctx.from?.id} tried to access database channels`);
+          await ctx.reply('❌ Siz admin emassiz!');
+          return;
+        }
+        await this.showDatabaseChannels(ctx);
       } catch (error) {
-        this.logger.error(
-          `❌ Error in database channels handler: ${error.message}`,
-        );
+        this.logger.error(`❌ Error in database channels handler: ${error.message}`);
+        this.logger.error('Stack:', error.stack);
+        await ctx.reply('❌ Xatolik yuz berdi. Iltimos qaytadan urinib ko\'ring.').catch(() => { });
       }
     });
 
@@ -1717,62 +1724,73 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
   private async showDatabaseChannels(ctx: BotContext) {
     const admin = await this.getAdmin(ctx);
-    if (!admin) return;
+    if (!admin) {
+      this.logger.warn('Admin not found in showDatabaseChannels');
+      return;
+    }
 
-    const channels = await this.channelService.findAllDatabase();
-    if (channels.length === 0) {
+    try {
+      this.logger.log(`Fetching database channels for admin ${admin.telegramId}`);
+      const channels = await this.channelService.findAllDatabase();
+      this.logger.log(`Found ${channels.length} database channels`);
+
+      if (channels.length === 0) {
+        const keyboard = new Keyboard()
+          .text("➕ Database kanal qo'shish")
+          .row()
+          .text('🔙 Orqaga')
+          .resized();
+
+        await ctx.reply("💾 Hech qanday database kanal yo'q.", {
+          reply_markup: keyboard,
+        });
+        return;
+      }
+
+      let message = '💾 Database kanallar:\n\n';
+      channels.forEach((ch, i) => {
+        message += `${i + 1}. ${ch.channelName}\n`;
+        message += `   🆔 ID: ${ch.channelId}\n`;
+        if (ch.channelLink) {
+          message += `   🔗 Link: ${ch.channelLink}\n`;
+        }
+        message += `\n`;
+      });
+
+      message += "\n📌 Amallarni tanlang:";
+
+      const inlineKeyboard = new InlineKeyboard();
+
+      // Kanalga o'tish tugmalari
+      channels.forEach((ch, i) => {
+        inlineKeyboard.text(`${i + 1}`, `goto_db_channel_${ch.channelId}`);
+        if ((i + 1) % 3 === 0) {
+          inlineKeyboard.row();
+        }
+      });
+      if (channels.length % 3 !== 0) {
+        inlineKeyboard.row();
+      }
+
+      // O'chirish tugmasi
+      inlineKeyboard.text("🗑 Kanal o'chirish", 'show_delete_db_channels').row();
+
+      await ctx.reply(message, {
+        reply_markup: inlineKeyboard,
+      });
+
       const keyboard = new Keyboard()
         .text("➕ Database kanal qo'shish")
         .row()
         .text('🔙 Orqaga')
         .resized();
 
-      await ctx.reply("💾 Hech qanday database kanal yo'q.", {
-        reply_markup: keyboard,
-      });
-      return;
+      await ctx.reply('Boshqaruv:', { reply_markup: keyboard });
+    } catch (error) {
+      this.logger.error(`Error showing database channels: ${error.message}`);
+      this.logger.error('Stack:', error.stack);
+      await ctx.reply('❌ Database kanallarni yuklashda xatolik yuz berdi.').catch(() => { });
     }
-
-    let message = '💾 **Database kanallar:**\n\n';
-    channels.forEach((ch, i) => {
-      message += `${i + 1}. ${ch.channelName}\n`;
-      message += `   🆔 ID: \`${ch.channelId}\`\n`;
-      if (ch.channelLink) {
-        message += `   🔗 Link: ${ch.channelLink}\n`;
-      }
-      message += `\n`;
-    });
-
-    message += "\n📌 Amallarni tanlang:";
-
-    const inlineKeyboard = new InlineKeyboard();
-
-    // Kanalga o'tish tugmalari
-    channels.forEach((ch, i) => {
-      inlineKeyboard.text(`${i + 1}`, `goto_db_channel_${ch.channelId}`);
-      if ((i + 1) % 3 === 0) {
-        inlineKeyboard.row();
-      }
-    });
-    if (channels.length % 3 !== 0) {
-      inlineKeyboard.row();
-    }
-
-    // O'chirish tugmasi
-    inlineKeyboard.text("🗑 Kanal o'chirish", 'show_delete_db_channels').row();
-
-    await ctx.reply(message, {
-      parse_mode: 'Markdown',
-      reply_markup: inlineKeyboard,
-    });
-
-    const keyboard = new Keyboard()
-      .text("➕ Database kanal qo'shish")
-      .row()
-      .text('🔙 Orqaga')
-      .resized();
-
-    await ctx.reply('Boshqaruv:', { reply_markup: keyboard });
   }
 
   private async showDeleteDatabaseChannels(ctx: BotContext) {

@@ -14,28 +14,13 @@ async function bootstrap() {
       logger: loggerConfig,
     });
 
-    app.enableCors();
+    app.enableCors({
+      origin: '*',
+      credentials: true,
+    });
 
     // Serve static files from public directory
-    app.useStaticAssets(join(__dirname, '..', 'public'), {
-      prefix: '/public/',
-    });
-
-    // Serve admin static files (CSS, JS, etc.)
-    app.useStaticAssets(join(__dirname, '..', 'public', 'admin'), {
-      prefix: '/admin/',
-    });
-
-    // Serve admin login page at /admin
-    app.use('/admin', (req, res, next) => {
-      if (req.url === '/' || req.url === '') {
-        res.sendFile(join(__dirname, '..', 'public', 'admin', 'index.html'));
-      } else if (req.url === '/dashboard' || req.url === '/dashboard.html') {
-        res.sendFile(join(__dirname, '..', 'public', 'admin', 'dashboard.html'));
-      } else {
-        next();
-      }
-    });
+    app.useStaticAssets(join(__dirname, '..', 'public'));
 
     const port = process.env.PORT ?? 3000;
     const webUrl = process.env.WEB_URL || `http://localhost:${port}`;

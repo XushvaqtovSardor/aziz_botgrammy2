@@ -14,7 +14,10 @@ import {
   HttpStatus,
   NotFoundException,
   Logger,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
+import { join } from 'path';
 import { AdminApiGuard } from './admin-api.guard';
 import { AdminService } from '../admin/services/admin.service';
 import { UserService } from '../user/services/user.service';

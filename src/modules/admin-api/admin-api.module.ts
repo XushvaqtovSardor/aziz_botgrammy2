@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AdminApiController } from './admin-api.controller';
+import { AdminPageController } from './admin-page.controller';
 import { AdminApiGuard } from './admin-api.guard';
 import { AdminModule } from '../admin/admin.module';
 import { UserModule } from '../user/user.module';
@@ -17,7 +18,7 @@ import { PaymentModule } from '../payment/payment.module';
     ContentModule,
     PaymentModule,
   ],
-  controllers: [AdminApiController],
+  controllers: [AdminApiController, AdminPageController],
   providers: [AdminApiGuard],
 })
-export class AdminApiModule {}
+export class AdminApiModule { }
