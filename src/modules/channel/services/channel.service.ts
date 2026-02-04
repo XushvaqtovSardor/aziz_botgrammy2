@@ -212,9 +212,15 @@ export class ChannelService {
   }
 
   async deleteDatabaseChannel(id: number) {
-    return this.prisma.databaseChannel.update({
+    // Birinchi bog'liq Field larni tozalash
+    await this.prisma.field.updateMany({
+      where: { databaseChannelId: id },
+      data: { databaseChannelId: null },
+    });
+
+    // Database kanalning o'zini to'liq o'chirish
+    return this.prisma.databaseChannel.delete({
       where: { id },
-      data: { isActive: false },
     });
   }
 

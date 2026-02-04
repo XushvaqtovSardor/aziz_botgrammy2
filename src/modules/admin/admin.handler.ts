@@ -360,6 +360,11 @@ export class AdminHandler implements OnModuleInit {
       if (admin) await this.deleteMandatoryChannel(ctx);
     });
 
+    bot.callbackQuery(/^confirm_delete_db_(\d+)$/, async (ctx) => {
+      const admin = await this.getAdmin(ctx);
+      if (admin) await this.confirmDeleteDatabaseChannel(ctx);
+    });
+
     bot.callbackQuery(/^delete_db_channel_(\d+)$/, async (ctx) => {
       const admin = await this.getAdmin(ctx);
       if (admin) await this.deleteDatabaseChannel(ctx);
@@ -1728,6 +1733,19 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     const channels = await this.channelService.findAllDatabase();
 
+    if (channels.length === 0) {
+      await ctx.editMessageText(
+        "📭 Database kanallar yo'q.\n\n🔙 Orqaga qaytish uchun tugmani bosing.",
+        {
+          reply_markup: new InlineKeyboard().text(
+            '🔙 Orqaga',
+            'back_to_db_channels',
+          ),
+        },
+      );
+      return;
+    }
+
     let message = '💾 **Database kanallar:**\n\n';
     channels.forEach((ch, i) => {
       message += `${i + 1}. ${ch.channelName}\n`;
@@ -1743,7 +1761,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     const inlineKeyboard = new InlineKeyboard();
     channels.forEach((ch) => {
       inlineKeyboard
-        .text(`🗑 ${ch.channelName}`, `delete_db_channel_${ch.id}`)
+        .text(`🗑 ${ch.channelName}`, `confirm_delete_db_${ch.id}`)
         .row();
     });
     inlineKeyboard.text('🔙 Orqaga', 'back_to_db_channels').row();
@@ -1825,14 +1843,60 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     );
   }
 
+  private async confirmDeleteDatabaseChannel(ctx: BotContext) {
+    const admin = await this.getAdmin(ctx);
+    if (!admin) return;
+
+    const channelId = parseInt(ctx.match![1] as string);
+    const channel = await this.prisma.databaseChannel.findUnique({
+      where: { id: channelId },
+      include: {
+        fields: true,
+      },
+    });
+
+    if (!channel) {
+      await ctx.answerCallbackQuery({ text: '❌ Kanal topilmadi!' });
+      await this.showDeleteDatabaseChannels(ctx);
+      return;
+    }
+
+    let message = `⚠️ **Database kanalini o'chirishni tasdiqlang:**\n\n`;
+    message += `📢 Kanal: ${channel.channelName}\n`;
+    message += `🆔 ID: ${channel.channelId}\n`;
+    if (channel.fields.length > 0) {
+      message += `\n📁 Bog'liq fieldlar: ${channel.fields.length} ta\n`;
+      message += `(Fieldlar bog'lanishi tozalanadi)\n`;
+    }
+    message += `\n❗️ Bu amalni ortga qaytarib bo'lmaydi!`;
+
+    const keyboard = new InlineKeyboard()
+      .text('✅ Ha, o\'chirish', `delete_db_channel_${channelId}`)
+      .text('❌ Yo\'q', 'show_delete_db_channels')
+      .row();
+
+    await ctx.editMessageText(message, {
+      parse_mode: 'Markdown',
+      reply_markup: keyboard,
+    });
+    await ctx.answerCallbackQuery();
+  }
+
   private async deleteDatabaseChannel(ctx: BotContext) {
     const admin = await this.getAdmin(ctx);
     if (!admin) return;
 
     const channelId = parseInt(ctx.match![1] as string);
-    await this.channelService.deleteDatabaseChannel(channelId);
 
-    await ctx.answerCallbackQuery({ text: '✅ Database kanal ochirildi' });
+    try {
+      await this.channelService.deleteDatabaseChannel(channelId);
+      await ctx.answerCallbackQuery({ text: '✅ Database kanal o\'chirildi' });
+      this.logger.log(`Database channel ${channelId} deleted by admin ${admin.telegramId}`);
+    } catch (error) {
+      this.logger.error(`Error deleting database channel ${channelId}:`, error);
+      await ctx.answerCallbackQuery({ text: '❌ O\'chirishda xatolik yuz berdi' });
+    }
+
     await this.showDeleteDatabaseChannels(ctx);
   }
 
