@@ -975,6 +975,15 @@ Savollaringiz bo'lsa murojaat qiling:
     if (!ctx.from) return;
 
     try {
+      // Check subscription before sending movie
+      const hasSubscription = await this.checkSubscription(ctx, code, 'movie');
+      if (!hasSubscription) {
+        this.logger.log(
+          `User ${ctx.from.id} tried to access movie ${code} without subscription`,
+        );
+        return;
+      }
+
       const movie = await this.movieService.findByCode(String(code));
       if (!movie) {
         await ctx.reply(`❌ ${code} kodli kino topilmadi.`);
@@ -1120,6 +1129,15 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     try {
       this.logger.log(`[sendSerialToUser] Starting for code: ${code}`);
+
+      // Check subscription before sending serial
+      const hasSubscription = await this.checkSubscription(ctx, code, 'serial');
+      if (!hasSubscription) {
+        this.logger.log(
+          `User ${ctx.from.id} tried to access serial ${code} without subscription`,
+        );
+        return;
+      }
 
       // 1. Serial ma'lumotlarini olish
       const serial = await this.serialService.findByCode(String(code));
@@ -1282,24 +1300,78 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
   ): Promise<boolean> {
     if (!ctx.from) return false;
 
-    const result = await this.channelStatusService.canUserAccessBot(
-      String(ctx.from.id),
-    );
-
-    if (result.canAccess) {
+    // Check if user has premium
+    const user = await this.userService.findByTelegramId(String(ctx.from.id));
+    if (user?.isPremium && user.premiumExpiresAt && user.premiumExpiresAt > new Date()) {
       return true;
     }
 
-    const needsAction = result.statuses.filter(
-      (s) => s.status === ChannelStatus.left,
-    );
+    // Get all mandatory channels
+    const channels = await this.channelService.findAllMandatory();
 
-    const externalChannels = needsAction.filter(
-      (s) => s.channelType === 'EXTERNAL',
-    );
-    const requiredChannels = needsAction.filter(
-      (s) => s.channelType !== 'EXTERNAL',
-    );
+    if (channels.length === 0) {
+      return true;
+    }
+
+    const notSubscribedChannels: {
+      channelName: string;
+      channelLink: string;
+      channelType: string;
+    }[] = [];
+
+    // Real-time check via Telegram API
+    for (const channel of channels) {
+      // Skip external channels - they're always shown but not blocking
+      if (channel.type === 'EXTERNAL') {
+        notSubscribedChannels.push({
+          channelName: channel.channelName,
+          channelLink: channel.channelLink,
+          channelType: channel.type,
+        });
+        continue;
+      }
+
+      // Check membership via Telegram API
+      try {
+        const member = await ctx.api.getChatMember(channel.channelId, ctx.from.id);
+
+        const isSubscribed =
+          member.status === 'member' ||
+          member.status === 'administrator' ||
+          member.status === 'creator' ||
+          (member.status === 'restricted' && 'is_member' in member && member.is_member);
+
+        // For private channels, pending join requests also grant access
+        const hasPendingAccess = channel.type === 'PRIVATE' && member.status === 'left';
+
+        if (!isSubscribed && !hasPendingAccess) {
+          notSubscribedChannels.push({
+            channelName: channel.channelName,
+            channelLink: channel.channelLink,
+            channelType: channel.type,
+          });
+        }
+      } catch (error) {
+        // If we can't check, assume not subscribed
+        this.logger.warn(`Cannot check membership for channel ${channel.channelName}: ${error.message}`);
+        notSubscribedChannels.push({
+          channelName: channel.channelName,
+          channelLink: channel.channelLink,
+          channelType: channel.type,
+        });
+      }
+    }
+
+    // Filter only non-external channels for blocking
+    const blockingChannels = notSubscribedChannels.filter(ch => ch.channelType !== 'EXTERNAL');
+
+    if (blockingChannels.length === 0) {
+      return true;
+    }
+
+    // User is not subscribed - show message
+    const externalChannels = notSubscribedChannels.filter(ch => ch.channelType === 'EXTERNAL');
+    const requiredChannels = blockingChannels;
 
     let message = `❌ Botdan foydalanish uchun quyidagi kanallarga obuna bo'lishingiz yoki join request yuborishingiz kerak:\n\n`;
 
@@ -1479,13 +1551,32 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         });
 
         if (channel) {
-          await this.channelService.incrementMemberCount(channel.id);
-          this.logger.log(`User ${userId} joined channel ${channel.channelName}. Member count incremented.`);
+          // Get user from database
+          const user = await this.prisma.user.findUnique({
+            where: { telegramId: String(userId) },
+          });
 
-          // If it was a pending request, decrement pending count
-          if (channel.type === 'PRIVATE' && oldStatus === 'left') {
-            await this.channelService.decrementPendingRequests(channel.id);
-            this.logger.log(`Decremented pending requests for channel ${channel.channelName}`);
+          if (user) {
+            // Check if user had a pending request
+            const userChannelStatus = await this.prisma.userChannelStatus.findUnique({
+              where: {
+                userId_channelId: {
+                  userId: user.id,
+                  channelId: channel.id,
+                },
+              },
+            });
+
+            const wasRequested = userChannelStatus?.status === 'requested';
+
+            await this.channelService.incrementMemberCount(channel.id);
+            this.logger.log(`User ${userId} joined channel ${channel.channelName}. Member count incremented.`);
+
+            // If user was in pending state, decrement pending count
+            if (wasRequested && channel.type === 'PRIVATE') {
+              await this.channelService.decrementPendingRequests(channel.id);
+              this.logger.log(`Decremented pending requests for channel ${channel.channelName}`);
+            }
           }
         }
       } catch (error) {
@@ -1549,6 +1640,15 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     });
 
     try {
+      // Check subscription before sending episode
+      const hasSubscription = await this.checkSubscription(ctx, 0, 'episode');
+      if (!hasSubscription) {
+        this.logger.log(
+          `User ${ctx.from.id} tried to access episode without subscription`,
+        );
+        return;
+      }
+
       const episode = await this.episodeService.findBySerialIdAndNumber(
         serialId,
         episodeNumber,
@@ -1634,6 +1734,15 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     });
 
     try {
+      // Check subscription before sending movie episode
+      const hasSubscription = await this.checkSubscription(ctx, 0, 'movie_episode');
+      if (!hasSubscription) {
+        this.logger.log(
+          `User ${ctx.from.id} tried to access movie episode without subscription`,
+        );
+        return;
+      }
+
       const movie = await this.movieService.findById(movieId);
       if (!movie) {
         await ctx.reply('❌ Kino topilmadi.');

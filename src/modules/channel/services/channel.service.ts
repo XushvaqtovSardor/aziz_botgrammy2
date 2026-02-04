@@ -197,6 +197,12 @@ export class ChannelService {
   }
 
   async decrementPendingRequests(channelId: number) {
+    const channel = await this.prisma.mandatoryChannel.findUnique({
+      where: { id: channelId },
+    });
+
+    if (!channel || channel.pendingRequests <= 0) return null;
+
     return this.prisma.mandatoryChannel.update({
       where: { id: channelId },
       data: {
@@ -333,6 +339,7 @@ export class ChannelService {
 
         if (hasAccess) {
           // Track user subscription in UserChannelStatus to count members
+          // This is a fallback for when chat_member updates are not available (bot not admin)
           if (isSubscribed && (channel.type === 'PUBLIC' || channel.type === 'PRIVATE')) {
             // Get the internal user ID from database
             const user = await this.prisma.user.findUnique({
@@ -349,39 +356,63 @@ export class ChannelService {
                 },
               });
 
-              // If this is the first time user joined, increment the count
-              if (!userChannelStatus || userChannelStatus.status !== 'joined') {
-                const wasRequested = userChannelStatus?.status === 'requested';
-
+              // Only increment if this is a new join (not already tracked)
+              if (!userChannelStatus) {
                 await this.incrementMemberCount(channel.id);
 
-                // If user was in pending state and now joined, decrement pending count
-                if (wasRequested && channel.type === 'PRIVATE') {
+                // Create the status
+                await this.prisma.userChannelStatus.create({
+                  data: {
+                    userId: user.id,
+                    channelId: channel.id,
+                    status: 'joined',
+                    lastUpdated: new Date(),
+                  },
+                });
+
+                this.logger.log(`User ${userId} joined channel ${channel.channelName}. Member count: incremented (via check).`);
+              } else if (userChannelStatus.status === 'requested') {
+                // User was in pending state and now joined
+                await this.incrementMemberCount(channel.id);
+
+                if (channel.type === 'PRIVATE') {
                   await this.decrementPendingRequests(channel.id);
                   this.logger.log(`User ${userId} approved in channel ${channel.channelName}. Decremented pending requests.`);
                 }
 
-                // Update or create the status
-                await this.prisma.userChannelStatus.upsert({
+                // Update status to joined
+                await this.prisma.userChannelStatus.update({
                   where: {
                     userId_channelId: {
                       userId: user.id,
                       channelId: channel.id,
                     },
                   },
-                  create: {
-                    userId: user.id,
-                    channelId: channel.id,
-                    status: 'joined',
-                    lastUpdated: new Date(),
-                  },
-                  update: {
+                  data: {
                     status: 'joined',
                     lastUpdated: new Date(),
                   },
                 });
 
-                this.logger.log(`User ${userId} joined channel ${channel.channelName}. Member count: incremented.`);
+                this.logger.log(`User ${userId} status updated to joined in channel ${channel.channelName}.`);
+              } else if (userChannelStatus.status === 'left') {
+                // User rejoined after leaving
+                await this.incrementMemberCount(channel.id);
+
+                await this.prisma.userChannelStatus.update({
+                  where: {
+                    userId_channelId: {
+                      userId: user.id,
+                      channelId: channel.id,
+                    },
+                  },
+                  data: {
+                    status: 'joined',
+                    lastUpdated: new Date(),
+                  },
+                });
+
+                this.logger.log(`User ${userId} rejoined channel ${channel.channelName}. Member count: incremented.`);
               }
             }
           }
