@@ -1324,179 +1324,143 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
   }
 
   private async checkSubscription(
-    ctx: BotContext,
-    contentCode?: number,
-    contentType?: string,
-  ): Promise<boolean> {
-    if (!ctx.from) return false;
+  ctx: BotContext,
+  contentCode?: number,
+  contentType?: string,
+): Promise<boolean> {
+  if (!ctx.from) return false;
 
-    // 1. Premium check
-    const user = await this.userService.findByTelegramId(String(ctx.from.id));
-    if (
-      user?.isPremium &&
-      user.premiumExpiresAt &&
-      user.premiumExpiresAt > new Date()
-    ) {
-      return true;
+  // 1. User
+  const user = await this.userService.findByTelegramId(String(ctx.from.id));
+  if (!user) return false;
+
+  // 2. Premium check
+  if (
+    user.isPremium &&
+    user.premiumExpiresAt &&
+    user.premiumExpiresAt > new Date()
+  ) {
+    return true;
+  }
+
+  // 3. Mandatory channels
+  const channels = await this.prisma.mandatoryChannel.findMany({
+    where: { isActive: true },
+    orderBy: { order: 'asc' },
+  });
+
+  if (!channels.length) return true;
+
+  // 4. User channel statuses
+  const statuses = await this.prisma.userChannelStatus.findMany({
+    where: { userId: user.id },
+  });
+
+  const statusMap = new Map<number, ChannelStatus>();
+  statuses.forEach(s => statusMap.set(s.channelId, s.status));
+
+  const notSubscribedChannels: {
+    channelId: number;
+    channelName: string;
+    channelLink: string;
+    channelType: ChannelType;
+  }[] = [];
+
+  // 5. Filter logic
+  for (const channel of channels) {
+    const status = statusMap.get(channel.id) || 'left';
+
+    /*
+      joined    → skip
+      requested → skip
+      left      → show
+    */
+
+    if (status === 'joined' || status === 'requested') {
+      continue;
     }
 
-    // 2. Mandatory channels
-    const channels = await this.channelService.findAllMandatory();
-    if (channels.length === 0) return true;
+    notSubscribedChannels.push({
+      channelId: channel.id,
+      channelName: channel.channelName,
+      channelLink: channel.channelLink,
+      channelType: channel.type,
+    });
+  }
 
-    const notSubscribedChannels: {
-      channelId: number;
-      channelName: string;
-      channelLink: string;
-      channelType: string;
-    }[] = [];
+  // 6. Blocking logic
+  const blockingChannels = notSubscribedChannels.filter(
+    ch => ch.channelType !== 'EXTERNAL',
+  );
 
-    // 3. Real-time Telegram check
-    for (const channel of channels) {
-      let isSubscribed = false;
+  if (blockingChannels.length === 0) {
+    return true;
+  }
 
-      try {
-        const member = await ctx.api.getChatMember(
-          channel.channelId,
-          ctx.from.id,
-        );
+  // 7. Types
+  const publicChannels = notSubscribedChannels.filter(
+    ch => ch.channelType === 'PUBLIC',
+  );
+  const privateChannels = notSubscribedChannels.filter(
+    ch => ch.channelType === 'PRIVATE',
+  );
+  const privateWithAdminApprovalChannels = notSubscribedChannels.filter(
+    ch => ch.channelType === 'PRIVATE_WITH_ADMIN_APPROVAL',
+  );
+  const externalChannels = notSubscribedChannels.filter(
+    ch => ch.channelType === 'EXTERNAL',
+  );
 
-        isSubscribed =
-          member.status === 'member' ||
-          member.status === 'administrator' ||
-          member.status === 'creator' ||
-          (member.status === 'restricted' &&
-            'is_member' in member &&
-            member.is_member);
+  // 8. Message
+  let message = `❌ Botdan foydalanish uchun quyidagi kanallarga obuna bo'lishingiz yoki join request yuborishingiz kerak:\n\n`;
+  message += `<blockquote>💎 Premium obuna sotib olib, kanallarga obuna bo'lmasdan foydalanishingiz mumkin.</blockquote>`;
 
-        // Log for debugging
-        this.logger.log(
-          `[checkSubscription] User ${ctx.from.id} - Channel ${channel.channelName}: ${isSubscribed ? 'SUBSCRIBED ✓' : 'NOT SUBSCRIBED ✗'}`,
-        );
-      } catch (error) {
-        this.logger.error(
-          `[checkSubscription] Cannot check ${channel.channelName}: ${error.message}`,
-        );
-        // Agar tekshirishda xatolik yuz bersa, bu kanalni skip qilamiz
-        // Faqat EXTERNAL kanallar uchun exception
-        if (channel.type === 'EXTERNAL') {
-          isSubscribed = false; // EXTERNAL ni har doim ko'rsatamiz
-        } else {
-          // Boshqa kanallar uchun skip - azo deb hisoblaymiz (xatolik bo'lgani uchun)
-          this.logger.log(`[checkSubscription] Skipping channel ${channel.channelName} due to error`);
-          continue;
-        }
-      }
+  if (contentCode && contentType) {
+    message += `\n\n🎬 Kino kodi: <b>${contentCode}</b>`;
+  }
 
-      // Agar azo bo‘lmasa — tekshiruvlar
-      if (!isSubscribed) {
-        // PRIVATE_WITH_ADMIN_APPROVAL uchun join request tekshiruvi
-        if (channel.type === 'PRIVATE_WITH_ADMIN_APPROVAL') {
-          const existingRequest =
-            await this.prisma.channelJoinRequest.findUnique({
-              where: {
-                userId_channelId: {
-                  userId: user.id,
-                  channelId: channel.id,
-                },
-              },
-            });
+  // 9. Keyboard
+  const keyboard = new InlineKeyboard();
 
-          // Agar PENDING yoki APPROVED bo‘lsa → qayta ko‘rsatma
-          if (
-            existingRequest &&
-            (existingRequest.status === 'PENDING' ||
-              existingRequest.status === 'APPROVED')
-          ) {
-            this.logger.log(
-              `[checkSubscription] User ${ctx.from.id} already has ${existingRequest.status} request for ${channel.channelName}`,
-            );
-            continue;
-          }
-        }
-
-        // not subscribed list ga qo‘shamiz
-        notSubscribedChannels.push({
-          channelId: channel.id,
-          channelName: channel.channelName,
-          channelLink: channel.channelLink,
-          channelType: channel.type,
-        });
-      }
-    }
-
-    // 4. Block qiladiganlar (EXTERNAL dan tashqari)
-    const blockingChannels = notSubscribedChannels.filter(
-      ch => ch.channelType !== 'EXTERNAL',
-    );
-
-    this.logger.log(
-      `[checkSubscription] User ${ctx.from.id}: not subscribed = ${notSubscribedChannels.length}, blocking = ${blockingChannels.length}`,
-    );
-
-    // Agar block qiladigan kanal qolmagan bo‘lsa → o‘tkazib yuboramiz
-    if (blockingChannels.length === 0) {
-      return true;
-    }
-
-    // 5. Type bo‘yicha ajratish (FAqat not subscribed dan!)
-    const publicChannels = notSubscribedChannels.filter(
-      ch => ch.channelType === 'PUBLIC',
-    );
-    const privateChannels = notSubscribedChannels.filter(
-      ch => ch.channelType === 'PRIVATE',
-    );
-    const privateWithAdminApprovalChannels =
-      notSubscribedChannels.filter(
-        ch => ch.channelType === 'PRIVATE_WITH_ADMIN_APPROVAL',
-      );
-    const externalChannels = notSubscribedChannels.filter(
-      ch => ch.channelType === 'EXTERNAL',
-    );
-
-    // 6. Message
-    let message = `❌ Botdan foydalanish uchun quyidagi kanallarga obuna bo'lishingiz yoki join request yuborishingiz kerak:\n\n`;
-    message += `<blockquote>💎 Premium obuna sotib olib, kanallarga obuna bo'lmasdan foydalanishingiz mumkin.</blockquote>`;
-
-    if (contentCode && contentType) {
-      message += `\n\n🎬 Kino kodi: <b>${contentCode}</b>`;
-    }
-
-    // 7. Keyboard
-    const keyboard = new InlineKeyboard();
-
-    // PUBLIC + PRIVATE + EXTERNAL (link bilan)
-    const allChannels = [
-      ...publicChannels,
-      ...privateChannels,
-      ...externalChannels,
-    ];
-
-    allChannels.forEach(channel => {
+  [...publicChannels, ...privateChannels, ...externalChannels].forEach(
+    channel => {
       keyboard.url(channel.channelName, channel.channelLink).row();
-    });
+    },
+  );
 
-    // PRIVATE_WITH_ADMIN_APPROVAL (request button bilan)
-    privateWithAdminApprovalChannels.forEach(channel => {
-      keyboard
-        .text(
-          `📤 ${channel.channelName} uchun so'rov yuborish`,
-          `request_join_${channel.channelId}`,
-        )
-        .row();
-    });
+  privateWithAdminApprovalChannels.forEach(channel => {
+    keyboard
+      .text(
+        `📤 ${channel.channelName} uchun so'rov yuborish`,
+        `request_join_${channel.channelId}`,
+      )
+      .row();
+  });
 
-    keyboard.text('✅ Tekshirish', 'check_subscription').row();
-    keyboard.text('💎 Premium sotib olish', 'show_premium');
+  keyboard.text('✅ Tekshirish', 'check_subscription').row();
+  keyboard.text('💎 Premium sotib olish', 'show_premium');
 
-    // 8. Send
+  // 10. Send (EDIT if possible)
+  if (ctx.callbackQuery?.message) {
+    await ctx.api.editMessageText(
+      ctx.callbackQuery.message.chat.id,
+      ctx.callbackQuery.message.message_id,
+      message,
+      {
+        parse_mode: 'HTML',
+        reply_markup: keyboard,
+      },
+    );
+  } else {
     await ctx.reply(message, {
       parse_mode: 'HTML',
       reply_markup: keyboard,
     });
-
-    return false;
   }
+
+  return false;
+}
+
 
 
   private async handleCheckSubscription(ctx: BotContext) {
