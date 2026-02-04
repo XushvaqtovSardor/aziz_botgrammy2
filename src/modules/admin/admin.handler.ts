@@ -217,7 +217,17 @@ export class AdminHandler implements OnModuleInit {
       }
     });
 
-    bot.hears("🔍 Link bo'yicha qidirish", async (ctx) => {
+    bot.hears("� Qayta yangilash", async (ctx) => {
+      try {
+        await this.withAdminCheck(this.showAllChannelsHistory.bind(this))(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in refresh history handler: ${error.message}`,
+        );
+      }
+    });
+
+    bot.hears("�🔍 Link bo'yicha qidirish", async (ctx) => {
       try {
         await this.withAdminCheck(this.startSearchChannelByLink.bind(this))(
           ctx,
@@ -378,6 +388,11 @@ export class AdminHandler implements OnModuleInit {
     bot.callbackQuery('show_delete_db_channels', async (ctx) => {
       const admin = await this.getAdmin(ctx);
       if (admin) await this.showDeleteDatabaseChannels(ctx);
+    });
+
+    bot.callbackQuery('show_db_channels_menu', async (ctx) => {
+      const admin = await this.getAdmin(ctx);
+      if (admin) await this.showDatabaseChannels(ctx);
     });
 
     bot.callbackQuery('back_to_db_channels', async (ctx) => {
@@ -1516,6 +1531,10 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     const admin = await this.getAdmin(ctx);
     if (!admin) return;
 
+    // Avval barcha kanallar statistikasini yangilash
+    await ctx.reply('⏳ Statistika yangilanmoqda...');
+    await this.channelService.recalculateAllChannelsStats();
+
     const channels = await this.channelService.findAllWithHistory();
 
     if (channels.length === 0) {
@@ -1526,7 +1545,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       return;
     }
 
-    let message = '📊 <b>Majburiy kanallar tarixi:</b>\n\n';
+    let message = '📊 <b>Majburiy kanallar tarixi (Yangilandi):</b>\n\n';
 
     const activeChannels = channels.filter((ch) => ch.isActive);
     const inactiveChannels = channels.filter((ch) => !ch.isActive);
@@ -1536,8 +1555,18 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       activeChannels.forEach((ch, index) => {
         message += `${index + 1}. <b>${ch.channelName}</b>\n`;
         message += `   🔗 ${ch.channelLink}\n`;
-        message += `   📁 Turi: ${ch.type === 'PUBLIC' ? 'Public' : ch.type === 'PRIVATE' ? 'Private' : 'Boshqa'}\n`;
-        message += `   👥 A'zolar: ${ch.currentMembers}`;
+
+        // Kanal turi
+        if (ch.type === 'PUBLIC') {
+          message += `   📁 Turi: 🌐 <b>Public</b> (Ochiq kanal)\n`;
+        } else if (ch.type === 'PRIVATE') {
+          message += `   📁 Turi: 🔒 <b>Private</b> (Tasdiq asosida)\n`;
+        } else {
+          message += `   📁 Turi: ${ch.type}\n`;
+        }
+
+        // A'zolar soni
+        message += `   👥 A'zolar: <b>${ch.currentMembers}</b>`;
 
         if (ch.memberLimit) {
           message += ` / ${ch.memberLimit}`;
@@ -1545,15 +1574,16 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
             (ch.currentMembers / ch.memberLimit) *
             100
           ).toFixed(1);
-          message += ` (${percentage}%)`;
+          message += ` (📊 ${percentage}%)`;
         } else {
-          message += ' (Cheksiz)';
+          message += ' (♾️ Cheksiz)';
         }
 
         message += '\n';
 
-        if (ch.type === 'PRIVATE' && ch.pendingRequests > 0) {
-          message += `   ⏳ Kutilayotgan so'rovlar: ${ch.pendingRequests}\n`;
+        // Private kanal uchun kutilayotgan so'rovlar
+        if (ch.type === 'PRIVATE') {
+          message += `   ⏳ Kutilayotgan so'rovlar: <b>${ch.pendingRequests}</b>\n`;
         }
 
         message += `   📅 Qo'shilgan: ${new Date(ch.createdAt).toLocaleDateString('uz-UZ')}\n\n`;
@@ -1566,8 +1596,14 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       inactiveChannels.forEach((ch, index) => {
         message += `${index + 1}. <b>${ch.channelName}</b>\n`;
         message += `   🔗 ${ch.channelLink}\n`;
-        message += `   📁 Turi: ${ch.type === 'PUBLIC' ? 'Public' : ch.type === 'PRIVATE' ? 'Private' : 'Boshqa'}\n`;
-        message += `   👥 Jami qo'shilganlar: ${ch.currentMembers}`;
+
+        if (ch.type === 'PUBLIC') {
+          message += `   📁 Turi: 🌐 Public\n`;
+        } else if (ch.type === 'PRIVATE') {
+          message += `   📁 Turi: 🔒 Private\n`;
+        }
+
+        message += `   👥 Jami qo'shilganlar: <b>${ch.currentMembers}</b>`;
 
         if (ch.memberLimit) {
           message += ` / ${ch.memberLimit}`;
@@ -1578,7 +1614,13 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       });
     }
 
+    message += '\n📌 <i>Eslatma:</i>\n';
+    message += '• Public - Ochiq kanal, to\'g\'ridan-to\'g\'ri qo\'shilish\n';
+    message += '• Private - So\'rov yuborish va admin tasdiqini kutish\n';
+    message += '• Statistika har safar yangilanadi\n';
+
     const keyboard = new Keyboard()
+      .text("🔄 Qayta yangilash")
       .text("🔍 Link bo'yicha qidirish")
       .row()
       .text('🗑️ Tarixni tozalash')
@@ -1694,11 +1736,18 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     let message = '💾 **Database kanallar:**\n\n';
     channels.forEach((ch, i) => {
       message += `${i + 1}. ${ch.channelName}\n`;
+      message += `   🆔 ID: \`${ch.channelId}\`\n`;
+      if (ch.channelLink) {
+        message += `   🔗 Link: ${ch.channelLink}\n`;
+      }
+      message += `\n`;
     });
 
-    message += "\n📌 Kanalga o'tish uchun quyidagi raqamlardan birini tanlang:";
+    message += "\n📌 Amallarni tanlang:";
 
     const inlineKeyboard = new InlineKeyboard();
+
+    // Kanalga o'tish tugmalari
     channels.forEach((ch, i) => {
       inlineKeyboard.text(`${i + 1}`, `goto_db_channel_${ch.channelId}`);
       if ((i + 1) % 3 === 0) {
@@ -1709,7 +1758,8 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       inlineKeyboard.row();
     }
 
-    inlineKeyboard.text("🗑 O'chirish", 'show_delete_db_channels').row();
+    // O'chirish tugmasi
+    inlineKeyboard.text("🗑 Kanal o'chirish", 'show_delete_db_channels').row();
 
     await ctx.reply(message, {
       parse_mode: 'Markdown',
@@ -1729,34 +1779,38 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     const admin = await this.getAdmin(ctx);
     if (!admin) return;
 
-    await ctx.answerCallbackQuery();
+    try {
+      await ctx.answerCallbackQuery();
+    } catch (error) {
+      // Ignore callback query errors
+    }
 
     const channels = await this.channelService.findAllDatabase();
 
     if (channels.length === 0) {
-      await ctx.editMessageText(
-        "📭 Database kanallar yo'q.\n\n🔙 Orqaga qaytish uchun tugmani bosing.",
+      await ctx.reply(
+        "📭 Database kanallar yo'q.\n\n🔙 Asosiy menyuga qaytish uchun /admin ni bosing.",
         {
           reply_markup: new InlineKeyboard().text(
-            '🔙 Orqaga',
-            'back_to_db_channels',
+            '🔄 Yangilash',
+            'show_db_channels_menu',
           ),
         },
       );
       return;
     }
 
-    let message = '💾 **Database kanallar:**\n\n';
+    let message = '🗑 **Database kanallarni o\'chirish:**\n\n';
     channels.forEach((ch, i) => {
-      message += `${i + 1}. ${ch.channelName}\n`;
-      message += `   ID: ${ch.channelId}\n`;
+      message += `${i + 1}. **${ch.channelName}**\n`;
+      message += `   🆔 ID: \`${ch.channelId}\`\n`;
       if (ch.channelLink) {
-        message += `   Link: ${ch.channelLink}\n`;
+        message += `   🔗 Link: ${ch.channelLink}\n`;
       }
       message += `\n`;
     });
 
-    message += "\n🗑 O'chirish uchun kanalni tanlang:";
+    message += "\n⚠️ O'chirmoqchi bo'lgan kanalni tanlang:";
 
     const inlineKeyboard = new InlineKeyboard();
     channels.forEach((ch) => {
@@ -1764,9 +1818,9 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         .text(`🗑 ${ch.channelName}`, `confirm_delete_db_${ch.id}`)
         .row();
     });
-    inlineKeyboard.text('🔙 Orqaga', 'back_to_db_channels').row();
+    inlineKeyboard.text('🔙 Orqaga', 'show_db_channels_menu').row();
 
-    await ctx.editMessageText(message, {
+    await ctx.reply(message, {
       parse_mode: 'Markdown',
       reply_markup: inlineKeyboard,
     });
@@ -1847,6 +1901,12 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     const admin = await this.getAdmin(ctx);
     if (!admin) return;
 
+    try {
+      await ctx.answerCallbackQuery();
+    } catch (error) {
+      // Ignore
+    }
+
     const channelId = parseInt(ctx.match![1] as string);
     const channel = await this.prisma.databaseChannel.findUnique({
       where: { id: channelId },
@@ -1856,48 +1916,85 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     });
 
     if (!channel) {
-      await ctx.answerCallbackQuery({ text: '❌ Kanal topilmadi!' });
+      await ctx.reply('❌ Kanal topilmadi!');
       await this.showDeleteDatabaseChannels(ctx);
       return;
     }
 
-    let message = `⚠️ **Database kanalini o'chirishni tasdiqlang:**\n\n`;
-    message += `📢 Kanal: ${channel.channelName}\n`;
-    message += `🆔 ID: ${channel.channelId}\n`;
-    if (channel.fields.length > 0) {
-      message += `\n📁 Bog'liq fieldlar: ${channel.fields.length} ta\n`;
-      message += `(Fieldlar bog'lanishi tozalanadi)\n`;
+    let message = `⚠️ **DIQQAT: Database kanalini o'chirish!**\n\n`;
+    message += `📢 **Kanal:** ${channel.channelName}\n`;
+    message += `🆔 **ID:** \`${channel.channelId}\`\n`;
+    if (channel.channelLink) {
+      message += `🔗 **Link:** ${channel.channelLink}\n`;
     }
-    message += `\n❗️ Bu amalni ortga qaytarib bo'lmaydi!`;
+    if (channel.fields.length > 0) {
+      message += `\n📁 **Bog'liq fieldlar:** ${channel.fields.length} ta\n`;
+      message += `   _(Fieldlarning bog'lanishi tozalanadi)_\n`;
+    }
+    message += `\n❗️ **Bu amalni ortga qaytarib bo'lmaydi!**\n`;
+    message += `\nRostdan ham o'chirmoqchimisiz?`;
 
     const keyboard = new InlineKeyboard()
       .text('✅ Ha, o\'chirish', `delete_db_channel_${channelId}`)
-      .text('❌ Yo\'q', 'show_delete_db_channels')
+      .text('❌ Bekor qilish', 'show_delete_db_channels')
       .row();
 
-    await ctx.editMessageText(message, {
+    await ctx.reply(message, {
       parse_mode: 'Markdown',
       reply_markup: keyboard,
     });
-    await ctx.answerCallbackQuery();
   }
 
   private async deleteDatabaseChannel(ctx: BotContext) {
     const admin = await this.getAdmin(ctx);
     if (!admin) return;
 
+    try {
+      await ctx.answerCallbackQuery({ text: '⏳ O\'chirilmoqda...' });
+    } catch (error) {
+      // Ignore
+    }
+
     const channelId = parseInt(ctx.match![1] as string);
 
     try {
+      // Kanalni o'chirishdan oldin ma'lumotlarini saqlab qolamiz
+      const channel = await this.prisma.databaseChannel.findUnique({
+        where: { id: channelId },
+      });
+
+      if (!channel) {
+        await ctx.reply('❌ Kanal topilmadi!');
+        return;
+      }
+
+      const channelName = channel.channelName;
+
+      // O'chirish
       await this.channelService.deleteDatabaseChannel(channelId);
-      await ctx.answerCallbackQuery({ text: '✅ Database kanal o\'chirildi' });
-      this.logger.log(`Database channel ${channelId} deleted by admin ${admin.telegramId}`);
+
+      this.logger.log(`Database channel ${channelId} (${channelName}) deleted by admin ${admin.telegramId}`);
+
+      await ctx.reply(
+        `✅ **Database kanal o'chirildi!**\n\n` +
+        `📢 Kanal: ${channelName}\n` +
+        `🆔 ID: \`${channel.channelId}\``,
+        { parse_mode: 'Markdown' }
+      );
+
+      // Yangilangan ro'yxatni ko'rsatish
+      setTimeout(() => {
+        this.showDeleteDatabaseChannels(ctx);
+      }, 1000);
+
     } catch (error) {
       this.logger.error(`Error deleting database channel ${channelId}:`, error);
-      await ctx.answerCallbackQuery({ text: '❌ O\'chirishda xatolik yuz berdi' });
+      await ctx.reply(
+        '❌ **O\'chirishda xatolik yuz berdi!**\n\n' +
+        `Xatolik: ${error.message}`,
+        { parse_mode: 'Markdown' }
+      );
     }
-
-    await this.showDeleteDatabaseChannels(ctx);
   }
 
   private async showPaymentsMenu(ctx: BotContext) {

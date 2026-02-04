@@ -1513,11 +1513,38 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       });
 
       if (channel) {
+        // Get user from database
+        const user = await this.prisma.user.findUnique({
+          where: { telegramId: String(userId) },
+        });
+
+        if (user) {
+          // Create or update UserChannelStatus
+          await this.prisma.userChannelStatus.upsert({
+            where: {
+              userId_channelId: {
+                userId: user.id,
+                channelId: channel.id,
+              },
+            },
+            create: {
+              userId: user.id,
+              channelId: channel.id,
+              status: 'requested',
+              lastUpdated: new Date(),
+            },
+            update: {
+              status: 'requested',
+              lastUpdated: new Date(),
+            },
+          });
+        }
+
         await this.channelService.incrementPendingRequests(channel.id);
-        this.logger.log(`Incremented pending requests for channel ${channel.channelName}: ${userId}`);
+        this.logger.log(`User ${userId} requested to join ${channel.channelName}. Pending: ${channel.pendingRequests + 1}`);
       }
     } catch (error) {
-      this.logger.error(`Error incrementing pending requests: ${error.message}`);
+      this.logger.error(`Error handling join request: ${error.message}`);
     }
   }
 
@@ -1530,6 +1557,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     const oldStatus = update.old_chat_member.status;
     const newStatus = update.new_chat_member.status;
 
+    // Foydalanuvchi kanalga qo'shildi (member, admin, creator)
     if (
       ['member', 'administrator', 'creator'].includes(newStatus) &&
       !['member', 'administrator', 'creator'].includes(oldStatus)
@@ -1557,7 +1585,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
           });
 
           if (user) {
-            // Check if user had a pending request
+            // Check if user had a pending request or was previously a member
             const userChannelStatus = await this.prisma.userChannelStatus.findUnique({
               where: {
                 userId_channelId: {
@@ -1568,23 +1596,56 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
             });
 
             const wasRequested = userChannelStatus?.status === 'requested';
+            const wasLeft = userChannelStatus?.status === 'left';
+            const isNewMember = !userChannelStatus || userChannelStatus.status !== 'joined';
 
-            await this.channelService.incrementMemberCount(channel.id);
-            this.logger.log(`User ${userId} joined channel ${channel.channelName}. Member count incremented.`);
+            // Update UserChannelStatus
+            await this.prisma.userChannelStatus.upsert({
+              where: {
+                userId_channelId: {
+                  userId: user.id,
+                  channelId: channel.id,
+                },
+              },
+              create: {
+                userId: user.id,
+                channelId: channel.id,
+                status: 'joined',
+                lastUpdated: new Date(),
+              },
+              update: {
+                status: 'joined',
+                lastUpdated: new Date(),
+              },
+            });
+
+            // Increment member count only if this is a new join
+            if (isNewMember) {
+              await this.channelService.incrementMemberCount(channel.id);
+              this.logger.log(
+                `User ${userId} joined ${channel.channelName} (${channel.type}). ` +
+                `Member count incremented. Was: ${wasRequested ? 'requested' : wasLeft ? 'left' : 'new'}`,
+              );
+            }
 
             // If user was in pending state, decrement pending count
             if (wasRequested && channel.type === 'PRIVATE') {
               await this.channelService.decrementPendingRequests(channel.id);
-              this.logger.log(`Decremented pending requests for channel ${channel.channelName}`);
+              this.logger.log(
+                `User ${userId} approved in ${channel.channelName}. ` +
+                `Pending requests decremented.`,
+              );
             }
           }
         }
       } catch (error) {
-        this.logger.error(`Error incrementing member count: ${error.message}`);
+        this.logger.error(`Error handling member join: ${error.message}`);
       }
     }
 
-    if (['left', 'kicked'].includes(newStatus)) {
+    // Foydalanuvchi kanaldan chiqib ketdi yoki bloklandi
+    if (['left', 'kicked', 'banned'].includes(newStatus) &&
+      ['member', 'administrator', 'creator', 'restricted'].includes(oldStatus)) {
       await this.channelStatusService.updateStatus(
         String(userId),
         chatId,
@@ -1593,19 +1654,72 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
       try {
         const channel = await this.prisma.mandatoryChannel.findFirst({
-          where: { channelId: chatId, isActive: true },
+          where: {
+            channelId: chatId,
+            isActive: true,
+            type: { in: ['PUBLIC', 'PRIVATE'] }
+          },
         });
 
         if (channel) {
-          await ctx.api.sendMessage(
-            userId,
-            `⚠️ Siz <b>${channel.channelName}</b> kanaldan chiqib ketdingiz.\n\n` +
-            `Botdan foydalanishda davom etish uchun qayta join request yuboring yoki obuna bo'ling.\n\n` +
-            `Kanal: ${channel.channelLink}`,
-            { parse_mode: 'HTML' },
-          );
+          const user = await this.prisma.user.findUnique({
+            where: { telegramId: String(userId) },
+          });
+
+          if (user) {
+            // Update status to left
+            await this.prisma.userChannelStatus.upsert({
+              where: {
+                userId_channelId: {
+                  userId: user.id,
+                  channelId: channel.id,
+                },
+              },
+              create: {
+                userId: user.id,
+                channelId: channel.id,
+                status: 'left',
+                lastUpdated: new Date(),
+              },
+              update: {
+                status: 'left',
+                lastUpdated: new Date(),
+              },
+            });
+
+            // Decrement member count
+            const updatedChannel = await this.prisma.mandatoryChannel.findUnique({
+              where: { id: channel.id },
+            });
+
+            if (updatedChannel && updatedChannel.currentMembers > 0) {
+              await this.prisma.mandatoryChannel.update({
+                where: { id: channel.id },
+                data: { currentMembers: { decrement: 1 } },
+              });
+              this.logger.log(
+                `User ${userId} left ${channel.channelName}. ` +
+                `Member count decremented.`,
+              );
+            }
+          }
+
+          // Notify user
+          try {
+            await ctx.api.sendMessage(
+              userId,
+              `⚠️ Siz <b>${channel.channelName}</b> kanaldan chiqib ketdingiz.\n\n` +
+              `Botdan foydalanishda davom etish uchun qayta obuna bo'ling.\n\n` +
+              `Kanal: ${channel.channelLink}`,
+              { parse_mode: 'HTML' },
+            );
+          } catch (error) {
+            // User may have blocked the bot
+          }
         }
-      } catch (error) { }
+      } catch (error) {
+        this.logger.error(`Error handling member leave: ${error.message}`);
+      }
     }
   }
 

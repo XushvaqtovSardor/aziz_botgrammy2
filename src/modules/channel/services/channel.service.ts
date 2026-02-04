@@ -505,6 +505,74 @@ export class ChannelService {
     });
   }
 
+  /**
+   * Real-time database'dan a'zolar sonini hisoblash
+   * Bu funksiya UserChannelStatus jadvalidagi ma'lumotlardan foydalanadi
+   */
+  async recalculateChannelStats(channelId: number) {
+    try {
+      // A'zolar sonini hisoblash (status = 'joined')
+      const memberCount = await this.prisma.userChannelStatus.count({
+        where: {
+          channelId: channelId,
+          status: 'joined',
+        },
+      });
+
+      // Kutilayotgan so'rovlar sonini hisoblash (status = 'requested')
+      const pendingCount = await this.prisma.userChannelStatus.count({
+        where: {
+          channelId: channelId,
+          status: 'requested',
+        },
+      });
+
+      // Database'ni yangilash
+      await this.prisma.mandatoryChannel.update({
+        where: { id: channelId },
+        data: {
+          currentMembers: memberCount,
+          pendingRequests: pendingCount,
+        },
+      });
+
+      return { memberCount, pendingCount };
+    } catch (error) {
+      this.logger.error(`Error recalculating stats for channel ${channelId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Barcha kanallar uchun statistikani qayta hisoblash
+   */
+  async recalculateAllChannelsStats() {
+    try {
+      const channels = await this.prisma.mandatoryChannel.findMany({
+        where: { isActive: true },
+      });
+
+      const results = [];
+      for (const channel of channels) {
+        const stats = await this.recalculateChannelStats(channel.id);
+        if (stats) {
+          results.push({
+            channelName: channel.channelName,
+            ...stats,
+          });
+          this.logger.log(
+            `Channel ${channel.channelName}: ${stats.memberCount} members, ${stats.pendingCount} pending`,
+          );
+        }
+      }
+
+      return results;
+    } catch (error) {
+      this.logger.error('Error recalculating all channels stats:', error);
+      return [];
+    }
+  }
+
   async findByLink(link: string) {
     return this.prisma.mandatoryChannel.findFirst({
       where: {
