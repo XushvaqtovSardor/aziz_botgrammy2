@@ -1353,32 +1353,32 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     let message = `❌ Botdan foydalanish uchun quyidagi kanallarga obuna bo'lishingiz yoki join request yuborishingiz kerak:\n\n`;
 
-    // Public kanallar
-    if (publicChannels.length > 0) {
-      message += `🌐 <b>Ochiq kanallar (to'g'ridan-to'g'ri qo'shilish):</b>\n`;
-      publicChannels.forEach((channel, index) => {
-        message += `${index + 1}. ${channel.channelName}\n`;
-      });
-      message += `\n`;
-    }
+    // // Public kanallar
+    // if (publicChannels.length > 0) {
+    //   message += `🌐 <b>Ochiq kanallar (to'g'ridan-to'g'ri qo'shilish):</b>\n`;
+    //   publicChannels.forEach((channel, index) => {
+    //     message += `${index + 1}. ${channel.channelName}\n`;
+    //   });
+    //   message += `\n`;
+    // }
 
-    // Private kanallar
-    if (privateChannels.length > 0) {
-      message += `🔒 <b>Yopiq kanallar (so'rov yuborish kerak):</b>\n`;
-      privateChannels.forEach((channel, index) => {
-        message += `${index + 1}. ${channel.channelName}\n`;
-      });
-      message += `\n`;
-    }
+    // // Private kanallar
+    // if (privateChannels.length > 0) {
+    //   message += `🔒 <b>Yopiq kanallar (so'rov yuborish kerak):</b>\n`;
+    //   privateChannels.forEach((channel, index) => {
+    //     message += `${index + 1}. ${channel.channelName}\n`;
+    //   });
+    //   message += `\n`;
+    // }
 
-    // External kanallar
-    if (externalChannels.length > 0) {
-      message += `🌟 <b>Qo'shimcha kanallar:</b>\n`;
-      externalChannels.forEach((channel, index) => {
-        message += `${index + 1}. ${channel.channelName}\n`;
-      });
-      message += `\n`;
-    }
+    // // External kanallar
+    // if (externalChannels.length > 0) {
+    //   message += `🌟 <b>Qo'shimcha kanallar:</b>\n`;
+    //   externalChannels.forEach((channel, index) => {
+    //     message += `${index + 1}. ${channel.channelName}\n`;
+    //   });
+    //   message += `\n`;
+    // }
 
     message += `<blockquote>💎 Premium obuna sotib olib, kanallarga obuna bo'lmasdan foydalanishingiz mumkin.</blockquote>`;
 
