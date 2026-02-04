@@ -912,17 +912,18 @@ export class AdminHandler implements OnModuleInit {
           const field = data.selectedField;
           const botInfo = await ctx.api.getMe();
           const botUsername = botInfo.username || 'bot';
+          const fieldLink = field.channelLink || 'https://t.me/' + field.channelId?.replace('@', '').replace('-100', '');
           const dbCaption = `╭────────────────────
 ├‣ Kino nomi : ${data.title}
 ├‣ Kino kodi: ${data.code}
 ├‣ Qism: ${data.episodeCount || 1}
 ├‣ Janrlari: ${data.genre}
-├‣ Kanal: ${field.channelLink || `https://t.me/${field.channelId?.replace('@', '').replace('-100', '')}`}
+├‣ Kanal: ${fieldLink}
 ╰────────────────────
 
-▶️ Kinoning to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!
+▶️ Kinoning to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!`
 
-<blockquote expandable>⚠️ ESLATMA:
+            < blockquote expandable>⚠️ ESLATMA:
 Biz yuklayotgan kinolar turli saytlardan olinadi.
 🎰 Ba'zi kinolarda kazino, qimor yoki "pulni ko'paytirib beramiz" degan reklama chiqishi mumkin.
 🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi.
@@ -958,18 +959,19 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       const field = data.selectedField;
       const botInfo = await ctx.api.getMe();
       const botUsername = botInfo.username || 'bot';
+      const fieldLink = field.channelLink || 'https://t.me/' + field.channelId?.replace('@', '').replace('-100', '');
 
       const caption = `╭────────────────────
 ├‣ Kino nomi : ${data.title}
 ├‣ Kino kodi: ${data.code}
 ├‣ Qism: ${data.episodeCount || 1}
 ├‣ Janrlari: ${data.genre}
-├‣ Kanal: ${field.channelLink || `https://t.me/${field.channelId?.replace('@', '').replace('-100', '')}`}
+├‣ Kanal: ${fieldLink}
 ╰────────────────────
 
 ▶️ Kinoning to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!
 
-<blockquote expandable>⚠️ ESLATMA:
+        < blockquote expandable>⚠️ ESLATMA:
 Biz yuklayotgan kinolar turli saytlardan olinadi.
 🎰 Ba'zi kinolarda kazino, qimor yoki "pulni ko'paytirib beramiz" degan reklama chiqishi mumkin.
 🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi.
@@ -5456,7 +5458,7 @@ Qaysi rol berasiz?
 Biz yuklayotgan kinolar turli saytlardan olinadi. 
 🎰 Ba’zi kinolarda kazino, qimor yoki “pulni ko‘paytirib beramiz” degan reklama chiqishi mumkin. 
 🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi. 
-🔞 Ba’zi sahnalar 18+ bo‘lishi mumkin – agar noqulay bo‘lsa, ko‘rishni to‘xtating.`;
+🔞 Ba’zi sahnalar 18+ bo‘lishi mumkin – agar noqulay bo‘lsa, ko‘rishni to‘xtating.</blockquote>`;
         // ------------------------
 
         const deepLink = `https://t.me/${botUsername}?start=${code}`;

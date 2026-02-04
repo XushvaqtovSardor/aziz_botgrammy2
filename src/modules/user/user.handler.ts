@@ -1000,14 +1000,15 @@ Savollaringiz bo'lsa murojaat qiling:
 
       if (movie.totalEpisodes > 1) {
         const movieDeepLink = `https://t.me/${botUsername}?start=${movie.code}`;
+        const fieldLink = field?.channelLink || '@' + (field?.name || 'Kanal');
 
         const caption = `╭────────────────────
 ├‣ Kino nomi: ${movie.title}
 ├‣ Kino kodi: ${movie.code}
 ├‣ Qism: ${movie.totalEpisodes}
 ├‣ Janrlari: ${movie.genre || "Noma'lum"}
-├‣ Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}
-⁰────────────────────
+├‣ Kanal: ${fieldLink}
+╰────────────────────
 
 ▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️
 ${movieDeepLink}`.trim();
@@ -1047,10 +1048,21 @@ ${movieDeepLink}`.trim();
           .text('🔙 Orqaga', 'back_to_main');
 
         if (movie.posterFileId) {
-          await ctx.replyWithPhoto(movie.posterFileId, {
-            caption,
-            reply_markup: keyboard,
-          });
+          // Check if poster is video or photo
+          const isVideoFile = movie.posterFileId.startsWith('BAAC');
+          const posterType = (movie as any).posterType || (isVideoFile ? 'video' : 'photo');
+
+          if (posterType === 'video' || isVideoFile) {
+            await ctx.replyWithVideo(movie.posterFileId, {
+              caption,
+              reply_markup: keyboard,
+            });
+          } else {
+            await ctx.replyWithPhoto(movie.posterFileId, {
+              caption,
+              reply_markup: keyboard,
+            });
+          }
         } else {
           await ctx.reply(caption, {
             reply_markup: keyboard,
@@ -1298,16 +1310,6 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     // Real-time check via Telegram API
     for (const channel of channels) {
-      // Skip external channels - they're always shown but not blocking
-      if (channel.type === 'EXTERNAL') {
-        notSubscribedChannels.push({
-          channelName: channel.channelName,
-          channelLink: channel.channelLink,
-          channelType: channel.type,
-        });
-        continue;
-      }
-
       // Check membership via Telegram API
       try {
         const member = await ctx.api.getChatMember(channel.channelId, ctx.from.id);
@@ -1318,10 +1320,11 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
           member.status === 'creator' ||
           (member.status === 'restricted' && 'is_member' in member && member.is_member);
 
-        // For private channels, pending join requests also grant access
-        const hasPendingAccess = channel.type === 'PRIVATE' && member.status === 'left';
+        // For EXTERNAL channels - always show but don't block
+        // For PRIVATE channels - show if not subscribed (user needs to request join)
+        // For PUBLIC channels - show if not subscribed
 
-        if (!isSubscribed && !hasPendingAccess) {
+        if (!isSubscribed) {
           notSubscribedChannels.push({
             channelName: channel.channelName,
             channelLink: channel.channelLink,
@@ -1463,9 +1466,9 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     let message = `❌ Botdan foydalanish uchun quyidagi kanallarga obuna bo'lishingiz yoki join request yuborishingiz kerak:\n\n`;
 
-    
 
-    
+
+
 
     // // External kanallar
     // if (externalChannels.length > 0) {
@@ -1495,11 +1498,15 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         reply_markup: keyboard,
       });
     } catch (error) {
-      this.logger.error('Error updating subscription message:', error);
-      await ctx.reply(message, {
-        parse_mode: 'HTML',
-        reply_markup: keyboard,
-      });
+      // If edit fails (message too old or not found), send new message
+      try {
+        await ctx.reply(message, {
+          parse_mode: 'HTML',
+          reply_markup: keyboard,
+        });
+      } catch (replyError) {
+        this.logger.error('Error sending subscription message:', replyError);
+      }
     }
   }
 
