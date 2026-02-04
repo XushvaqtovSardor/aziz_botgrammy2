@@ -1073,13 +1073,7 @@ ${movieDeepLink}`;
 ├‣ Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}
 ╰────────────────────
 
-▶️ Kinoning to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!
-
-⚠️ ESLATMA:
-Biz yuklayotgan kinolar turli saytlardan olinadi.
-🎰 Ba'zi kinolarda kazino, qimor yoki "pulni ko'paytirib beramiz" degan reklama chiqishi mumkin.
-🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi.
-🔞 Ba'zi sahnalar 18+ bo'lishi mumkin – agar noqulay bo'lsa, ko'rishni to'xtating.`;
+▶️ Kinoning to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!`;
 
           const shareKeyboard = new InlineKeyboard().switchInline(
             '📤 Ulashish',
@@ -1205,13 +1199,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 ╰────────────────────
 
 ▶️ Serialning barcha qismlarini tomosha qilish uchun:
-${serialDeepLink}
-
-⚠️ ESLATMA:
-Biz yuklayotgan kinolar turli saytlardan olinadi.
-🎰 Ba'zi kinolarda kazino, qimor yoki "pulni ko'paytirib beramiz" degan reklama chiqishi mumkin.
-🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi.
-🔞 Ba'zi sahnalar 18+ bo'lishi mumkin – agar noqulay bo'lsa, ko'rishni to'xtating.`;
+${serialDeepLink}`;
 
       // 9. Keyboard - qismlar tugmalari
       const keyboard = new InlineKeyboard();

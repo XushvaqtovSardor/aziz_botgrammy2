@@ -2807,10 +2807,13 @@ Qaysi guruhga xabar yubormoqchisiz?
         } catch (error) {
           this.logger.error(
             'Failed to get channel info or create channel',
-            error,
           );
+          this.logger.error(`Error message: ${error.message}`);
+          this.logger.error(`Error stack: ${error.stack}`);
           await ctx.reply(
-            "❌ Kanal ma'lumotlarini olishda xatolik yuz berdi.\n\nBotning kanalda admin ekanligiga ishonch hosil qiling va qaytadan urinib ko'ring.",
+            "❌ Kanal ma'lumotlarini olishda xatolik yuz berdi.\n\n" +
+            `Xatolik: ${error.message}\n\n` +
+            "Botning kanalda admin ekanligiga ishonch hosil qiling va qaytadan urinib ko'ring.",
             AdminKeyboard.getCancelButton(),
           );
         }
