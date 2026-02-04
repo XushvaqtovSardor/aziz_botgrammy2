@@ -1370,10 +1370,38 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     }
 
     // User is not subscribed - show message
+    const publicChannels = blockingChannels.filter(ch => ch.channelType === 'PUBLIC');
+    const privateChannels = blockingChannels.filter(ch => ch.channelType === 'PRIVATE');
     const externalChannels = notSubscribedChannels.filter(ch => ch.channelType === 'EXTERNAL');
-    const requiredChannels = blockingChannels;
 
     let message = `❌ Botdan foydalanish uchun quyidagi kanallarga obuna bo'lishingiz yoki join request yuborishingiz kerak:\n\n`;
+
+    // Public kanallar
+    if (publicChannels.length > 0) {
+      message += `🌐 <b>Ochiq kanallar (to'g'ridan-to'g'ri qo'shilish):</b>\n`;
+      publicChannels.forEach((channel, index) => {
+        message += `${index + 1}. ${channel.channelName}\n`;
+      });
+      message += `\n`;
+    }
+
+    // Private kanallar
+    if (privateChannels.length > 0) {
+      message += `🔒 <b>Yopiq kanallar (so'rov yuborish kerak):</b>\n`;
+      privateChannels.forEach((channel, index) => {
+        message += `${index + 1}. ${channel.channelName}\n`;
+      });
+      message += `\n`;
+    }
+
+    // External kanallar
+    if (externalChannels.length > 0) {
+      message += `🌟 <b>Qo'shimcha kanallar:</b>\n`;
+      externalChannels.forEach((channel, index) => {
+        message += `${index + 1}. ${channel.channelName}\n`;
+      });
+      message += `\n`;
+    }
 
     message += `<blockquote>💎 Premium obuna sotib olib, kanallarga obuna bo'lmasdan foydalanishingiz mumkin.</blockquote>`;
 
@@ -1383,15 +1411,11 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     const keyboard = new InlineKeyboard();
 
-    requiredChannels.forEach((channel) => {
+    // Barcha kanallarni bitta inline keyboard'da ko'rsatish
+    const allChannels = [...publicChannels, ...privateChannels, ...externalChannels];
+    allChannels.forEach((channel) => {
       keyboard.url(channel.channelName, channel.channelLink).row();
     });
-
-    if (externalChannels.length > 0) {
-      externalChannels.forEach((channel) => {
-        keyboard.url(channel.channelName, channel.channelLink).row();
-      });
-    }
 
     keyboard.text('✅ Tekshirish', 'check_subscription').row();
     keyboard.text('💎 Premium sotib olish', 'show_premium');
@@ -1450,28 +1474,54 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       (s) => s.status === ChannelStatus.left,
     );
 
+    const publicChannels = needsAction.filter(
+      (s) => s.channelType === 'PUBLIC',
+    );
+    const privateChannels = needsAction.filter(
+      (s) => s.channelType === 'PRIVATE',
+    );
     const externalChannels = needsAction.filter(
       (s) => s.channelType === 'EXTERNAL',
     );
-    const requiredChannels = needsAction.filter(
-      (s) => s.channelType !== 'EXTERNAL',
-    );
 
     let message = `❌ Botdan foydalanish uchun quyidagi kanallarga obuna bo'lishingiz yoki join request yuborishingiz kerak:\n\n`;
+
+    // Public kanallar
+    if (publicChannels.length > 0) {
+      message += `🌐 <b>Ochiq kanallar (to'g'ridan-to'g'ri qo'shilish):</b>\n`;
+      publicChannels.forEach((channel, index) => {
+        message += `${index + 1}. ${channel.channelName}\n`;
+      });
+      message += `\n`;
+    }
+
+    // Private kanallar
+    if (privateChannels.length > 0) {
+      message += `🔒 <b>Yopiq kanallar (so'rov yuborish kerak):</b>\n`;
+      privateChannels.forEach((channel, index) => {
+        message += `${index + 1}. ${channel.channelName}\n`;
+      });
+      message += `\n`;
+    }
+
+    // External kanallar
+    if (externalChannels.length > 0) {
+      message += `🌟 <b>Qo'shimcha kanallar:</b>\n`;
+      externalChannels.forEach((channel, index) => {
+        message += `${index + 1}. ${channel.channelName}\n`;
+      });
+      message += `\n`;
+    }
 
     message += `<blockquote>💎 Premium obuna sotib olib, kanallarga obuna bo'lmasdan foydalanishingiz mumkin.</blockquote>`;
 
     const keyboard = new InlineKeyboard();
 
-    requiredChannels.forEach((channel) => {
+    // Barcha kanallarni bitta inline keyboard'da ko'rsatish
+    const allChannels = [...publicChannels, ...privateChannels, ...externalChannels];
+    allChannels.forEach((channel) => {
       keyboard.url(channel.channelName, channel.channelLink).row();
     });
-
-    if (externalChannels.length > 0) {
-      externalChannels.forEach((channel) => {
-        keyboard.url(channel.channelName, channel.channelLink).row();
-      });
-    }
 
     keyboard.text('✅ Tekshirish', 'check_subscription').row();
     keyboard.text('💎 Premium sotib olish', 'show_premium');
