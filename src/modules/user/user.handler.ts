@@ -1034,16 +1034,12 @@ ${movieDeepLink}`.trim();
         if (totalButtons % 5 !== 0) keyboard.row();
 
         // Ulashish uchun oddiy matn (HTML-siz)
-        const shareText = `╭────────────────────
+        const shareText = `╭────────────────────────────
 ├‣ Kino nomi: ${movie.title}
 ├‣ Kino kodi: ${movie.code}
-├‣ Qismlar: ${movie.totalEpisodes}
-├‣ Janrlari: ${movie.genre || "Noma'lum"}
-├‣ Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}
-╰────────────────────
-
-▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️
-${movieDeepLink}`;
+├‣ Kino linki: ${movieDeepLink}
+╰────────────────────────────
+▶️ Kinoning to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!`;
 
         keyboard
           .switchInline('📤 Ulashish', shareText)
@@ -1065,14 +1061,11 @@ ${movieDeepLink}`;
       } else {
         if (movie.videoFileId) {
           // 1. Ulashish uchun oddiy matn (HTML-siz)
-          const shareText = `╭────────────────────
-├‣ Kino nomi : ${movie.title}
+          const shareText = `╭────────────────────────────
+├‣ Kino nomi: ${movie.title}
 ├‣ Kino kodi: ${movie.code}
-├‣ Qism: 1
-├‣ Janrlari: ${movie.genre || "Noma'lum"}
-├‣ Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}
-╰────────────────────
-
+├‣ Kino linki: https://t.me/${botUsername}?start=${movie.code}
+╰────────────────────────────
 ▶️ Kinoning to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!`;
 
           const shareKeyboard = new InlineKeyboard().switchInline(
@@ -1190,16 +1183,12 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 🔞 Ba'zi sahnalar 18+ bo'lishi mumkin – agar noqulay bo'lsa, ko'rishni to'xtating.</blockquote>`;
 
       // 8. Ulashish uchun oddiy matn (HTML-siz)
-      const shareText = `╭────────────────────
+      const shareText = `╭────────────────────────────
 ├‣ Serial nomi: ${serial.title}
 ├‣ Serial kodi: ${serial.code}
-├‣ Qismlar: ${episodes.length || serial.totalEpisodes || 0}
-├‣ Janrlari: ${serial.genre || "Noma'lum"}
-├‣ Kanal: ${channelLink}
-╰────────────────────
-
-▶️ Serialning barcha qismlarini tomosha qilish uchun:
-${serialDeepLink}`;
+├‣ Serial linki: ${serialDeepLink}
+╰────────────────────────────
+▶️ Serialning to'liq qismlarini @${botUsername} dan tomosha qilishingiz mumkin!`;
 
       // 9. Keyboard - qismlar tugmalari
       const keyboard = new InlineKeyboard();
@@ -1814,7 +1803,13 @@ ${serialDeepLink}`;
       const botUsername = (await ctx.api.getMe()).username;
       const field = await this.fieldService.findOne(serial.fieldId);
 
-      const shareText = `╭────────────────────\n├‣  Serial nomi: ${serial.title}\n├‣  Serial kodi: ${serial.code}\n├‣  Qism: ${episodeNumber}\n├‣  Janrlari: ${serial.genre || "Noma'lum"}\n├‣  Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}\n╰────────────────────\n▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️\nhttps://t.me/${botUsername}?start=s${serial.code}`;
+      const shareText = `╭────────────────────────────
+├‣ Serial nomi: ${serial.title}
+├‣ Serial kodi: ${serial.code}
+├‣ Qism: ${episodeNumber}
+├‣ Serial linki: https://t.me/${botUsername}?start=s${serial.code}
+╰────────────────────────────
+▶️ Serialning to'liq qismlarini @${botUsername} dan tomosha qilishingiz mumkin!`;
 
       const serialDeepLink = `https://t.me/${botUsername}?start=s${serial.code}`;
 
@@ -1905,16 +1900,13 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       const field = await this.fieldService.findOne(movie.fieldId);
 
       // Share message text
-      const shareText = `╭────────────────────
+      const shareText = `╭────────────────────────────
 ├‣ Kino nomi: ${movie.title}
 ├‣ Kino kodi: ${movie.code}
 ├‣ Qism: ${episodeNumber}
-├‣ Janrlari: ${movie.genre || "Noma'lum"}
-├‣ Kanal: ${field?.channelLink || '@' + (field?.name || 'Kanal')}
-⁰────────────────────
-
-▶️ Kinoni tomosha qilish uchun pastdagi taklif havolasi ustiga bosing. ⬇️
-https://t.me/${botUsername}?start=${movie.code}`;
+├‣ Kino linki: https://t.me/${botUsername}?start=${movie.code}
+╰────────────────────────────
+▶️ Kinoning to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!`;
 
       const movieDeepLink = `https://t.me/${botUsername}?start=${movie.code}`;
 
