@@ -16,7 +16,7 @@ export interface SubscriptionStatus {
 export class ChannelService {
   private readonly logger = new Logger(ChannelService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async create(
     channelId: string,
@@ -332,6 +332,60 @@ export class ChannelService {
         }
 
         if (hasAccess) {
+          // Track user subscription in UserChannelStatus to count members
+          if (isSubscribed && (channel.type === 'PUBLIC' || channel.type === 'PRIVATE')) {
+            // Get the internal user ID from database
+            const user = await this.prisma.user.findUnique({
+              where: { telegramId: String(userId) },
+            });
+
+            if (user) {
+              const userChannelStatus = await this.prisma.userChannelStatus.findUnique({
+                where: {
+                  userId_channelId: {
+                    userId: user.id,
+                    channelId: channel.id,
+                  },
+                },
+              });
+
+              // If this is the first time user joined, increment the count
+              if (!userChannelStatus || userChannelStatus.status !== 'joined') {
+                const wasRequested = userChannelStatus?.status === 'requested';
+
+                await this.incrementMemberCount(channel.id);
+
+                // If user was in pending state and now joined, decrement pending count
+                if (wasRequested && channel.type === 'PRIVATE') {
+                  await this.decrementPendingRequests(channel.id);
+                  this.logger.log(`User ${userId} approved in channel ${channel.channelName}. Decremented pending requests.`);
+                }
+
+                // Update or create the status
+                await this.prisma.userChannelStatus.upsert({
+                  where: {
+                    userId_channelId: {
+                      userId: user.id,
+                      channelId: channel.id,
+                    },
+                  },
+                  create: {
+                    userId: user.id,
+                    channelId: channel.id,
+                    status: 'joined',
+                    lastUpdated: new Date(),
+                  },
+                  update: {
+                    status: 'joined',
+                    lastUpdated: new Date(),
+                  },
+                });
+
+                this.logger.log(`User ${userId} joined channel ${channel.channelName}. Member count: incremented.`);
+              }
+            }
+          }
+
           subscribedChannels.push({
             id: channel.id,
             channelId: channel.channelId,
