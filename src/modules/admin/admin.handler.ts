@@ -933,7 +933,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
             video.file_id,
             {
               caption: dbCaption,
-              parse_mode: 'HTML',
+              // parse_mode: 'HTML',
             },
           );
           videoMessages.push({
