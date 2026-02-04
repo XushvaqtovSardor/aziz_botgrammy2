@@ -121,6 +121,12 @@ export class ChannelService {
     });
   }
 
+  async findDatabaseChannelByChannelId(channelId: string) {
+    return this.prisma.databaseChannel.findUnique({
+      where: { channelId },
+    });
+  }
+
   async createDatabaseChannel(data: {
     channelId: string;
     channelName: string;

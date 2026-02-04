@@ -1938,17 +1938,17 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       return;
     }
 
-    let message = `⚠️ **DIQQAT: Database kanalini o'chirish!**\n\n`;
-    message += `📢 **Kanal:** ${channel.channelName}\n`;
-    message += `🆔 **ID:** \`${channel.channelId}\`\n`;
+    let message = `⚠️ DIQQAT: Database kanalini o'chirish!\n\n`;
+    message += `📢 Kanal: ${channel.channelName}\n`;
+    message += `🆔 ID: ${channel.channelId}\n`;
     if (channel.channelLink) {
-      message += `🔗 **Link:** ${channel.channelLink}\n`;
+      message += `🔗 Link: ${channel.channelLink}\n`;
     }
     if (channel.fields.length > 0) {
-      message += `\n📁 **Bog'liq fieldlar:** ${channel.fields.length} ta\n`;
-      message += `   _(Fieldlarning bog'lanishi tozalanadi)_\n`;
+      message += `\n📁 Bog'liq fieldlar: ${channel.fields.length} ta\n`;
+      message += `   (Fieldlarning bog'lanishi tozalanadi)\n`;
     }
-    message += `\n❗️ **Bu amalni ortga qaytarib bo'lmaydi!**\n`;
+    message += `\n❗️ Bu amalni ortga qaytarib bo'lmaydi!\n`;
     message += `\nRostdan ham o'chirmoqchimisiz?`;
 
     const keyboard = new InlineKeyboard()
@@ -1957,7 +1957,6 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       .row();
 
     await ctx.reply(message, {
-      parse_mode: 'Markdown',
       reply_markup: keyboard,
     });
   }
@@ -2783,12 +2782,44 @@ Qaysi guruhga xabar yubormoqchisiz?
         }
 
         try {
-          const chat = await ctx.api.getChat(channelId);
-          const channelName = 'title' in chat ? chat.title : channelId;
+          // Check if channel already exists
+          const existingChannel = await this.channelService.findDatabaseChannelByChannelId(channelId);
+          if (existingChannel) {
+            await ctx.reply(
+              `⚠️ Bu kanal allaqachon database kanallar ro'yxatida mavjud!\n\n` +
+              `📢 ${existingChannel.channelName}\n` +
+              `🆔 ${channelId}\n` +
+              `${existingChannel.channelLink ? `🔗 ${existingChannel.channelLink}` : ''}`,
+              AdminKeyboard.getAdminMainMenu(admin.role),
+            );
+            this.sessionService.clearSession(ctx.from.id);
+            return;
+          }
 
+          let channelName: string;
           let channelLink: string | undefined;
-          if ('username' in chat && chat.username) {
-            channelLink = `https://t.me/${chat.username}`;
+
+          try {
+            const chat = await ctx.api.getChat(channelId);
+            channelName = 'title' in chat ? chat.title : channelId;
+
+            if ('username' in chat && chat.username) {
+              channelLink = `https://t.me/${chat.username}`;
+            }
+          } catch (getChatError) {
+            // Bot can't access the chat - ask admin to provide channel name
+            this.logger.warn(`Cannot access chat ${channelId}, asking for manual input`);
+            this.sessionService.updateSessionData(ctx.from.id, { channelId });
+            this.sessionService.nextStep(ctx.from.id);
+            await ctx.reply(
+              `⚠️ Bot bu kanalga kira olmadi.\n\n` +
+              `Bu quyidagi sabablarga ko'ra bo'lishi mumkin:\n` +
+              `• Bot kanalda admin emas\n` +
+              `• Kanal ID noto'g'ri\n\n` +
+              `📝 Agar kanal to'g'ri bo'lsa, botni kanalga admin qiling va kanal nomini kiriting:`,
+              AdminKeyboard.getCancelButton(),
+            );
+            return;
           }
 
           await this.channelService.createDatabaseChannel({
@@ -2816,6 +2847,43 @@ Qaysi guruhga xabar yubormoqchisiz?
             "Botning kanalda admin ekanligiga ishonch hosil qiling va qaytadan urinib ko'ring.",
             AdminKeyboard.getCancelButton(),
           );
+        }
+        break;
+
+      case 1: // Channel name (manual input)
+        const channelName = text.trim();
+        if (!channelName) {
+          await ctx.reply(
+            "❌ Kanal nomi bo'sh bo'lishi mumkin emas!",
+            AdminKeyboard.getCancelButton(),
+          );
+          return;
+        }
+
+        const data = session.data;
+        try {
+          await this.channelService.createDatabaseChannel({
+            channelId: data.channelId,
+            channelName: channelName,
+            channelLink: undefined,
+            isActive: true,
+          });
+
+          this.sessionService.clearSession(ctx.from.id);
+          await ctx.reply(
+            `✅ Database kanal muvaffaqiyatli qo'shildi!\n\n` +
+            `📢 ${channelName}\n` +
+            `🆔 ${data.channelId}\n\n` +
+            `⚠️ Bot kanalga kirish huquqiga ega emas. Videolarni yuklash uchun botni kanalga admin qiling.`,
+            AdminKeyboard.getAdminMainMenu(admin.role),
+          );
+        } catch (error) {
+          this.logger.error('Failed to create database channel manually:', error);
+          await ctx.reply(
+            `❌ Kanal yaratishda xatolik: ${error.message}`,
+            AdminKeyboard.getAdminMainMenu(admin.role),
+          );
+          this.sessionService.clearSession(ctx.from.id);
         }
         break;
     }
