@@ -8,7 +8,7 @@ export class MovieService {
   constructor(
     private prisma: PrismaService,
     private codeGenerator: CodeGeneratorService,
-  ) {}
+  ) { }
 
   async create(data: MovieData) {
     const { thumbnailFileId, ...movieData } = data;
@@ -93,6 +93,12 @@ export class MovieService {
         field: true,
       },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async getMovieCount(fieldId?: number): Promise<number> {
+    return this.prisma.movie.count({
+      where: fieldId ? { fieldId } : undefined,
     });
   }
 

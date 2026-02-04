@@ -8,7 +8,7 @@ export class SerialService {
   constructor(
     private prisma: PrismaService,
     private codeGenerator: CodeGeneratorService,
-  ) {}
+  ) { }
 
   async create(data: SerialData) {
     const codeNum =
@@ -93,6 +93,12 @@ export class SerialService {
         episodes: true,
       },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async getSerialCount(fieldId?: number): Promise<number> {
+    return this.prisma.serial.count({
+      where: fieldId ? { fieldId } : undefined,
     });
   }
 

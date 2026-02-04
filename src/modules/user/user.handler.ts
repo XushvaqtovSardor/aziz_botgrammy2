@@ -1429,6 +1429,24 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       chatId,
       ChannelStatus.requested,
     );
+
+    // Increment pending requests count for PRIVATE channels
+    try {
+      const channel = await this.prisma.mandatoryChannel.findFirst({
+        where: {
+          channelId: chatId,
+          isActive: true,
+          type: 'PRIVATE'
+        },
+      });
+
+      if (channel) {
+        await this.channelService.incrementPendingRequests(channel.id);
+        this.logger.log(`Incremented pending requests for channel ${channel.channelName}: ${userId}`);
+      }
+    } catch (error) {
+      this.logger.error(`Error incrementing pending requests: ${error.message}`);
+    }
   }
 
   private async handleChatMemberUpdate(ctx: BotContext) {
@@ -1449,6 +1467,30 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         chatId,
         ChannelStatus.joined,
       );
+
+      // Increment member count for PUBLIC/PRIVATE channels
+      try {
+        const channel = await this.prisma.mandatoryChannel.findFirst({
+          where: {
+            channelId: chatId,
+            isActive: true,
+            type: { in: ['PUBLIC', 'PRIVATE'] }
+          },
+        });
+
+        if (channel) {
+          await this.channelService.incrementMemberCount(channel.id);
+          this.logger.log(`User ${userId} joined channel ${channel.channelName}. Member count incremented.`);
+
+          // If it was a pending request, decrement pending count
+          if (channel.type === 'PRIVATE' && oldStatus === 'left') {
+            await this.channelService.decrementPendingRequests(channel.id);
+            this.logger.log(`Decremented pending requests for channel ${channel.channelName}`);
+          }
+        }
+      } catch (error) {
+        this.logger.error(`Error incrementing member count: ${error.message}`);
+      }
     }
 
     if (['left', 'kicked'].includes(newStatus)) {

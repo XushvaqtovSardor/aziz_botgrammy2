@@ -40,7 +40,7 @@ export class AdminApiController {
     private serialService: SerialService,
     private paymentService: PaymentService,
     private prisma: PrismaService,
-  ) {}
+  ) { }
 
   @Get('me')
   getMe(@Request() req: any) {
@@ -52,12 +52,22 @@ export class AdminApiController {
   async getStatistics() {
     this.logger.log('📊 Statistics endpoint accessed');
     try {
-      const [userStats, paymentStats] = await Promise.all([
+      const [userStats, paymentStats, moviesCount, serialsCount] = await Promise.all([
         this.userService.getUserStatistics(),
         this.paymentService.getStatistics(),
+        this.movieService.getMovieCount(),
+        this.serialService.getSerialCount(),
       ]);
 
       return {
+        totalUsers: userStats.totalUsers || 0,
+        activeUsers: userStats.activeUsers || 0,
+        premiumUsers: userStats.premiumUsers || 0,
+        totalMovies: moviesCount || 0,
+        totalSerials: serialsCount || 0,
+        pendingPayments: paymentStats.pending || 0,
+        approvedPayments: paymentStats.approved || 0,
+        rejectedPayments: paymentStats.rejected || 0,
         users: userStats,
         payments: paymentStats,
       };
@@ -381,14 +391,14 @@ export class AdminApiController {
     if (movie.channelMessageId && movie.field?.channelId) {
       try {
         deletedFromFieldChannel = true;
-      } catch (error) {}
+      } catch (error) { }
     }
 
     let deletedFromDatabaseChannel = false;
     if (movie.channelMessageId && movie.field?.databaseChannel?.channelId) {
       try {
         deletedFromDatabaseChannel = true;
-      } catch (error) {}
+      } catch (error) { }
     }
 
     await this.prisma.movieEpisode.deleteMany({

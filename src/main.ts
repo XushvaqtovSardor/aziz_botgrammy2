@@ -16,7 +16,15 @@ async function bootstrap() {
 
     app.enableCors();
 
-    app.useStaticAssets(join(__dirname, '..', 'public'));
+    // Serve static files from public directory
+    app.useStaticAssets(join(__dirname, '..', 'public'), {
+      prefix: '/public/',
+    });
+
+    // Serve admin static files directly (CSS, JS, etc.)
+    app.useStaticAssets(join(__dirname, '..', 'public', 'admin'), {
+      prefix: '/admin/',
+    });
 
     const port = process.env.PORT ?? 3000;
 
@@ -36,7 +44,7 @@ async function bootstrap() {
     process.on('SIGINT', async () => {
       try {
         await grammyBot.bot.stop();
-      } catch (error) {}
+      } catch (error) { }
       await app.close();
       process.exit(0);
     });
@@ -44,7 +52,7 @@ async function bootstrap() {
     process.on('SIGTERM', async () => {
       try {
         await grammyBot.bot.stop();
-      } catch (error) {}
+      } catch (error) { }
       await app.close();
       process.exit(0);
     });

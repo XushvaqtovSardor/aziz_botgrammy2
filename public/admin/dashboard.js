@@ -13,7 +13,7 @@ const token = localStorage.getItem('admin_token');
 const adminData = JSON.parse(localStorage.getItem('admin_data') || '{}');
 
 if (!token) {
-  window.location.href = '/admin/index.html';
+  window.location.href = '/admin';
 }
 
 const API_BASE = '/api/admin';
@@ -1347,5 +1347,5 @@ function closeModal() {
 function logout() {
   localStorage.removeItem('admin_token');
   localStorage.removeItem('admin_data');
-  window.location.href = '/admin/index.html';
+  window.location.href = '/admin';
 }

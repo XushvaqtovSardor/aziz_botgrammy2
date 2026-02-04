@@ -548,56 +548,56 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
   }
 
   async finalizeAddingEpisodes(ctx: BotContext, updateField: boolean) {
-  if (!ctx.from) return;
+    if (!ctx.from) return;
 
-  const session = this.sessionService.getSession(ctx.from.id);
-  if (!session || !session.data) {
-    await ctx.reply('❌ Session topilmadi. Qaytadan boshlang.');
-    return;
-  }
+    const session = this.sessionService.getSession(ctx.from.id);
+    if (!session || !session.data) {
+      await ctx.reply('❌ Session topilmadi. Qaytadan boshlang.');
+      return;
+    }
 
-  const {
-    contentType,
-    movieId,
-    movieCode,
-    movieTitle,
-    movieGenre,
-    movieFieldId,
-    movieChannelMessageId,
-    serialId,
-    serialCode,
-    serialTitle,
-    serialGenre,
-    serialFieldId,
-    serialChannelMessageId,
-    addedEpisodes = [],
-  } = session.data;
+    const {
+      contentType,
+      movieId,
+      movieCode,
+      movieTitle,
+      movieGenre,
+      movieFieldId,
+      movieChannelMessageId,
+      serialId,
+      serialCode,
+      serialTitle,
+      serialGenre,
+      serialFieldId,
+      serialChannelMessageId,
+      addedEpisodes = [],
+    } = session.data;
 
-  if (addedEpisodes.length === 0) {
-    await ctx.reply("❌ Hech qanday qism qo'shilmadi.");
-    this.sessionService.clearSession(ctx.from.id);
-    return;
-  }
+    if (addedEpisodes.length === 0) {
+      await ctx.reply("❌ Hech qanday qism qo'shilmadi.");
+      this.sessionService.clearSession(ctx.from.id);
+      return;
+    }
 
-  try {
-    await ctx.reply('⏳ Qismlar yuklanmoqda...');
+    try {
+      await ctx.reply('⏳ Qismlar yuklanmoqda...');
 
-    const dbChannels = await this.channelService.findAllDatabase();
-    const botInfo = await ctx.api.getMe();
-    const botUsername = botInfo.username;
+      const dbChannels = await this.channelService.findAllDatabase();
+      const botInfo = await ctx.api.getMe();
+      const botUsername = botInfo.username;
 
-    if (contentType === 'movie') {
-      if (!movieId) {
-        await ctx.reply("❌ Kino ma'lumotlari topilmadi.");
-        this.sessionService.clearSession(ctx.from.id);
-        return;
-      }
+      if (contentType === 'movie') {
+        if (!movieId) {
+          await ctx.reply("❌ Kino ma'lumotlari topilmadi.");
+          this.sessionService.clearSession(ctx.from.id);
+          return;
+        }
 
-      for (const ep of addedEpisodes) {
-        const videoMessages: { channelId: string; messageId: number }[] = [];
-        for (const dbChannel of dbChannels) {
-          try {
-            const caption = `╭────────────────────
+        for (const ep of addedEpisodes) {
+          const videoMessages: { channelId: string; messageId: number }[] = [];
+          for (const dbChannel of dbChannels) {
+            try {
+              const caption = `╭────────────────────
 ├‣ Kino nomi: ${movieTitle}
 ├‣ Kino kodi: ${movieCode}
 ├‣ Qism: ${ep.episodeNumber}
@@ -613,40 +613,40 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi.
 🔞 Ba'zi sahnalar 18+ bo'lishi mumkin – agar noqulay bo'lsa, ko'rishni to'xtating.</blockquote>`;
 
-            const sentVideo = await ctx.api.sendVideo(
-              dbChannel.channelId,
-              ep.videoFileId,
-              { caption, parse_mode: 'HTML' },
-            );
-            videoMessages.push({
-              channelId: dbChannel.channelId,
-              messageId: sentVideo.message_id,
-            });
-          } catch (error) {
-            this.logger.error('Error uploading movie episode:', error);
+              const sentVideo = await ctx.api.sendVideo(
+                dbChannel.channelId,
+                ep.videoFileId,
+                { caption, parse_mode: 'HTML' },
+              );
+              videoMessages.push({
+                channelId: dbChannel.channelId,
+                messageId: sentVideo.message_id,
+              });
+            } catch (error) {
+              this.logger.error('Error uploading movie episode:', error);
+            }
           }
+
+          await this.movieEpisodeService.create({
+            movieId: movieId,
+            episodeNumber: ep.episodeNumber,
+            videoFileId: ep.videoFileId,
+            videoMessageId: JSON.stringify(videoMessages),
+          });
         }
 
-        await this.movieEpisodeService.create({
-          movieId: movieId,
-          episodeNumber: ep.episodeNumber,
-          videoFileId: ep.videoFileId,
-          videoMessageId: JSON.stringify(videoMessages),
-        });
-      }
+        // Yangi qismlar sonini hisoblash
+        const allEpisodes =
+          await this.movieEpisodeService.findByMovieId(movieId);
+        const totalEpisodes =
+          allEpisodes.length > 0 ? 1 + allEpisodes.length : 1;
+        await this.movieService.update(movieId, { totalEpisodes });
 
-      // Yangi qismlar sonini hisoblash
-      const allEpisodes =
-        await this.movieEpisodeService.findByMovieId(movieId);
-      const totalEpisodes =
-        allEpisodes.length > 0 ? 1 + allEpisodes.length : 1;
-      await this.movieService.update(movieId, { totalEpisodes });
-
-      // Field kanalga yangilash
-      if (updateField && movieChannelMessageId && movieFieldId) {
-        const field = await this.fieldService.findOne(movieFieldId);
-        if (field) {
-          const caption = `╭────────────────────
+        // Field kanalga yangilash
+        if (updateField && movieChannelMessageId && movieFieldId) {
+          const field = await this.fieldService.findOne(movieFieldId);
+          if (field) {
+            const caption = `╭────────────────────
 ├‣ Kino nomi: ${movieTitle}
 ├‣ Kino kodi: ${movieCode}
 ├‣ Qismlar: ${totalEpisodes}
@@ -662,46 +662,46 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi.
 🔞 Ba'zi sahnalar 18+ bo'lishi mumkin – agar noqulay bo'lsa, ko'rishni to'xtating.</blockquote>`;
 
-          const keyboard = new InlineKeyboard().url(
-            '✨ Tomosha Qilish',
-            `https://t.me/${this.grammyBot.botUsername}?start=${movieCode}`,
-          );
+            const keyboard = new InlineKeyboard().url(
+              '✨ Tomosha Qilish',
+              `https://t.me/${this.grammyBot.botUsername}?start=${movieCode}`,
+            );
 
-          try {
-            await ctx.api.editMessageCaption(
-              field.channelId,
-              movieChannelMessageId,
-              { caption, reply_markup: keyboard, parse_mode: 'HTML' },
-            );
-          } catch (error) {
-            this.logger.error(
-              'Error updating movie field channel poster:',
-              error,
-            );
+            try {
+              await ctx.api.editMessageCaption(
+                field.channelId,
+                movieChannelMessageId,
+                { caption, reply_markup: keyboard, parse_mode: 'HTML' },
+              );
+            } catch (error) {
+              this.logger.error(
+                'Error updating movie field channel poster:',
+                error,
+              );
+            }
           }
         }
-      }
 
-      this.sessionService.clearSession(ctx.from.id);
-      await ctx.reply(
-        `✅ Qismlar muvaffaqiyatli qo'shildi!\n\n` +
-        `🎬 ${movieTitle}\n` +
-        `📹 Jami qismlar: ${totalEpisodes}\n` +
-        `➕ Qo'shildi: ${addedEpisodes.length} ta`,
-        AdminKeyboard.getAdminMainMenu('ADMIN'),
-      );
-    } else if (contentType === 'serial') {
-      if (!serialId) {
-        await ctx.reply("❌ Serial ma'lumotlari topilmadi.");
         this.sessionService.clearSession(ctx.from.id);
-        return;
-      }
+        await ctx.reply(
+          `✅ Qismlar muvaffaqiyatli qo'shildi!\n\n` +
+          `🎬 ${movieTitle}\n` +
+          `📹 Jami qismlar: ${totalEpisodes}\n` +
+          `➕ Qo'shildi: ${addedEpisodes.length} ta`,
+          AdminKeyboard.getAdminMainMenu('ADMIN'),
+        );
+      } else if (contentType === 'serial') {
+        if (!serialId) {
+          await ctx.reply("❌ Serial ma'lumotlari topilmadi.");
+          this.sessionService.clearSession(ctx.from.id);
+          return;
+        }
 
-      for (const ep of addedEpisodes) {
-        const videoMessages: { channelId: string; messageId: number }[] = [];
-        for (const dbChannel of dbChannels) {
-          try {
-            const caption = `╭────────────────────
+        for (const ep of addedEpisodes) {
+          const videoMessages: { channelId: string; messageId: number }[] = [];
+          for (const dbChannel of dbChannels) {
+            try {
+              const caption = `╭────────────────────
 ├‣ Serial nomi: ${serialTitle}
 ├‣ Serial kodi: ${serialCode}
 ├‣ Qism: ${ep.episodeNumber}
@@ -717,38 +717,38 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi.
 🔞 Ba'zi sahnalar 18+ bo'lishi mumkin – agar noqulay bo'lsa, ko'rishni to'xtating.</blockquote>`;
 
-            const sentVideo = await ctx.api.sendVideo(
-              dbChannel.channelId,
-              ep.videoFileId,
-              { caption, parse_mode: 'HTML' },
-            );
-            videoMessages.push({
-              channelId: dbChannel.channelId,
-              messageId: sentVideo.message_id,
-            });
-          } catch (error) {
-            this.logger.error('Error uploading episode:', error);
+              const sentVideo = await ctx.api.sendVideo(
+                dbChannel.channelId,
+                ep.videoFileId,
+                { caption, parse_mode: 'HTML' },
+              );
+              videoMessages.push({
+                channelId: dbChannel.channelId,
+                messageId: sentVideo.message_id,
+              });
+            } catch (error) {
+              this.logger.error('Error uploading episode:', error);
+            }
           }
+
+          await this.episodeService.create({
+            serialId: serialId,
+            episodeNumber: ep.episodeNumber,
+            videoFileId: ep.videoFileId,
+            videoMessageId: JSON.stringify(videoMessages),
+          });
         }
 
-        await this.episodeService.create({
-          serialId: serialId,
-          episodeNumber: ep.episodeNumber,
-          videoFileId: ep.videoFileId,
-          videoMessageId: JSON.stringify(videoMessages),
-        });
-      }
+        // Yangi qismlar sonini hisoblash
+        const allEpisodes = await this.episodeService.findBySerialId(serialId);
+        const totalEpisodes = allEpisodes.length;
+        await this.serialService.update(serialId, { totalEpisodes });
 
-      // Yangi qismlar sonini hisoblash
-      const allEpisodes = await this.episodeService.findBySerialId(serialId);
-      const totalEpisodes = allEpisodes.length;
-      await this.serialService.update(serialId, { totalEpisodes });
-
-      // Field kanalga yangilash
-      if (updateField && serialChannelMessageId && serialFieldId) {
-        const field = await this.fieldService.findOne(serialFieldId);
-        if (field) {
-          const caption = `╭────────────────────
+        // Field kanalga yangilash
+        if (updateField && serialChannelMessageId && serialFieldId) {
+          const field = await this.fieldService.findOne(serialFieldId);
+          if (field) {
+            const caption = `╭────────────────────
 ├‣ Serial nomi: ${serialTitle}
 ├‣ Serial kodi: ${serialCode}
 ├‣ Qismlar: ${totalEpisodes}
@@ -764,42 +764,42 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi.
 🔞 Ba'zi sahnalar 18+ bo'lishi mumkin – agar noqulay bo'lsa, ko'rishni to'xtating.</blockquote>`;
 
-          const keyboard = new InlineKeyboard().url(
-            '✨ Tomosha Qilish',
-            `https://t.me/${this.grammyBot.botUsername}?start=s${serialCode}`,
-          );
+            const keyboard = new InlineKeyboard().url(
+              '✨ Tomosha Qilish',
+              `https://t.me/${this.grammyBot.botUsername}?start=s${serialCode}`,
+            );
 
-          try {
-            await ctx.api.editMessageCaption(
-              field.channelId,
-              serialChannelMessageId,
-              { caption, reply_markup: keyboard, parse_mode: 'HTML' },
-            );
-          } catch (error) {
-            this.logger.error(
-              'Error updating serial field channel poster:',
-              error,
-            );
+            try {
+              await ctx.api.editMessageCaption(
+                field.channelId,
+                serialChannelMessageId,
+                { caption, reply_markup: keyboard, parse_mode: 'HTML' },
+              );
+            } catch (error) {
+              this.logger.error(
+                'Error updating serial field channel poster:',
+                error,
+              );
+            }
           }
         }
-      }
 
-      this.sessionService.clearSession(ctx.from.id);
-      await ctx.reply(
-        `✅ Qismlar muvaffaqiyatli qo'shildi!\n\n` +
-        `📺 ${serialTitle}\n` +
-        `📹 Jami qismlar: ${totalEpisodes}\n` +
-        `➕ Qo'shildi: ${addedEpisodes.length} ta`,
-        AdminKeyboard.getAdminMainMenu('ADMIN'),
-      );
-    } else {
-      await ctx.reply("❌ Noto'g'ri content turi.");
+        this.sessionService.clearSession(ctx.from.id);
+        await ctx.reply(
+          `✅ Qismlar muvaffaqiyatli qo'shildi!\n\n` +
+          `📺 ${serialTitle}\n` +
+          `📹 Jami qismlar: ${totalEpisodes}\n` +
+          `➕ Qo'shildi: ${addedEpisodes.length} ta`,
+          AdminKeyboard.getAdminMainMenu('ADMIN'),
+        );
+      } else {
+        await ctx.reply("❌ Noto'g'ri content turi.");
+        this.sessionService.clearSession(ctx.from.id);
+      }
+    } catch (error: any) {
+      this.logger.error('Error finalizing episodes:', error);
+      await ctx.reply(`❌ Xatolik: ${error?.message || "Noma'lum xatolik"}`);
       this.sessionService.clearSession(ctx.from.id);
     }
-  } catch (error: any) {
-    this.logger.error('Error finalizing episodes:', error);
-    await ctx.reply(`❌ Xatolik: ${error?.message || "Noma'lum xatolik"}`);
-    this.sessionService.clearSession(ctx.from.id);
   }
-}
 }
