@@ -232,6 +232,19 @@ export class UserHandler implements OnModuleInit {
       }
     });
 
+    bot.callbackQuery(/^request_join_(\d+)$/, async (ctx) => {
+      try {
+        await this.handleRequestJoin(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in request join callback for user ${ctx.from?.id}: ${error.message}`,
+        );
+        await ctx
+          .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
+          .catch(() => { });
+      }
+    });
+
     bot.callbackQuery(/^show_premium$/, async (ctx) => {
       try {
         await this.showPremium(ctx);
@@ -949,9 +962,16 @@ Savollaringiz bo'lsa murojaat qiling:
     const premiumStatus = await this.premiumService.checkPremiumStatus(user.id);
     const isPremium = premiumStatus.isPremium && !premiumStatus.isExpired;
 
+    const admin = await this.adminService.getAdminByTelegramId(String(ctx.from.id));
+    const isAdmin = !!admin;
+
+    // Check subscription for non-premium users (even if admin)
     if (!isPremium) {
       const hasSubscription = await this.checkSubscription(ctx, code, 'search');
       if (!hasSubscription) {
+        this.logger.log(
+          `User ${ctx.from.id} (admin: ${isAdmin}) doesn't have subscription to required channels`,
+        );
         return;
       }
     }
@@ -1047,29 +1067,40 @@ ${movieDeepLink}`.trim();
           .row()
           .text('🔙 Orqaga', 'back_to_main');
 
-        if (movie.posterFileId) {
-          // Check if poster is video or photo
-          const isVideoFile = movie.posterFileId.startsWith('BAAC');
-          const posterType = (movie as any).posterType || (isVideoFile ? 'video' : 'photo');
+        try {
+          if (movie.posterFileId) {
+            // Check if poster is video or photo
+            const isVideoFile = movie.posterFileId.startsWith('BAAC');
+            const posterType = (movie as any).posterType || (isVideoFile ? 'video' : 'photo');
 
-          if (posterType === 'video' || isVideoFile) {
-            await ctx.replyWithVideo(movie.posterFileId, {
-              caption,
-              reply_markup: keyboard,
-            });
+            this.logger.log(`[sendMovieToUser] Sending with ${posterType} poster`);
+
+            if (posterType === 'video' || isVideoFile) {
+              await ctx.replyWithVideo(movie.posterFileId, {
+                caption,
+                reply_markup: keyboard,
+              });
+            } else {
+              await ctx.replyWithPhoto(movie.posterFileId, {
+                caption,
+                reply_markup: keyboard,
+              });
+            }
           } else {
-            await ctx.replyWithPhoto(movie.posterFileId, {
-              caption,
+            this.logger.log(`[sendMovieToUser] Sending without poster`);
+            await ctx.reply(caption, {
               reply_markup: keyboard,
             });
           }
-        } else {
-          await ctx.reply(caption, {
-            reply_markup: keyboard,
-          });
-        }
 
-        await this.watchHistoryService.recordMovieWatch(user.id, movie.id);
+          await this.watchHistoryService.recordMovieWatch(user.id, movie.id);
+        } catch (sendError) {
+          this.logger.error(`[sendMovieToUser] Error sending message with poster:`);
+          this.logger.error(`Poster type: ${(movie as any).posterType || 'unknown'}`);
+          this.logger.error(`Caption length: ${caption.length}`);
+          this.logger.error(`Keyboard buttons: ${totalButtons}`);
+          throw sendError;
+        }
       } else {
         if (movie.videoFileId) {
           // 1. Ulashish uchun oddiy matn (HTML-siz)
@@ -1313,6 +1344,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     }
 
     const notSubscribedChannels: {
+      channelId: number;
       channelName: string;
       channelLink: string;
       channelType: string;
@@ -1332,10 +1364,30 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
         // For EXTERNAL channels - always show but don't block
         // For PRIVATE channels - show if not subscribed (user needs to request join)
+        // For PRIVATE_WITH_ADMIN_APPROVAL - check if user already sent a request
         // For PUBLIC channels - show if not subscribed
 
         if (!isSubscribed) {
+          // For PRIVATE_WITH_ADMIN_APPROVAL, check if user already has a pending request
+          if (channel.type === 'PRIVATE_WITH_ADMIN_APPROVAL') {
+            const existingRequest = await this.prisma.channelJoinRequest.findUnique({
+              where: {
+                userId_channelId: {
+                  userId: user.id,
+                  channelId: channel.id,
+                },
+              },
+            });
+
+            // If user already sent a request (PENDING or APPROVED), remove from list
+            if (existingRequest && (existingRequest.status === 'PENDING' || existingRequest.status === 'APPROVED')) {
+              this.logger.log(`User ${ctx.from.id} already has ${existingRequest.status} request for channel ${channel.channelName}`);
+              continue; // Don't show this channel
+            }
+          }
+
           notSubscribedChannels.push({
+            channelId: channel.id,
             channelName: channel.channelName,
             channelLink: channel.channelLink,
             channelType: channel.type,
@@ -1344,7 +1396,27 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       } catch (error) {
         // If we can't check, assume not subscribed
         this.logger.warn(`Cannot check membership for channel ${channel.channelName}: ${error.message}`);
+
+        // For PRIVATE_WITH_ADMIN_APPROVAL, check if user already has a pending request
+        if (channel.type === 'PRIVATE_WITH_ADMIN_APPROVAL') {
+          const existingRequest = await this.prisma.channelJoinRequest.findUnique({
+            where: {
+              userId_channelId: {
+                userId: user.id,
+                channelId: channel.id,
+              },
+            },
+          });
+
+          // If user already sent a request, don't show this channel
+          if (existingRequest && (existingRequest.status === 'PENDING' || existingRequest.status === 'APPROVED')) {
+            this.logger.log(`User ${ctx.from.id} already has ${existingRequest.status} request for channel ${channel.channelName}`);
+            continue;
+          }
+        }
+
         notSubscribedChannels.push({
+          channelId: channel.id,
           channelName: channel.channelName,
           channelLink: channel.channelLink,
           channelType: channel.type,
@@ -1355,6 +1427,9 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     // Filter only non-external channels for blocking
     const blockingChannels = notSubscribedChannels.filter(ch => ch.channelType !== 'EXTERNAL');
 
+    this.logger.log(`[checkSubscription] User ${ctx.from.id}: Found ${notSubscribedChannels.length} unsubscribed channels (${blockingChannels.length} blocking)`);
+    this.logger.log(`[checkSubscription] PUBLIC: ${notSubscribedChannels.filter(ch => ch.channelType === 'PUBLIC').length}, PRIVATE: ${notSubscribedChannels.filter(ch => ch.channelType === 'PRIVATE').length}, PRIVATE_WITH_ADMIN_APPROVAL: ${notSubscribedChannels.filter(ch => ch.channelType === 'PRIVATE_WITH_ADMIN_APPROVAL').length}, EXTERNAL: ${notSubscribedChannels.filter(ch => ch.channelType === 'EXTERNAL').length}`);
+
     if (blockingChannels.length === 0) {
       return true;
     }
@@ -1362,36 +1437,10 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     // User is not subscribed - show message
     const publicChannels = blockingChannels.filter(ch => ch.channelType === 'PUBLIC');
     const privateChannels = blockingChannels.filter(ch => ch.channelType === 'PRIVATE');
+    const privateWithAdminApprovalChannels = blockingChannels.filter(ch => ch.channelType === 'PRIVATE_WITH_ADMIN_APPROVAL');
     const externalChannels = notSubscribedChannels.filter(ch => ch.channelType === 'EXTERNAL');
 
     let message = `❌ Botdan foydalanish uchun quyidagi kanallarga obuna bo'lishingiz yoki join request yuborishingiz kerak:\n\n`;
-
-    // // Public kanallar
-    // if (publicChannels.length > 0) {
-    //   message += `🌐 <b>Ochiq kanallar (to'g'ridan-to'g'ri qo'shilish):</b>\n`;
-    //   publicChannels.forEach((channel, index) => {
-    //     message += `${index + 1}. ${channel.channelName}\n`;
-    //   });
-    //   message += `\n`;
-    // }
-
-    // // Private kanallar
-    // if (privateChannels.length > 0) {
-    //   message += `🔒 <b>Yopiq kanallar (so'rov yuborish kerak):</b>\n`;
-    //   privateChannels.forEach((channel, index) => {
-    //     message += `${index + 1}. ${channel.channelName}\n`;
-    //   });
-    //   message += `\n`;
-    // }
-
-    // // External kanallar
-    // if (externalChannels.length > 0) {
-    //   message += `🌟 <b>Qo'shimcha kanallar:</b>\n`;
-    //   externalChannels.forEach((channel, index) => {
-    //     message += `${index + 1}. ${channel.channelName}\n`;
-    //   });
-    //   message += `\n`;
-    // }
 
     message += `<blockquote>💎 Premium obuna sotib olib, kanallarga obuna bo'lmasdan foydalanishingiz mumkin.</blockquote>`;
 
@@ -1405,6 +1454,11 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     const allChannels = [...publicChannels, ...privateChannels, ...externalChannels];
     allChannels.forEach((channel) => {
       keyboard.url(channel.channelName, channel.channelLink).row();
+    });
+
+    // For PRIVATE_WITH_ADMIN_APPROVAL channels, add special buttons
+    privateWithAdminApprovalChannels.forEach((channel) => {
+      keyboard.text(`📤 ${channel.channelName} uchun so'rov yuborish`, `request_join_${channel.channelId}`).row();
     });
 
     keyboard.text('✅ Tekshirish', 'check_subscription').row();
@@ -1517,6 +1571,113 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       } catch (replyError) {
         this.logger.error('Error sending subscription message:', replyError);
       }
+    }
+  }
+
+  private async handleRequestJoin(ctx: BotContext) {
+    if (!ctx.callbackQuery || !ctx.from) return;
+
+    const match = ctx.callbackQuery.data?.match(/^request_join_(\d+)$/);
+    if (!match) return;
+
+    const channelId = parseInt(match[1]);
+
+    try {
+      // Get user
+      const user = await this.userService.findByTelegramId(String(ctx.from.id));
+      if (!user) {
+        await ctx.answerCallbackQuery({ text: '❌ Foydalanuvchi topilmadi.' });
+        return;
+      }
+
+      // Get channel
+      const channel = await this.prisma.mandatoryChannel.findUnique({
+        where: { id: channelId },
+      });
+
+      if (!channel || channel.type !== 'PRIVATE_WITH_ADMIN_APPROVAL') {
+        await ctx.answerCallbackQuery({ text: '❌ Kanal topilmadi yoki noto\'g\'ri tur.' });
+        return;
+      }
+
+      // Check if request already exists
+      const existingRequest = await this.prisma.channelJoinRequest.findUnique({
+        where: {
+          userId_channelId: {
+            userId: user.id,
+            channelId: channelId,
+          },
+        },
+      });
+
+      if (existingRequest) {
+        if (existingRequest.status === 'PENDING') {
+          await ctx.answerCallbackQuery({
+            text: '⏳ Sizning so\'rovingiz kutilmoqda. Admin ko\'rib chiqishini kuting.',
+            show_alert: true
+          });
+          return;
+        } else if (existingRequest.status === 'APPROVED') {
+          await ctx.answerCallbackQuery({
+            text: '✅ Sizning so\'rovingiz allaqachon tasdiqlangan.',
+            show_alert: true
+          });
+          return;
+        }
+      }
+
+      // Create join request
+      await this.prisma.channelJoinRequest.create({
+        data: {
+          userId: user.id,
+          channelId: channelId,
+          telegramId: String(ctx.from.id),
+          username: ctx.from.username,
+          firstName: ctx.from.first_name,
+          lastName: ctx.from.last_name,
+          status: 'PENDING',
+        },
+      });
+
+      this.logger.log(`✅ Created join request for user ${ctx.from.id} to channel ${channel.channelName}`);
+
+      // Send notification to admins
+      try {
+        const settings = await this.prisma.botSettings.findFirst();
+        if (settings?.adminNotificationChat) {
+          const adminMessage =
+            `📤 <b>Yangi kanal qo'shilish so'rovi</b>\n\n` +
+            `👤 Foydalanuvchi: ${ctx.from.first_name || ''} ${ctx.from.last_name || ''}\n` +
+            `🆔 Telegram ID: <code>${ctx.from.id}</code>\n` +
+            `👤 Username: ${ctx.from.username ? '@' + ctx.from.username : 'Yo\'q'}\n` +
+            `📱 Kanal: ${channel.channelName}\n` +
+            `🔗 Link: ${channel.channelLink}\n\n` +
+            `⏰ Sana: ${new Date().toLocaleString('uz-UZ')}`;
+
+          const adminKeyboard = new InlineKeyboard()
+            .text('✅ Tasdiqlash', `approve_join_${user.id}_${channelId}`)
+            .text('❌ Rad etish', `reject_join_${user.id}_${channelId}`);
+
+          await ctx.api.sendMessage(settings.adminNotificationChat, adminMessage, {
+            parse_mode: 'HTML',
+            reply_markup: adminKeyboard,
+          });
+        }
+      } catch (error) {
+        this.logger.error(`Failed to send admin notification: ${error.message}`);
+      }
+
+      await ctx.answerCallbackQuery({
+        text: '✅ So\'rov yuborildi! Admin ko\'rib chiqishini kuting.',
+        show_alert: true
+      });
+
+      // Update the message to remove the button for this channel
+      await this.handleCheckSubscription(ctx);
+
+    } catch (error) {
+      this.logger.error(`Error in handleRequestJoin: ${error.message}`);
+      await ctx.answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' });
     }
   }
 

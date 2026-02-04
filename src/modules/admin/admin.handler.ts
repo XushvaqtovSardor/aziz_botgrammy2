@@ -417,6 +417,16 @@ export class AdminHandler implements OnModuleInit {
       if (admin) await this.rejectPayment(ctx);
     });
 
+    bot.callbackQuery(/^approve_join_(\d+)_(\d+)$/, async (ctx) => {
+      const admin = await this.getAdmin(ctx);
+      if (admin) await this.approveJoinRequest(ctx);
+    });
+
+    bot.callbackQuery(/^reject_join_(\d+)_(\d+)$/, async (ctx) => {
+      const admin = await this.getAdmin(ctx);
+      if (admin) await this.rejectJoinRequest(ctx);
+    });
+
     bot.callbackQuery('cancel_premiere', async (ctx) => {
       const admin = await this.getAdmin(ctx);
       if (admin) {
@@ -921,9 +931,9 @@ export class AdminHandler implements OnModuleInit {
 ├‣ Kanal: ${fieldLink}
 ╰────────────────────
 
-▶️ Kinoning to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!`
+▶️ Kinoning to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!
 
-            < blockquote expandable>⚠️ ESLATMA:
+<blockquote expandable>⚠️ ESLATMA:
 Biz yuklayotgan kinolar turli saytlardan olinadi.
 🎰 Ba'zi kinolarda kazino, qimor yoki "pulni ko'paytirib beramiz" degan reklama chiqishi mumkin.
 🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi.
@@ -2204,6 +2214,169 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       `📝 Rad etish sababini yozing:`,
       { parse_mode: 'Markdown', reply_markup: keyboard },
     );
+  }
+
+  private async approveJoinRequest(ctx: BotContext) {
+    const admin = await this.getAdmin(ctx);
+    if (!admin || !ctx.from) return;
+
+    await ctx.answerCallbackQuery();
+
+    const match = ctx.callbackQuery?.data?.match(/^approve_join_(\d+)_(\d+)$/);
+    if (!match) return;
+
+    const userId = parseInt(match[1]);
+    const channelId = parseInt(match[2]);
+
+    try {
+      const joinRequest = await this.prisma.channelJoinRequest.findUnique({
+        where: {
+          userId_channelId: {
+            userId,
+            channelId,
+          },
+        },
+      });
+
+      if (!joinRequest) {
+        await ctx.editMessageText("❌ So'rov topilmadi.");
+        return;
+      }
+
+      if (joinRequest.status !== 'PENDING') {
+        await ctx.editMessageText(`❌ So'rov allaqachon ${joinRequest.status === 'APPROVED' ? 'tasdiqlangan' : 'rad etilgan'}.`);
+        return;
+      }
+
+      // Update join request status
+      await this.prisma.channelJoinRequest.update({
+        where: {
+          userId_channelId: {
+            userId,
+            channelId,
+          },
+        },
+        data: {
+          status: 'APPROVED',
+          processedAt: new Date(),
+          processedBy: String(ctx.from.id),
+        },
+      });
+
+      // Get channel and user info
+      const channel = await this.prisma.mandatoryChannel.findUnique({
+        where: { id: channelId },
+      });
+
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      // Notify user
+      if (user && channel) {
+        try {
+          await ctx.api.sendMessage(
+            user.telegramId,
+            `✅ Sizning ${channel.channelName} kanaliga qo'shilish so'rovingiz tasdiqlandi!\n\n` +
+            `Endi botdan foydalanishingiz mumkin. /start ni bosing.`
+          );
+        } catch (error) {
+          this.logger.error(`Failed to notify user ${user.telegramId}: ${error.message}`);
+        }
+      }
+
+      await ctx.editMessageText(
+        ctx.callbackQuery?.message?.text + '\n\n✅ So\'rov tasdiqlandi!'
+      );
+
+      this.logger.log(`✅ Admin ${ctx.from.id} approved join request for user ${userId} to channel ${channelId}`);
+
+    } catch (error) {
+      this.logger.error(`Error approving join request: ${error.message}`);
+      await ctx.reply("❌ So'rovni tasdiqlashda xatolik yuz berdi.");
+    }
+  }
+
+  private async rejectJoinRequest(ctx: BotContext) {
+    const admin = await this.getAdmin(ctx);
+    if (!admin || !ctx.from) return;
+
+    await ctx.answerCallbackQuery();
+
+    const match = ctx.callbackQuery?.data?.match(/^reject_join_(\d+)_(\d+)$/);
+    if (!match) return;
+
+    const userId = parseInt(match[1]);
+    const channelId = parseInt(match[2]);
+
+    try {
+      const joinRequest = await this.prisma.channelJoinRequest.findUnique({
+        where: {
+          userId_channelId: {
+            userId,
+            channelId,
+          },
+        },
+      });
+
+      if (!joinRequest) {
+        await ctx.editMessageText("❌ So'rov topilmadi.");
+        return;
+      }
+
+      if (joinRequest.status !== 'PENDING') {
+        await ctx.editMessageText(`❌ So'rov allaqachon ${joinRequest.status === 'APPROVED' ? 'tasdiqlangan' : 'rad etilgan'}.`);
+        return;
+      }
+
+      // Update join request status
+      await this.prisma.channelJoinRequest.update({
+        where: {
+          userId_channelId: {
+            userId,
+            channelId,
+          },
+        },
+        data: {
+          status: 'REJECTED',
+          processedAt: new Date(),
+          processedBy: String(ctx.from.id),
+          rejectedReason: 'Admin tomonidan rad etildi',
+        },
+      });
+
+      // Get channel and user info
+      const channel = await this.prisma.mandatoryChannel.findUnique({
+        where: { id: channelId },
+      });
+
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      // Notify user
+      if (user && channel) {
+        try {
+          await ctx.api.sendMessage(
+            user.telegramId,
+            `❌ Sizning ${channel.channelName} kanaliga qo'shilish so'rovingiz rad etildi.\n\n` +
+            `Agar savol bo'lsa, admin bilan bog'laning.`
+          );
+        } catch (error) {
+          this.logger.error(`Failed to notify user ${user.telegramId}: ${error.message}`);
+        }
+      }
+
+      await ctx.editMessageText(
+        ctx.callbackQuery?.message?.text + '\n\n❌ So\'rov rad etildi!'
+      );
+
+      this.logger.log(`❌ Admin ${ctx.from.id} rejected join request for user ${userId} to channel ${channelId}`);
+
+    } catch (error) {
+      this.logger.error(`Error rejecting join request: ${error.message}`);
+      await ctx.reply("❌ So'rovni rad etishda xatolik yuz berdi.");
+    }
   }
 
   private async showAdminsList(ctx: BotContext) {
@@ -4080,23 +4253,28 @@ Qaysi rol berasiz?
         '╰────────────────────\n' +
         `▶️ ${isSerial ? 'Serialning' : 'Kinoning'} to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!`;
 
+      const messageText = "🎬 Premyera e'loni\n\n" + caption + '\n\n📢 Bu kontentni qayerga yubormoqchisiz?';
+
       if (content.posterFileId) {
-        await ctx.replyWithPhoto(content.posterFileId, {
-          caption:
-            "🎬 Premyera e'loni\n\n" +
-            caption +
-            '\n\n📢 Bu kontentni qayerga yubormoqchisiz?',
+        // Check if poster is video or photo
+        const isVideoFile = content.posterFileId.startsWith('BAAC');
+        const posterType = (content as any).posterType || (isVideoFile ? 'video' : 'photo');
+
+        if (posterType === 'video' || isVideoFile) {
+          await ctx.replyWithVideo(content.posterFileId, {
+            caption: messageText,
+            reply_markup: keyboard,
+          });
+        } else {
+          await ctx.replyWithPhoto(content.posterFileId, {
+            caption: messageText,
+            reply_markup: keyboard,
+          });
+        }
+      } else {
+        await ctx.reply(messageText, {
           reply_markup: keyboard,
         });
-      } else {
-        await ctx.reply(
-          "🎬 Premyera e'loni\n\n" +
-          caption +
-          '\n\n📢 Bu kontentni qayerga yubormoqchisiz?',
-          {
-            reply_markup: keyboard,
-          },
-        );
       }
 
       this.sessionService.updateSession(ctx.from.id, {
@@ -4115,10 +4293,21 @@ Qaysi rol berasiz?
         },
       });
     } catch (error) {
-      this.logger.error('Error handling premiere broadcast steps:', error?.message || 'Unknown error');
-      this.logger.error('Error stack:', error?.stack);
-      this.logger.error('Full error:', error);
-      await ctx.reply("❌ Xatolik yuz berdi. Qaytadan urinib ko'ring.");
+      this.logger.error('❌ Error handling premiere broadcast steps');
+      if (error) {
+        this.logger.error(`Error message: ${error?.message || 'N/A'}`);
+        this.logger.error(`Error name: ${error?.name || 'N/A'}`);
+        if (error?.stack) {
+          this.logger.error(`Error stack: ${error.stack}`);
+        }
+        if (error?.response) {
+          this.logger.error(`API Response: ${JSON.stringify(error.response)}`);
+        }
+        this.logger.error(`Full error: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`);
+      } else {
+        this.logger.error('Error object is undefined or null');
+      }
+      await ctx.reply("❌ Xatolik yuz berdi. Qaytadan urinib ko'ring.").catch(() => { });
       this.sessionService.clearSession(ctx.from.id);
     }
   }

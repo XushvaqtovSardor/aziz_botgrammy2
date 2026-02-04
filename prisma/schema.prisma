@@ -304,6 +304,7 @@ enum BroadcastStatus {
 enum ChannelType {
   PUBLIC
   PRIVATE
+  PRIVATE_WITH_ADMIN_APPROVAL
   EXTERNAL
 }
 
@@ -326,4 +327,31 @@ model UserChannelStatus {
   @@index([userId])
   @@index([channelId])
   @@index([status])
+}
+
+model ChannelJoinRequest {
+  id            Int                     @id @default(autoincrement())
+  userId        Int
+  channelId     Int
+  telegramId    String
+  username      String?
+  firstName     String?
+  lastName      String?
+  status        JoinRequestStatus       @default(PENDING)
+  requestedAt   DateTime                @default(now())
+  processedAt   DateTime?
+  processedBy   String?
+  rejectedReason String?
+
+  @@unique([userId, channelId])
+  @@index([userId])
+  @@index([channelId])
+  @@index([status])
+  @@index([telegramId])
+}
+
+enum JoinRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
