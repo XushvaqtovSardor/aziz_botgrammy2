@@ -1113,13 +1113,23 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         }
       }
     } catch (error) {
-      this.logger.error(`Error sending movie ${code}:`, error?.message || 'No error message');
-      this.logger.error(`Error name:`, error?.name || 'No error name');
-      this.logger.error(`Error stack:`, error?.stack || 'No stack trace');
-      this.logger.error(`Full error object:`, JSON.stringify(error, Object.getOwnPropertyNames(error)));
+      this.logger.error(`❌ Error sending movie ${code} to user ${ctx.from.id}:`);
+      if (error) {
+        this.logger.error(`Error message: ${error?.message || 'N/A'}`);
+        this.logger.error(`Error name: ${error?.name || 'N/A'}`);
+        if (error?.stack) {
+          this.logger.error(`Error stack: ${error.stack}`);
+        }
+        if (error?.response) {
+          this.logger.error(`API Response: ${JSON.stringify(error.response)}`);
+        }
+        this.logger.error(`Full error: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`);
+      } else {
+        this.logger.error('Error object is undefined or null');
+      }
       await ctx.reply(
         "❌ Kino yuklashda xatolik yuz berdi. Iltimos admin bilan bog'laning.",
-      );
+      ).catch(() => { });
     }
   }
 
