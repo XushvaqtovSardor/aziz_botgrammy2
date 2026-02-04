@@ -1349,3 +1349,30 @@ function logout() {
   localStorage.removeItem('admin_data');
   window.location.href = '/admin';
 }
+
+// Mobile menu toggle
+function toggleMenu() {
+  const sidebar = document.getElementById('sidebar');
+  sidebar.classList.toggle('open');
+}
+
+// Close menu when clicking outside (mobile)
+document.addEventListener('click', (e) => {
+  const sidebar = document.getElementById('sidebar');
+  const isClickInside = sidebar && sidebar.contains(e.target);
+  
+  if (!isClickInside && window.innerWidth <= 768) {
+    sidebar.classList.remove('open');
+  }
+});
+
+// Close menu when nav item clicked (mobile)
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      if (window.innerWidth <= 768) {
+        document.getElementById('sidebar').classList.remove('open');
+      }
+    });
+  });
+});

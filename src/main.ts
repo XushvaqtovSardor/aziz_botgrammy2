@@ -21,14 +21,30 @@ async function bootstrap() {
       prefix: '/public/',
     });
 
-    // Serve admin static files directly (CSS, JS, etc.)
+    // Serve admin static files (CSS, JS, etc.)
     app.useStaticAssets(join(__dirname, '..', 'public', 'admin'), {
       prefix: '/admin/',
     });
 
+    // Serve admin login page at /admin
+    app.use('/admin', (req, res, next) => {
+      if (req.url === '/' || req.url === '') {
+        res.sendFile(join(__dirname, '..', 'public', 'admin', 'index.html'));
+      } else if (req.url === '/dashboard' || req.url === '/dashboard.html') {
+        res.sendFile(join(__dirname, '..', 'public', 'admin', 'dashboard.html'));
+      } else {
+        next();
+      }
+    });
+
     const port = process.env.PORT ?? 3000;
+    const webUrl = process.env.WEB_URL || `http://localhost:${port}`;
 
     await app.listen(port, '0.0.0.0');
+
+    logger.log(`\u2705 Server is running on: ${webUrl}`);
+    logger.log(`\u2705 Admin panel: ${webUrl}/admin`);
+    logger.log(`\u2705 API docs: ${webUrl}/api`);
 
     const grammyBot = app.get(GrammyBotService);
 

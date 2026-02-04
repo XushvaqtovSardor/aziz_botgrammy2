@@ -572,20 +572,254 @@ tbody tr:hover {
 }
 
 /* Responsive */
+@media (max-width: 1024px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    table {
+        font-size: 13px;
+    }
+}
+
 @media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+    }
+
     .sidebar {
-        width: 200px;
+        width: 100%;
+        padding: 15px;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        max-height: 70px;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+    }
+
+    .sidebar.open {
+        max-height: 100vh;
+    }
+
+    .logo {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .logo h2 {
+        font-size: 20px;
+        margin-bottom: 0;
+    }
+
+    .menu-toggle {
+        display: block;
+        background: none;
+        border: none;
+        color: white;
+        font-size: 28px;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .admin-info {
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+
+    .nav-menu {
+        margin-bottom: 20px;
+    }
+
+    .main-content {
+        padding: 15px;
+    }
+
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .header h1 {
+        font-size: 24px;
+    }
+
+    .refresh-btn {
+        width: 100%;
     }
 
     .stats-grid {
         grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .stat-card {
+        padding: 20px;
+    }
+
+    .stat-icon {
+        font-size: 36px;
+    }
+
+    .stat-value {
+        font-size: 24px;
+    }
+
+    .table-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .add-btn {
+        width: 100%;
+    }
+
+    .data-table {
+        overflow-x: auto;
     }
 
     table {
         font-size: 12px;
+        min-width: 600px;
     }
 
     th, td {
+        padding: 8px;
+    }
+
+    .tab-buttons {
+        flex-direction: column;
+    }
+
+    .tab-btn {
+        width: 100%;
+        border-radius: 8px;
+        border-bottom: none;
+        border-left: 3px solid transparent;
+    }
+
+    .tab-btn.active {
+        border-bottom: none;
+        border-left-color: #667eea;
+    }
+
+    .modal-content {
+        width: 95%;
+        padding: 20px;
+        max-height: 85vh;
+    }
+
+    .input-group {
+        flex-direction: column;
+    }
+
+    .input-group .btn-delete {
+        width: 100%;
+    }
+
+    .action-btn {
+        display: block;
+        width: 100%;
+        margin-bottom: 5px;
+        margin-right: 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .sidebar {
         padding: 10px;
+        max-height: 60px;
+    }
+
+    .logo h2 {
+        font-size: 18px;
+    }
+
+    .admin-info .avatar {
+        font-size: 32px;
+        margin-right: 10px;
+    }
+
+    .admin-info .info .name {
+        font-size: 14px;
+    }
+
+    .nav-item {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+
+    .main-content {
+        padding: 10px;
+    }
+
+    .header h1 {
+        font-size: 20px;
+    }
+
+    .stat-card {
+        padding: 15px;
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .stat-icon {
+        font-size: 40px;
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+
+    table {
+        font-size: 11px;
+    }
+
+    th, td {
+        padding: 6px;
+    }
+
+    .close {
+        font-size: 24px;
+        right: 15px;
+        top: 15px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        font-size: 16px; /* Prevent zoom on iOS */
+    }
+}
+
+/* Menu toggle button (only visible on mobile) */
+.menu-toggle {
+    display: none;
+}
+
+@media (min-width: 769px) {
+    .menu-toggle {
+        display: none !important;
+    }
+}
+
+/* Print styles */
+@media print {
+    .sidebar,
+    .refresh-btn,
+    .add-btn,
+    .action-btn,
+    .logout-btn {
+        display: none !important;
+    }
+
+    .main-content {
+        width: 100%;
+        padding: 0;
+    }
+
+    .data-table {
+        box-shadow: none;
     }
 }
