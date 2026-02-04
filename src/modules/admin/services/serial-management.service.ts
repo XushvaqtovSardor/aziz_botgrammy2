@@ -366,7 +366,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 ├‣ Qismlar: ${episodes.length}
 ├‣ Janrlari: ${genre}
 ├‣ Kanal: ${selectedField.channelLink || `https://t.me/${selectedField.channelId?.replace('@', '').replace('-100', '')}`}
-⁰────────────────────
+╰────────────────────
 
 ▶️ Serialning to'liq qismlarini @${botUsername} dan tomosha qilishingiz mumkin!
 
@@ -603,7 +603,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 ├‣ Qism: ${ep.episodeNumber}
 ├‣ Janrlari: ${movieGenre || "Noma'lum"}
 ├‣ Kanal: ${dbChannel.channelLink || 'https://t.me/' + dbChannel.channelName}
-⁰────────────────────
+╰────────────────────
 
 ▶️ Kinoning to'liq qismini https://t.me/${botUsername}?start=${movieCode} dan tomosha qilishingiz mumkin!
 
@@ -652,7 +652,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 ├‣ Qismlar: ${totalEpisodes}
 ├‣ Janrlari: ${movieGenre || "Noma'lum"}
 ├‣ Kanal: ${field.channelLink || '@' + field.name}
-⁰────────────────────
+╰────────────────────
 
 ▶️ Kinoning to'liq qismlarini https://t.me/${this.grammyBot.botUsername}?start=${movieCode} dan tomosha qilishingiz mumkin!
 
@@ -707,7 +707,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 ├‣ Qism: ${ep.episodeNumber}
 ├‣ Janrlari: ${serialGenre || "Noma'lum"}
 ├‣ Kanal: ${dbChannel.channelLink || 'https://t.me/' + dbChannel.channelName}
-⁰────────────────────
+╰────────────────────
 
 ▶️ Serialning to'liq qismini https://t.me/${botUsername}?start=s${serialCode} dan tomosha qilishingiz mumkin!
 
@@ -754,7 +754,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 ├‣ Qismlar: ${totalEpisodes}
 ├‣ Janrlari: ${serialGenre || "Noma'lum"}
 ├‣ Kanal: ${field.channelLink || '@' + field.name}
-⁰────────────────────
+╰────────────────────
 
 ▶️ Serialning to'liq qismlarini https://t.me/${this.grammyBot.botUsername}?start=s${serialCode} dan tomosha qilishingiz mumkin!
 
