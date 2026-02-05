@@ -5835,7 +5835,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       // Format caption with new structure
       const formattedCaption = `╭────────────────────
 ├‣ ${contentType === 'serial' ? 'Serial' : 'Kino'} nomi : ${title || 'Noma\'lum'}
-├‣ ${contentType === 'serial' ? 'Serial' : 'Kino'} kodi: ${contentType === 'serial' ? 's' : ''}${code}
+├‣ ${contentType === 'serial' ? 'Serial' : 'Kino'} kodi: ${contentType === 'serial' ? '' : ''}${code}
 ├‣ Janrlari: ${genre || 'Janr ko\'rsatilmadi'}
 ├‣ Kanal: ${fieldChannelLink || '@Kanal'}
 ╰────────────────────
