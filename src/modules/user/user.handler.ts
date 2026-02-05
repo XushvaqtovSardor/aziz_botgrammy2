@@ -1515,6 +1515,9 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     const privateChannels = needsAction.filter(
       (s) => s.channelType === 'PRIVATE',
     );
+    const privateWithAdminApprovalChannels = needsAction.filter(
+      (s) => s.channelType === 'PRIVATE_WITH_ADMIN_APPROVAL',
+    );
     const externalChannels = needsAction.filter(
       (s) => s.channelType === 'EXTERNAL',
     );
@@ -1539,9 +1542,28 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     const keyboard = new InlineKeyboard();
 
     // Barcha kanallarni bitta inline keyboard'da ko'rsatish
-    const allChannels = [...publicChannels, ...privateChannels, ...externalChannels];
-    allChannels.forEach((channel) => {
+    // PUBLIC, PRIVATE va EXTERNAL kanallar uchun URL button
+    const allLinkChannels = [...publicChannels, ...privateChannels, ...externalChannels];
+    allLinkChannels.forEach((channel) => {
       keyboard.url(channel.channelName, channel.channelLink).row();
+    });
+
+    // PRIVATE_WITH_ADMIN_APPROVAL kanallar uchun so'rov yuborish button
+    privateWithAdminApprovalChannels.forEach((channel) => {
+      // Get channel internal ID to create callback data
+      const channelData = result.statuses.find(
+        (s) => s.channelName === channel.channelName && s.channelType === 'PRIVATE_WITH_ADMIN_APPROVAL'
+      );
+      if (channelData) {
+        // Need to get the channel ID from database
+        // For now, show a text button with link
+        keyboard
+          .text(
+            `📤 ${channel.channelName} uchun so'rov yuborish`,
+            `request_join_${channel.channelName}`,
+          )
+          .row();
+      }
     });
 
     keyboard.text('✅ Tekshirish', 'check_subscription').row();

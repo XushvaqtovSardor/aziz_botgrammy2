@@ -100,6 +100,7 @@ export class ChannelStatusService {
   async canUserAccessBot(userTelegramId: string): Promise<{
     canAccess: boolean;
     statuses: {
+      channelId: number;
       channelName: string;
       channelLink: string;
       channelType: string;
@@ -121,19 +122,12 @@ export class ChannelStatusService {
     });
 
     const canAccess = nonExternalStatuses.every((s) => {
-      if (s.channelType !== 'PRIVATE_WITH_ADMIN_APPROVAL') {
-        return (
-          s.status === ChannelStatus.joined ||
-          s.status === ChannelStatus.requested
-        );
-      }
-
-      if (user) {
-        const channelId = s.channelId;
-        return true; 
-      }
-
-      return false;
+      // For all channel types including PRIVATE_WITH_ADMIN_APPROVAL,
+      // user must have joined or sent a request
+      return (
+        s.status === ChannelStatus.joined ||
+        s.status === ChannelStatus.requested
+      );
     });
 
     return {
