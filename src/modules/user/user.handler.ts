@@ -18,7 +18,7 @@ import { AdminService } from '../admin/services/admin.service';
 import { GrammyBotService } from '../../common/grammy/grammy-bot.module';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MainMenuKeyboard } from './keyboards/main-menu.keyboard';
-import { ChannelStatus } from '@prisma/client';
+import { ChannelStatus, ChannelType } from '@prisma/client';
 
 @Injectable()
 export class UserHandler implements OnModuleInit {
@@ -1324,142 +1324,142 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
   }
 
   private async checkSubscription(
-  ctx: BotContext,
-  contentCode?: number,
-  contentType?: string,
-): Promise<boolean> {
-  if (!ctx.from) return false;
+    ctx: BotContext,
+    contentCode?: number,
+    contentType?: string,
+  ): Promise<boolean> {
+    if (!ctx.from) return false;
 
-  // 1. User
-  const user = await this.userService.findByTelegramId(String(ctx.from.id));
-  if (!user) return false;
+    // 1. User
+    const user = await this.userService.findByTelegramId(String(ctx.from.id));
+    if (!user) return false;
 
-  // 2. Premium check
-  if (
-    user.isPremium &&
-    user.premiumExpiresAt &&
-    user.premiumExpiresAt > new Date()
-  ) {
-    return true;
-  }
-
-  // 3. Mandatory channels
-  const channels = await this.prisma.mandatoryChannel.findMany({
-    where: { isActive: true },
-    orderBy: { order: 'asc' },
-  });
-
-  if (!channels.length) return true;
-
-  // 4. User channel statuses
-  const statuses = await this.prisma.userChannelStatus.findMany({
-    where: { userId: user.id },
-  });
-
-  const statusMap = new Map<number, ChannelStatus>();
-  statuses.forEach(s => statusMap.set(s.channelId, s.status));
-
-  const notSubscribedChannels: {
-    channelId: number;
-    channelName: string;
-    channelLink: string;
-    channelType: ChannelType;
-  }[] = [];
-
-  // 5. Filter logic
-  for (const channel of channels) {
-    const status = statusMap.get(channel.id) || 'left';
-
-    /*
-      joined    → skip
-      requested → skip
-      left      → show
-    */
-
-    if (status === 'joined' || status === 'requested') {
-      continue;
+    // 2. Premium check
+    if (
+      user.isPremium &&
+      user.premiumExpiresAt &&
+      user.premiumExpiresAt > new Date()
+    ) {
+      return true;
     }
 
-    notSubscribedChannels.push({
-      channelId: channel.id,
-      channelName: channel.channelName,
-      channelLink: channel.channelLink,
-      channelType: channel.type,
+    // 3. Mandatory channels
+    const channels = await this.prisma.mandatoryChannel.findMany({
+      where: { isActive: true },
+      orderBy: { order: 'asc' },
     });
-  }
 
-  // 6. Blocking logic
-  const blockingChannels = notSubscribedChannels.filter(
-    ch => ch.channelType !== 'EXTERNAL',
-  );
+    if (!channels.length) return true;
 
-  if (blockingChannels.length === 0) {
-    return true;
-  }
+    // 4. User channel statuses
+    const statuses = await this.prisma.userChannelStatus.findMany({
+      where: { userId: user.id },
+    });
 
-  // 7. Types
-  const publicChannels = notSubscribedChannels.filter(
-    ch => ch.channelType === 'PUBLIC',
-  );
-  const privateChannels = notSubscribedChannels.filter(
-    ch => ch.channelType === 'PRIVATE',
-  );
-  const privateWithAdminApprovalChannels = notSubscribedChannels.filter(
-    ch => ch.channelType === 'PRIVATE_WITH_ADMIN_APPROVAL',
-  );
-  const externalChannels = notSubscribedChannels.filter(
-    ch => ch.channelType === 'EXTERNAL',
-  );
+    const statusMap = new Map<number, ChannelStatus>();
+    statuses.forEach(s => statusMap.set(s.channelId, s.status));
 
-  // 8. Message
-  let message = `❌ Botdan foydalanish uchun quyidagi kanallarga obuna bo'lishingiz yoki join request yuborishingiz kerak:\n\n`;
-  message += `<blockquote>💎 Premium obuna sotib olib, kanallarga obuna bo'lmasdan foydalanishingiz mumkin.</blockquote>`;
+    const notSubscribedChannels: {
+      channelId: number;
+      channelName: string;
+      channelLink: string;
+      channelType: ChannelType;
+    }[] = [];
 
-  if (contentCode && contentType) {
-    message += `\n\n🎬 Kino kodi: <b>${contentCode}</b>`;
-  }
+    // 5. Filter logic
+    for (const channel of channels) {
+      const status = statusMap.get(channel.id) || 'left';
 
-  // 9. Keyboard
-  const keyboard = new InlineKeyboard();
+      /*
+        joined    → skip
+        requested → skip
+        left      → show
+      */
 
-  [...publicChannels, ...privateChannels, ...externalChannels].forEach(
-    channel => {
-      keyboard.url(channel.channelName, channel.channelLink).row();
-    },
-  );
+      if (status === 'joined' || status === 'requested') {
+        continue;
+      }
 
-  privateWithAdminApprovalChannels.forEach(channel => {
-    keyboard
-      .text(
-        `📤 ${channel.channelName} uchun so'rov yuborish`,
-        `request_join_${channel.channelId}`,
-      )
-      .row();
-  });
+      notSubscribedChannels.push({
+        channelId: channel.id,
+        channelName: channel.channelName,
+        channelLink: channel.channelLink,
+        channelType: channel.type,
+      });
+    }
 
-  keyboard.text('✅ Tekshirish', 'check_subscription').row();
-  keyboard.text('💎 Premium sotib olish', 'show_premium');
+    // 6. Blocking logic
+    const blockingChannels = notSubscribedChannels.filter(
+      ch => ch.channelType !== 'EXTERNAL',
+    );
 
-  // 10. Send (EDIT if possible)
-  if (ctx.callbackQuery?.message) {
-    await ctx.api.editMessageText(
-      ctx.callbackQuery.message.chat.id,
-      ctx.callbackQuery.message.message_id,
-      message,
-      {
-        parse_mode: 'HTML',
-        reply_markup: keyboard,
+    if (blockingChannels.length === 0) {
+      return true;
+    }
+
+    // 7. Types
+    const publicChannels = notSubscribedChannels.filter(
+      ch => ch.channelType === 'PUBLIC',
+    );
+    const privateChannels = notSubscribedChannels.filter(
+      ch => ch.channelType === 'PRIVATE',
+    );
+    const privateWithAdminApprovalChannels = notSubscribedChannels.filter(
+      ch => ch.channelType === 'PRIVATE_WITH_ADMIN_APPROVAL',
+    );
+    const externalChannels = notSubscribedChannels.filter(
+      ch => ch.channelType === 'EXTERNAL',
+    );
+
+    // 8. Message
+    let message = `❌ Botdan foydalanish uchun quyidagi kanallarga obuna bo'lishingiz yoki join request yuborishingiz kerak:\n\n`;
+    message += `<blockquote>💎 Premium obuna sotib olib, kanallarga obuna bo'lmasdan foydalanishingiz mumkin.</blockquote>`;
+
+    if (contentCode && contentType) {
+      message += `\n\n🎬 Kino kodi: <b>${contentCode}</b>`;
+    }
+
+    // 9. Keyboard
+    const keyboard = new InlineKeyboard();
+
+    [...publicChannels, ...privateChannels, ...externalChannels].forEach(
+      channel => {
+        keyboard.url(channel.channelName, channel.channelLink).row();
       },
     );
-  } else {
-    await ctx.reply(message, {
-      parse_mode: 'HTML',
-      reply_markup: keyboard,
-    });
-  }
 
-  return false;
-}
+    privateWithAdminApprovalChannels.forEach(channel => {
+      keyboard
+        .text(
+          `📤 ${channel.channelName} uchun so'rov yuborish`,
+          `request_join_${channel.channelId}`,
+        )
+        .row();
+    });
+
+    keyboard.text('✅ Tekshirish', 'check_subscription').row();
+    keyboard.text('💎 Premium sotib olish', 'show_premium');
+
+    // 10. Send (EDIT if possible)
+    if (ctx.callbackQuery?.message) {
+      await ctx.api.editMessageText(
+        ctx.callbackQuery.message.chat.id,
+        ctx.callbackQuery.message.message_id,
+        message,
+        {
+          parse_mode: 'HTML',
+          reply_markup: keyboard,
+        },
+      );
+    } else {
+      await ctx.reply(message, {
+        parse_mode: 'HTML',
+        reply_markup: keyboard,
+      });
+    }
+
+    return false;
+  }
 
 
 
@@ -1627,6 +1627,26 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
           firstName: ctx.from.first_name,
           lastName: ctx.from.last_name,
           status: 'PENDING',
+        },
+      });
+
+      // Update UserChannelStatus to 'requested' so the system knows the user has sent a request
+      await this.prisma.userChannelStatus.upsert({
+        where: {
+          userId_channelId: {
+            userId: user.id,
+            channelId: channelId,
+          },
+        },
+        create: {
+          userId: user.id,
+          channelId: channelId,
+          status: 'requested',
+          lastUpdated: new Date(),
+        },
+        update: {
+          status: 'requested',
+          lastUpdated: new Date(),
         },
       });
 

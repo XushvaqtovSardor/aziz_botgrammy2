@@ -2263,6 +2263,26 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         },
       });
 
+      // Update UserChannelStatus to 'joined' since the admin has approved
+      await this.prisma.userChannelStatus.upsert({
+        where: {
+          userId_channelId: {
+            userId,
+            channelId,
+          },
+        },
+        create: {
+          userId,
+          channelId,
+          status: 'joined',
+          lastUpdated: new Date(),
+        },
+        update: {
+          status: 'joined',
+          lastUpdated: new Date(),
+        },
+      });
+
       // Get channel and user info
       const channel = await this.prisma.mandatoryChannel.findUnique({
         where: { id: channelId },
@@ -2342,6 +2362,26 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
           processedAt: new Date(),
           processedBy: String(ctx.from.id),
           rejectedReason: 'Admin tomonidan rad etildi',
+        },
+      });
+
+      // Update UserChannelStatus to 'left' since the request was rejected
+      await this.prisma.userChannelStatus.upsert({
+        where: {
+          userId_channelId: {
+            userId,
+            channelId,
+          },
+        },
+        create: {
+          userId,
+          channelId,
+          status: 'left',
+          lastUpdated: new Date(),
+        },
+        update: {
+          status: 'left',
+          lastUpdated: new Date(),
         },
       });
 
