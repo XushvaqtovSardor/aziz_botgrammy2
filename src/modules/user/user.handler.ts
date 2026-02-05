@@ -1330,8 +1330,13 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
   ): Promise<boolean> {
     if (!ctx.from) return false;
 
+    this.logger.log(`🔍 checkSubscription boshlandi user ${ctx.from.id} uchun (contentType: ${contentType})`);
+
     const user = await this.userService.findByTelegramId(String(ctx.from.id));
-    if (!user) return false;
+    if (!user) {
+      this.logger.error(`❌ User ${ctx.from.id} topilmadi (checkSubscription)`);
+      return false;
+    }
 
     // Premium foydalanuvchilar uchun tekshirish shart emas
     if (
@@ -1339,6 +1344,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       user.premiumExpiresAt &&
       user.premiumExpiresAt > new Date()
     ) {
+      this.logger.log(`✅ User ${ctx.from.id} premium, subscriptions kerak emas`);
       return true;
     }
 
@@ -1348,7 +1354,12 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       orderBy: { order: 'asc' },
     });
 
-    if (!allChannels.length) return true;
+    this.logger.log(`📊 Jami ${allChannels.length} ta faol kanal topildi`);
+
+    if (!allChannels.length) {
+      this.logger.log(`✅ Kanallar yo'q, access granted`);
+      return true;
+    }
 
     // Foydalanuvchining hozirgi statuslarini olish
     const userStatuses = await this.prisma.userChannelStatus.findMany({
@@ -1356,8 +1367,13 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       include: { channel: true },
     });
 
+    this.logger.log(`📊 User ${ctx.from.id} uchun ${userStatuses.length} ta status yozuv topildi`);
+
     const statusMap = new Map<number, ChannelStatus>();
-    userStatuses.forEach(s => statusMap.set(s.channelId, s.status));
+    userStatuses.forEach(s => {
+      statusMap.set(s.channelId, s.status);
+      this.logger.log(`   - Channel ${s.channelId}: ${s.status}`);
+    });
 
     // Kanallarni tekshirish va filtrlash
     const channelsToShow: Array<{
@@ -1370,9 +1386,12 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     // API chaqiriqlarni parallel qilish uchun barcha promise'larni to'playmiz
     const channelCheckPromises = allChannels.map(async (channel) => {
       const currentStatus = statusMap.get(channel.id);
+      
+      this.logger.log(`🔍 Channel tekshirilmoqda: ${channel.channelName} (ID: ${channel.id}, Type: ${channel.type}, Current Status: ${currentStatus || 'none'})`);
 
       // EXTERNAL kanallar uchun tekshirish yo'q (blocking emas)
       if (channel.type === 'EXTERNAL') {
+        this.logger.log(`   ✅ EXTERNAL kanal, o'tkazildi`);
         return null;
       }
 
@@ -1380,9 +1399,11 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       if (channel.type === 'PRIVATE_WITH_ADMIN_APPROVAL') {
         // joined yoki requested bo'lsa OK
         if (currentStatus === 'joined' || currentStatus === 'requested') {
+          this.logger.log(`   ✅ PRIVATE_WITH_ADMIN_APPROVAL: status ${currentStatus}, OK`);
           return null;
         }
         // Aks holda ko'rsatish
+        this.logger.log(`   ❌ PRIVATE_WITH_ADMIN_APPROVAL: so'rov yuborilmagan, ko'rsatiladi`);
         return {
           id: channel.id,
           name: channel.channelName,
@@ -1406,6 +1427,8 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       }
 
       try {
+        this.logger.log(`   🌐 API chaqirilmoqda: ${channel.channelId}`);
+        
         // 5 sekundlik timeout bilan API chaqiriq
         const memberPromise = ctx.api.getChatMember(
           channel.channelId,
@@ -1417,6 +1440,8 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         );
 
         const member = await Promise.race([memberPromise, timeoutPromise]) as any;
+        
+        this.logger.log(`   📡 API javob: status = ${member.status}`);
 
         const isJoined =
           member.status === 'member' ||
@@ -1425,6 +1450,8 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
           (member.status === 'restricted' && 'is_member' in member && member.is_member);
 
         if (isJoined) {
+          this.logger.log(`   ✅ API: User qo'shilgan! DB yangilanadi.`);
+          
           // Database'ni yangilash (async, kutmaymiz)
           this.prisma.userChannelStatus.upsert({
             where: {
@@ -1444,14 +1471,18 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
           return null;
         }
 
+        this.logger.log(`   ❌ API: User qo'shilmagan (status: ${member.status})`);
+
         // PRIVATE kanallar uchun: so'rov yuborgan bo'lsa OK
         if (channel.type === 'PRIVATE' && currentStatus === 'requested') {
+          this.logger.log(`   ✅ PRIVATE kanal, status 'requested', OK`);
           return null;
         }
 
         // Agar qo'shilmagan bo'lsa, ro'yxatga qo'shish
         // Database'ni yangilash (async, kutmaymiz)
         if (currentStatus !== 'requested') {
+          this.logger.log(`   📝 DB yangilanadi: left`);
           this.prisma.userChannelStatus.upsert({
             where: {
               userId_channelId: { userId: user.id, channelId: channel.id },
@@ -1469,6 +1500,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
           }).catch(err => this.logger.error('Error updating status:', err));
         }
 
+        this.logger.log(`   ❌ Kanal ko'rsatilishi kerak: ${channel.channelName}`);
         return {
           id: channel.id,
           name: channel.channelName,
@@ -1477,10 +1509,12 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         };
       } catch (error) {
         // API xato bersa yoki timeout bo'lsa, database statusga qarab qaror qabul qilamiz
-        this.logger.warn(`API error for channel ${channel.channelName}: ${error.message}`);
+        this.logger.warn(`   ⚠️ API xato: ${channel.channelName} - ${error.message}`);
         if (currentStatus === 'joined' || currentStatus === 'requested') {
+          this.logger.log(`   ✅ DB status ${currentStatus}, access granted`);
           return null;
         }
+        this.logger.log(`   ❌ DB status ${currentStatus || 'none'}, kanal ko'rsatiladi`);
         return {
           id: channel.id,
           name: channel.channelName,
@@ -1490,19 +1524,25 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       }
     });
 
+    this.logger.log(`⏳ ${allChannels.length} ta kanal parallel tekshirilmoqda...`);
+
     // Barcha tekshiruvlarni parallel bajaramiz
     const results = await Promise.all(channelCheckPromises);
     
+    this.logger.log(`✅ Tekshiruvlar tugadi, natijalar tahlil qilinmoqda...`);
+    
     // null bo'lmaganlarni channelsToShow ga qo'shamiz
-    results.forEach(result => {
+    results.forEach((result, index) => {
       if (result !== null) {
+        this.logger.log(`   ❌ Kanal ${index + 1}: ${result.name} - ko'rsatilishi kerak`);
         channelsToShow.push(result);
       }
     });
 
     // Agar barcha kanallarga qo'shilgan yoki so'rov yuborilgan bo'lsa
     if (channelsToShow.length === 0) {
-      this.logger.log(`✅ User ${ctx.from.id} has access - all channels satisfied (joined or requested)`);
+      this.logger.log(`✅✅✅ User ${ctx.from.id} BARCHA KANALLARGA QOSHILGAN! (channelsToShow.length = 0)`);
+      this.logger.log(`✅✅✅ checkSubscription RETURNS TRUE!`);
       return true;
     }
 
@@ -1579,15 +1619,20 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     this.logger.log(`🔍 User ${ctx.from.id} bosdi Tekshirish tugmasini`);
 
-    try {
-      await ctx.answerCallbackQuery({ text: 'Tekshirilmoqda...' });
+    // Callback query ni darhol javob beramiz (timeout bo'lmasligi uchun)
+    await ctx.answerCallbackQuery({ text: 'Tekshirilmoqda...' }).catch(err => {
+      this.logger.warn(`⚠️ Callback query javob berishda xato: ${err.message}`);
+    });
 
+    try {
       const user = await this.userService.findByTelegramId(String(ctx.from.id));
       if (!user) {
         this.logger.error(`❌ User ${ctx.from.id} topilmadi`);
         await ctx.reply('❌ Foydalanuvchi topilmadi.');
         return;
       }
+
+      this.logger.log(`👤 User ${ctx.from.id} topildi, kanallarni tekshiramiz...`);
 
       // Barcha kanallarni tekshiramiz
       const hasAccess = await this.checkSubscription(ctx, 0, 'check');
@@ -1596,9 +1641,9 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
       if (hasAccess) {
         // ✅ Barcha kanallarga qo'shilgan yoki so'rov yuborilgan
-        this.logger.log(`✅ User ${ctx.from.id} has access!`);
+        this.logger.log(`✅ User ${ctx.from.id} barcha kanallarga qo'shilgan!`);
 
-        // Eski xabarni o'chirish
+        // Eski xabarni o'chirishga harakat qilamiz
         if (ctx.callbackQuery.message) {
           try {
             await ctx.api.deleteMessage(
@@ -1607,30 +1652,51 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
             );
             this.logger.log(`🗑️ Eski xabar o'chirildi`);
           } catch (err) {
-            this.logger.warn(`Xabarni o'chirib bo'lmadi: ${err.message}`);
+            this.logger.warn(`⚠️ Xabarni o'chirib bo'lmadi: ${err.message}`);
           }
         }
 
         // Success xabarni yuborish
+        this.logger.log(`📤 Success xabar yuborilmoqda user ${ctx.from.id} ga...`);
+        
         const successMessage = 
           '✅ Siz barcha kanallarga qo\'shildingiz!\n\n' +
           '🎬 Endi botdan foydalanishingiz mumkin.\n\n' +
           '🔍 Kino yoki serial kodini yuboring.';
 
-        await ctx.reply(
-          successMessage,
-          MainMenuKeyboard.getMainMenu(user.isPremium, user.isPremiumBanned),
-        );
-
-        this.logger.log(`✅ SUCCESS xabar yuborildi user ${ctx.from.id} ga!`);
+        try {
+          const keyboard = MainMenuKeyboard.getMainMenu(user.isPremium, user.isPremiumBanned);
+          
+          await ctx.reply(successMessage, keyboard);
+          
+          this.logger.log(`✅✅✅ SUCCESS xabar YUBORILDI user ${ctx.from.id} ga!`);
+        } catch (sendError) {
+          this.logger.error(`❌ Success xabar yuborishda XATOLIK:`, sendError);
+          this.logger.error(`Message: ${sendError.message}`);
+          this.logger.error(`Stack: ${sendError.stack}`);
+          
+          // Fallback: oddiy xabar yuborish (keyboard siz)
+          try {
+            await ctx.reply(successMessage);
+            this.logger.log(`✅ Fallback xabar yuborildi (keyboard siz)`);
+          } catch (fallbackError) {
+            this.logger.error(`❌ Fallback xabar ham yuborilmadi:`, fallbackError);
+          }
+        }
       } else {
         // ❌ Hali qo'shilishi kerak - checkSubscription allaqachon xabar yuborgan
         this.logger.log(`⚠️ User ${ctx.from.id} hali kanallar kerak - xabar allaqachon yuborilgan`);
       }
     } catch (error) {
-      this.logger.error(`❌ Xatolik handleCheckSubscription da:`, error);
-      this.logger.error(`Stack:`, error.stack);
-      await ctx.reply('❌ Xatolik yuz berdi. Qaytadan urinib ko\'ring.').catch(() => {});
+      this.logger.error(`❌❌❌ XATOLIK handleCheckSubscription da:`, error);
+      this.logger.error(`Error message: ${error?.message || 'unknown'}`);
+      this.logger.error(`Error stack: ${error?.stack || 'no stack'}`);
+      
+      try {
+        await ctx.reply('❌ Xatolik yuz berdi. Qaytadan urinib ko\'ring.');
+      } catch (replyError) {
+        this.logger.error(`❌ Xato xabarini yuborib ham bo'lmadi:`, replyError);
+      }
     }
   }
 
