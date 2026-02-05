@@ -1370,27 +1370,30 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     for (const channel of allChannels) {
       const currentStatus = statusMap.get(channel.id);
 
-      // EXTERNAL kanallar uchun tekshirish yo'q
+      // EXTERNAL kanallar uchun tekshirish yo'q (blocking emas)
       if (channel.type === 'EXTERNAL') {
         continue;
       }
 
-      // Agar kanal uchun channelId yo'q bo'lsa (faqat link), API orqali tekshirib bo'lmaydi
-      if (!channel.channelId) {
-        if (currentStatus === 'joined' || currentStatus === 'requested') {
-          continue;
-        }
-        channelsToShow.push({
-          id: channel.id,
-          name: channel.channelName,
-          link: channel.channelLink,
-          type: channel.type,
-        });
-        continue;
-      }
-
-      // PRIVATE_WITH_ADMIN_APPROVAL uchun faqat database statusga qaraymiz
+      // PRIVATE_WITH_ADMIN_APPROVAL: so'rov yuborgan bo'lsa yetarli
       if (channel.type === 'PRIVATE_WITH_ADMIN_APPROVAL') {
+        // joined yoki requested bo'lsa OK
+        if (currentStatus === 'joined' || currentStatus === 'requested') {
+          continue;
+        }
+        // Aks holda ko'rsatish
+        channelsToShow.push({
+          id: channel.id,
+          name: channel.channelName,
+          link: channel.channelLink,
+          type: channel.type,
+        });
+        continue;
+      }
+
+      // PUBLIC va PRIVATE kanallar uchun
+      if (!channel.channelId) {
+        // channelId yo'q bo'lsa, faqat database statusga qaraymiz
         if (currentStatus === 'joined' || currentStatus === 'requested') {
           continue;
         }
@@ -1403,7 +1406,6 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         continue;
       }
 
-      // PUBLIC va PRIVATE kanallar uchun real-time tekshirish
       try {
         const member = await ctx.api.getChatMember(
           channel.channelId,
@@ -1436,7 +1438,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
           continue;
         }
 
-        // PRIVATE kanallar uchun so'rov yuborilganligini tekshirish
+        // PRIVATE kanallar uchun: so'rov yuborgan bo'lsa OK
         if (channel.type === 'PRIVATE' && currentStatus === 'requested') {
           continue;
         }
@@ -1481,10 +1483,16 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       }
     }
 
-    // Agar barcha kanallarga qo'shilgan bo'lsa
+    // Agar barcha kanallarga qo'shilgan yoki so'rov yuborilgan bo'lsa
     if (channelsToShow.length === 0) {
+      this.logger.log(`✅ User ${ctx.from.id} has access - all channels satisfied (joined or requested)`);
       return true;
     }
+
+    this.logger.log(`⚠️ User ${ctx.from.id} needs to join ${channelsToShow.length} channels`);
+    channelsToShow.forEach(ch => {
+      this.logger.log(`   - ${ch.name} (${ch.type})`);
+    });
 
     // Kanallarni turlariga ajratish
     const publicChannels = channelsToShow.filter(ch => ch.type === 'PUBLIC');
@@ -1494,7 +1502,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     );
 
     // Xabar tayyorlash
-    let message = `❌ Botdan foydalanish uchun quyidagi kanallarga obuna bo'lishingiz kerak:\n\n`;
+    let message = `❌ Botdan foydalanish uchun quyidagi kanallarga obuna bo'lishingiz yoki so'rov yuborishingiz kerak:\n\n`;
     message += `<blockquote>💎 Premium obuna sotib olib, kanallarga obuna bo'lmasdan foydalanishingiz mumkin.</blockquote>`;
 
     if (contentCode && contentType) {
@@ -1512,7 +1520,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     // PRIVATE_WITH_ADMIN_APPROVAL uchun so'rov yuborish tugmalari
     privateApprovalChannels.forEach(channel => {
       keyboard
-        .text(`📤 ${channel.name} uchun so'rov yuborish`, `request_join_${channel.id}`)
+        .text(`📤 ${channel.name} so'rov yuborish`, `request_join_${channel.id}`)
         .row();
     });
 
@@ -1697,9 +1705,11 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       }
 
       await ctx.answerCallbackQuery({
-        text: '✅ So\'rov yuborildi! Admin ko\'rib chiqishini kuting.',
+        text: '✅ So\'rov yuborildi! Endi botdan foydalanishingiz mumkin.',
         show_alert: true
       });
+
+      this.logger.log(`✅ User ${ctx.from.id} sent join request for channel ${channel.channelName}. Status: requested`);
 
       // Xabarni yangilash - endi bu kanaldan so'rov yuborilgan
       try {
@@ -1712,7 +1722,9 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
           );
           await ctx.reply(
             '✅ Barcha kerakli kanallar uchun so\'rovlar yuborildi!\n\n' +
-            '⏳ Admin tasdiqlashini kuting.',
+            '🎬 Endi botdan foydalanishingiz mumkin.\n\n' +
+            '🔍 Kino yoki serial kodini yuboring.',
+            MainMenuKeyboard.getMainMenu(user.isPremium, user.isPremiumBanned),
           );
         }
       } catch (error) {

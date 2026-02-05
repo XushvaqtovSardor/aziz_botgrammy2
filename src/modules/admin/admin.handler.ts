@@ -427,6 +427,11 @@ export class AdminHandler implements OnModuleInit {
       if (admin) await this.rejectJoinRequest(ctx);
     });
 
+    bot.callbackQuery('view_join_requests', async (ctx) => {
+      const admin = await this.getAdmin(ctx);
+      if (admin) await this.viewJoinRequests(ctx);
+    });
+
     bot.callbackQuery('cancel_premiere', async (ctx) => {
       const admin = await this.getAdmin(ctx);
       if (admin) {
@@ -1479,6 +1484,9 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         .row();
     });
 
+    // So'rovlarni ko'rish tugmasini qo'shish
+    inlineKeyboard.text('📋 So\'rovlarni ko\'rish', 'view_join_requests').row();
+
     await ctx.reply(message, { reply_markup: inlineKeyboard });
 
     const keyboard = new Keyboard()
@@ -2416,6 +2424,63 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     } catch (error) {
       this.logger.error(`Error rejecting join request: ${error.message}`);
       await ctx.reply("❌ So'rovni rad etishda xatolik yuz berdi.");
+    }
+  }
+
+  private async viewJoinRequests(ctx: BotContext) {
+    const admin = await this.getAdmin(ctx);
+    if (!admin || !ctx.from) return;
+
+    await ctx.answerCallbackQuery();
+
+    try {
+      // Barcha PENDING so'rovlarni olish
+      const requests = await this.prisma.channelJoinRequest.findMany({
+        where: { status: 'PENDING' },
+        orderBy: { requestedAt: 'desc' },
+        take: 20, // Faqat oxirgi 20 ta
+      });
+
+      if (requests.length === 0) {
+        await ctx.reply('📋 Hozirda kutilayotgan kanalga qo\'shilish so\'rovlari yo\'q.');
+        return;
+      }
+
+      let message = '📋 <b>Kanalga qo\'shilish so\'rovlari:</b>\n\n';
+
+      const keyboard = new InlineKeyboard();
+
+      for (const [index, req] of requests.entries()) {
+        // User va channel ma'lumotlarini olish
+        const user = await this.prisma.user.findUnique({
+          where: { id: req.userId },
+        });
+
+        const channel = await this.prisma.mandatoryChannel.findUnique({
+          where: { id: req.channelId },
+        });
+
+        if (!user || !channel) continue;
+
+        message += `${index + 1}. 👤 ${req.firstName || ''} ${req.lastName || ''}\n`;
+        message += `   🆔 ID: <code>${req.telegramId}</code>\n`;
+        message += `   👤 Username: ${req.username ? '@' + req.username : 'Yo\'q'}\n`;
+        message += `   📱 Kanal: ${channel.channelName}\n`;
+        message += `   ⏰ Sana: ${req.requestedAt.toLocaleString('uz-UZ')}\n\n`;
+
+        keyboard
+          .text(`✅ ${index + 1}`, `approve_join_${req.userId}_${req.channelId}`)
+          .text(`❌ ${index + 1}`, `reject_join_${req.userId}_${req.channelId}`)
+          .row();
+      }
+
+      await ctx.reply(message, {
+        parse_mode: 'HTML',
+        reply_markup: keyboard,
+      });
+    } catch (error) {
+      this.logger.error(`Error viewing join requests: ${error.message}`);
+      await ctx.reply('❌ Xatolik yuz berdi.');
     }
   }
 
