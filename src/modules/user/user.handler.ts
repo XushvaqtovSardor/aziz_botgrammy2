@@ -1682,7 +1682,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     if (externalChannelsToShow.length > 0) {
       externalChannelsToShow.forEach(channel => {
         keyboard
-          .text(`🔗 ${channel.name}`, `external_${channel.id}`)
+          .text(` ${channel.name}`, `external_${channel.id}`)
           .row();
       });
     }
