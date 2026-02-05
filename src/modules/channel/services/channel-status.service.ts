@@ -170,7 +170,13 @@ export class ChannelStatusService {
       });
 
       for (const channel of channels) {
+        // EXTERNAL va channelId bo'lmagan kanallar uchun API tekshirish yo'q
         if (channel.type === 'EXTERNAL' || !channel.channelId) {
+          continue;
+        }
+
+        // PRIVATE_WITH_ADMIN_APPROVAL uchun faqat database statusga qaraymiz
+        if (channel.type === 'PRIVATE_WITH_ADMIN_APPROVAL') {
           continue;
         }
 
@@ -192,6 +198,7 @@ export class ChannelStatusService {
           ) {
             newStatus = ChannelStatus.joined;
           } else if (member.status === 'left' || member.status === 'kicked') {
+            // Agar foydalanuvchi so'rov yuborgan bo'lsa, statusni saqlab qolamiz
             const existingStatus =
               await this.prisma.userChannelStatus.findUnique({
                 where: {
@@ -202,10 +209,11 @@ export class ChannelStatusService {
                 },
               });
 
-            newStatus =
-              existingStatus?.status === ChannelStatus.requested
-                ? ChannelStatus.requested
-                : ChannelStatus.left;
+            if (existingStatus?.status === ChannelStatus.requested) {
+              continue; // So'rov yuborilgan statusni saqlab qolish
+            }
+
+            newStatus = ChannelStatus.left;
           } else {
             newStatus = ChannelStatus.left;
           }
@@ -216,8 +224,7 @@ export class ChannelStatusService {
             `Error checking channel ${channel.channelName} for user ${userTelegramId}:`,
             error instanceof Error ? error.message : String(error),
           );
-          // Don't update status on error - preserve existing status
-          // This prevents overwriting 'requested' status when API fails
+          // Xato bo'lganda statusni o'zgartirmaymiz
         }
       }
     } catch (error) {

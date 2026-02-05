@@ -1330,11 +1330,10 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
   ): Promise<boolean> {
     if (!ctx.from) return false;
 
-    // 1. User
     const user = await this.userService.findByTelegramId(String(ctx.from.id));
     if (!user) return false;
 
-    // 2. Premium check
+    // Premium foydalanuvchilar uchun tekshirish shart emas
     if (
       user.isPremium &&
       user.premiumExpiresAt &&
@@ -1343,114 +1342,201 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       return true;
     }
 
-    // 3. Mandatory channels
-    const channels = await this.prisma.mandatoryChannel.findMany({
+    // Barcha faol kanallarni olish
+    const allChannels = await this.prisma.mandatoryChannel.findMany({
       where: { isActive: true },
       orderBy: { order: 'asc' },
     });
 
-    if (!channels.length) return true;
+    if (!allChannels.length) return true;
 
-    // 4. User channel statuses
-    const statuses = await this.prisma.userChannelStatus.findMany({
+    // Foydalanuvchining hozirgi statuslarini olish
+    const userStatuses = await this.prisma.userChannelStatus.findMany({
       where: { userId: user.id },
+      include: { channel: true },
     });
 
     const statusMap = new Map<number, ChannelStatus>();
-    statuses.forEach(s => statusMap.set(s.channelId, s.status));
+    userStatuses.forEach(s => statusMap.set(s.channelId, s.status));
 
-    const notSubscribedChannels: {
-      channelId: number;
-      channelName: string;
-      channelLink: string;
-      channelType: ChannelType;
-    }[] = [];
+    // Kanallarni tekshirish va filtrlash
+    const channelsToShow: Array<{
+      id: number;
+      name: string;
+      link: string;
+      type: ChannelType;
+    }> = [];
 
-    // 5. Filter logic
-    for (const channel of channels) {
-      const status = statusMap.get(channel.id) || 'left';
+    for (const channel of allChannels) {
+      const currentStatus = statusMap.get(channel.id);
 
-      /*
-        joined    → skip
-        requested → skip
-        left      → show
-      */
-
-      if (status === 'joined' || status === 'requested') {
+      // EXTERNAL kanallar uchun tekshirish yo'q
+      if (channel.type === 'EXTERNAL') {
         continue;
       }
 
-      notSubscribedChannels.push({
-        channelId: channel.id,
-        channelName: channel.channelName,
-        channelLink: channel.channelLink,
-        channelType: channel.type,
-      });
+      // Agar kanal uchun channelId yo'q bo'lsa (faqat link), API orqali tekshirib bo'lmaydi
+      if (!channel.channelId) {
+        if (currentStatus === 'joined' || currentStatus === 'requested') {
+          continue;
+        }
+        channelsToShow.push({
+          id: channel.id,
+          name: channel.channelName,
+          link: channel.channelLink,
+          type: channel.type,
+        });
+        continue;
+      }
+
+      // PRIVATE_WITH_ADMIN_APPROVAL uchun faqat database statusga qaraymiz
+      if (channel.type === 'PRIVATE_WITH_ADMIN_APPROVAL') {
+        if (currentStatus === 'joined' || currentStatus === 'requested') {
+          continue;
+        }
+        channelsToShow.push({
+          id: channel.id,
+          name: channel.channelName,
+          link: channel.channelLink,
+          type: channel.type,
+        });
+        continue;
+      }
+
+      // PUBLIC va PRIVATE kanallar uchun real-time tekshirish
+      try {
+        const member = await ctx.api.getChatMember(
+          channel.channelId,
+          ctx.from.id,
+        );
+
+        const isJoined =
+          member.status === 'member' ||
+          member.status === 'administrator' ||
+          member.status === 'creator' ||
+          (member.status === 'restricted' && 'is_member' in member && member.is_member);
+
+        if (isJoined) {
+          // Database'ni yangilash
+          await this.prisma.userChannelStatus.upsert({
+            where: {
+              userId_channelId: { userId: user.id, channelId: channel.id },
+            },
+            create: {
+              userId: user.id,
+              channelId: channel.id,
+              status: 'joined',
+              lastUpdated: new Date(),
+            },
+            update: {
+              status: 'joined',
+              lastUpdated: new Date(),
+            },
+          });
+          continue;
+        }
+
+        // PRIVATE kanallar uchun so'rov yuborilganligini tekshirish
+        if (channel.type === 'PRIVATE' && currentStatus === 'requested') {
+          continue;
+        }
+
+        // Agar qo'shilmagan bo'lsa, ro'yxatga qo'shish
+        channelsToShow.push({
+          id: channel.id,
+          name: channel.channelName,
+          link: channel.channelLink,
+          type: channel.type,
+        });
+
+        // Database'ni yangilash
+        if (currentStatus !== 'requested') {
+          await this.prisma.userChannelStatus.upsert({
+            where: {
+              userId_channelId: { userId: user.id, channelId: channel.id },
+            },
+            create: {
+              userId: user.id,
+              channelId: channel.id,
+              status: 'left',
+              lastUpdated: new Date(),
+            },
+            update: {
+              status: 'left',
+              lastUpdated: new Date(),
+            },
+          });
+        }
+      } catch (error) {
+        // API xato bersa, database statusga qarab qaror qabul qilamiz
+        if (currentStatus === 'joined' || currentStatus === 'requested') {
+          continue;
+        }
+        channelsToShow.push({
+          id: channel.id,
+          name: channel.channelName,
+          link: channel.channelLink,
+          type: channel.type,
+        });
+      }
     }
 
-    // 6. Blocking logic
-    const blockingChannels = notSubscribedChannels.filter(
-      ch => ch.channelType !== 'EXTERNAL',
-    );
-
-    if (blockingChannels.length === 0) {
+    // Agar barcha kanallarga qo'shilgan bo'lsa
+    if (channelsToShow.length === 0) {
       return true;
     }
 
-    // 7. Types
-    const publicChannels = notSubscribedChannels.filter(
-      ch => ch.channelType === 'PUBLIC',
-    );
-    const privateChannels = notSubscribedChannels.filter(
-      ch => ch.channelType === 'PRIVATE',
-    );
-    const privateWithAdminApprovalChannels = notSubscribedChannels.filter(
-      ch => ch.channelType === 'PRIVATE_WITH_ADMIN_APPROVAL',
-    );
-    const externalChannels = notSubscribedChannels.filter(
-      ch => ch.channelType === 'EXTERNAL',
+    // Kanallarni turlariga ajratish
+    const publicChannels = channelsToShow.filter(ch => ch.type === 'PUBLIC');
+    const privateChannels = channelsToShow.filter(ch => ch.type === 'PRIVATE');
+    const privateApprovalChannels = channelsToShow.filter(
+      ch => ch.type === 'PRIVATE_WITH_ADMIN_APPROVAL',
     );
 
-    // 8. Message
-    let message = `❌ Botdan foydalanish uchun quyidagi kanallarga obuna bo'lishingiz yoki join request yuborishingiz kerak:\n\n`;
+    // Xabar tayyorlash
+    let message = `❌ Botdan foydalanish uchun quyidagi kanallarga obuna bo'lishingiz kerak:\n\n`;
     message += `<blockquote>💎 Premium obuna sotib olib, kanallarga obuna bo'lmasdan foydalanishingiz mumkin.</blockquote>`;
 
     if (contentCode && contentType) {
       message += `\n\n🎬 Kino kodi: <b>${contentCode}</b>`;
     }
 
-    // 9. Keyboard
+    // Keyboard yaratish
     const keyboard = new InlineKeyboard();
 
-    [...publicChannels, ...privateChannels, ...externalChannels].forEach(
-      channel => {
-        keyboard.url(channel.channelName, channel.channelLink).row();
-      },
-    );
+    // PUBLIC va PRIVATE kanallar uchun URL tugmalari
+    [...publicChannels, ...privateChannels].forEach(channel => {
+      keyboard.url(channel.name, channel.link).row();
+    });
 
-    privateWithAdminApprovalChannels.forEach(channel => {
+    // PRIVATE_WITH_ADMIN_APPROVAL uchun so'rov yuborish tugmalari
+    privateApprovalChannels.forEach(channel => {
       keyboard
-        .text(
-          `📤 ${channel.channelName} uchun so'rov yuborish`,
-          `request_join_${channel.channelId}`,
-        )
+        .text(`📤 ${channel.name} uchun so'rov yuborish`, `request_join_${channel.id}`)
         .row();
     });
 
     keyboard.text('✅ Tekshirish', 'check_subscription').row();
     keyboard.text('💎 Premium sotib olish', 'show_premium');
 
-    // 10. Send (EDIT if possible)
+    // Xabar yuborish
     if (ctx.callbackQuery?.message) {
-      await ctx.api.editMessageText(
-        ctx.callbackQuery.message.chat.id,
-        ctx.callbackQuery.message.message_id,
-        message,
-        {
+      try {
+        await ctx.api.editMessageText(
+          ctx.callbackQuery.message.chat.id,
+          ctx.callbackQuery.message.message_id,
+          message,
+          {
+            parse_mode: 'HTML',
+            reply_markup: keyboard,
+          },
+        );
+      } catch (error) {
+        await ctx.reply(message, {
           parse_mode: 'HTML',
           reply_markup: keyboard,
-        },
-      );
+        });
+      }
     } else {
       await ctx.reply(message, {
         parse_mode: 'HTML',
@@ -1468,115 +1554,33 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     await ctx.answerCallbackQuery({ text: 'Tekshirilmoqda...' });
 
-    await this.channelStatusService.syncUserChannelStatuses(
-      String(ctx.from.id),
-      ctx.api,
-    );
+    const user = await this.userService.findByTelegramId(String(ctx.from.id));
+    if (!user) return;
 
-    const result = await this.channelStatusService.canUserAccessBot(
-      String(ctx.from.id),
-    );
+    // checkSubscription funksiyasi tekshiradi va agar kerak bo'lsa xabar yuboradi
+    const hasAccess = await this.checkSubscription(ctx, 0, 'check');
 
-    if (result.canAccess) {
+    if (hasAccess) {
+      // Barcha kanallarga qo'shilgan yoki so'rov yuborilgan
       try {
-        if (ctx.callbackQuery?.message) {
+        if (ctx.callbackQuery.message) {
           await ctx.api.deleteMessage(
             ctx.callbackQuery.message.chat.id,
             ctx.callbackQuery.message.message_id,
           );
         }
-      } catch (error) { }
+      } catch (error) {
+        this.logger.error('Error deleting message:', error);
+      }
 
-      const hasRequested = result.statuses.some(
-        (ch) => ch.status === ChannelStatus.requested,
+      await ctx.reply(
+        '✅ Siz barcha kanallarga qo\'shildingiz!\n\n' +
+        '🎬 Endi botdan foydalanishingiz mumkin.\n\n' +
+        '🔍 Kino yoki serial kodini yuboring.',
+        MainMenuKeyboard.getMainMenu(user.isPremium, user.isPremiumBanned),
       );
-
-      if (hasRequested) {
-        await ctx.reply(
-          '🎬 Endi botdan foydalanishingiz mumkin.\n\n🔍 Kino yoki serial kodini yuboring.',
-          { reply_markup: { remove_keyboard: true } },
-        );
-      } else {
-        await ctx.reply(
-          "✅ Siz barcha kanallarga obuna bo'ldingiz!\n\n🎬 Endi botdan foydalanishingiz mumkin.\n\n🔍 Kino yoki serial kodini yuboring.",
-          { reply_markup: { remove_keyboard: true } },
-        );
-      }
-      return;
     }
-
-    const needsAction = result.statuses.filter(
-      (s) => s.status === ChannelStatus.left,
-    );
-
-    const publicChannels = needsAction.filter(
-      (s) => s.channelType === 'PUBLIC',
-    );
-    const privateChannels = needsAction.filter(
-      (s) => s.channelType === 'PRIVATE',
-    );
-    const privateWithAdminApprovalChannels = needsAction.filter(
-      (s) => s.channelType === 'PRIVATE_WITH_ADMIN_APPROVAL',
-    );
-    const externalChannels = needsAction.filter(
-      (s) => s.channelType === 'EXTERNAL',
-    );
-
-    let message = `❌ Botdan foydalanish uchun quyidagi kanallarga obuna bo'lishingiz yoki join request yuborishingiz kerak:\n\n`;
-
-
-
-
-
-    // // External kanallar
-    // if (externalChannels.length > 0) {
-    //   message += `🌟 <b>Qo'shimcha kanallar:</b>\n`;
-    //   externalChannels.forEach((channel, index) => {
-    //     message += `${index + 1}. ${channel.channelName}\n`;
-    //   });
-    //   message += `\n`;
-    // }
-
-    message += `<blockquote>💎 Premium obuna sotib olib, kanallarga obuna bo'lmasdan foydalanishingiz mumkin.</blockquote>`;
-
-    const keyboard = new InlineKeyboard();
-
-    // Barcha kanallarni bitta inline keyboard'da ko'rsatish
-    // PUBLIC, PRIVATE va EXTERNAL kanallar uchun URL button
-    const allLinkChannels = [...publicChannels, ...privateChannels, ...externalChannels];
-    allLinkChannels.forEach((channel) => {
-      keyboard.url(channel.channelName, channel.channelLink).row();
-    });
-
-    // PRIVATE_WITH_ADMIN_APPROVAL kanallar uchun so'rov yuborish button
-    privateWithAdminApprovalChannels.forEach((channel) => {
-      keyboard
-        .text(
-          `📤 ${channel.channelName} uchun so'rov yuborish`,
-          `request_join_${channel.channelId}`,
-        )
-        .row();
-    });
-
-    keyboard.text('✅ Tekshirish', 'check_subscription').row();
-    keyboard.text('💎 Premium sotib olish', 'show_premium');
-
-    try {
-      await ctx.editMessageText(message, {
-        parse_mode: 'HTML',
-        reply_markup: keyboard,
-      });
-    } catch (error) {
-      // If edit fails (message too old or not found), send new message
-      try {
-        await ctx.reply(message, {
-          parse_mode: 'HTML',
-          reply_markup: keyboard,
-        });
-      } catch (replyError) {
-        this.logger.error('Error sending subscription message:', replyError);
-      }
-    }
+    // Agar hasAccess false bo'lsa, checkSubscription allaqachon xabar yuborgan
   }
 
   private async handleRequestJoin(ctx: BotContext) {
@@ -1697,8 +1701,23 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         show_alert: true
       });
 
-      // Update the message to remove the button for this channel
-      await this.handleCheckSubscription(ctx);
+      // Xabarni yangilash - endi bu kanaldan so'rov yuborilgan
+      try {
+        const hasAccess = await this.checkSubscription(ctx, 0, 'request');
+        if (hasAccess && ctx.callbackQuery.message) {
+          // Agar barcha kanallar bajarilgan bo'lsa, xabarni o'chirish
+          await ctx.api.deleteMessage(
+            ctx.callbackQuery.message.chat.id,
+            ctx.callbackQuery.message.message_id,
+          );
+          await ctx.reply(
+            '✅ Barcha kerakli kanallar uchun so\'rovlar yuborildi!\n\n' +
+            '⏳ Admin tasdiqlashini kuting.',
+          );
+        }
+      } catch (error) {
+        this.logger.error('Error updating message after request:', error);
+      }
 
     } catch (error) {
       this.logger.error(`Error in handleRequestJoin: ${error.message}`);
