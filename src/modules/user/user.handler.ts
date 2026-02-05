@@ -1544,7 +1544,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     keyboard.text('✅ Tekshirish', 'check_subscription').row();
     keyboard.text('💎 Premium sotib olish', 'show_premium');
 
-    // Xabar yuborish
+    // Xabar yuborish - har doim yuboramiz (contentType ga qaramay)
     if (ctx.callbackQuery?.message) {
       try {
         await ctx.api.editMessageText(
@@ -1574,87 +1574,63 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     return false;
   }
 
-
-
   private async handleCheckSubscription(ctx: BotContext) {
     if (!ctx.callbackQuery || !ctx.from) return;
 
-    this.logger.log(`🔍 User ${ctx.from.id} checking subscription status...`);
-
-    const user = await this.userService.findByTelegramId(String(ctx.from.id));
-    if (!user) {
-      this.logger.error(`❌ User ${ctx.from.id} not found in handleCheckSubscription`);
-      await ctx.answerCallbackQuery({ text: '❌ Foydalanuvchi topilmadi.', show_alert: true });
-      return;
-    }
+    this.logger.log(`🔍 User ${ctx.from.id} bosdi Tekshirish tugmasini`);
 
     try {
-      // Avval tekshiramiz
+      await ctx.answerCallbackQuery({ text: 'Tekshirilmoqda...' });
+
+      const user = await this.userService.findByTelegramId(String(ctx.from.id));
+      if (!user) {
+        this.logger.error(`❌ User ${ctx.from.id} topilmadi`);
+        await ctx.reply('❌ Foydalanuvchi topilmadi.');
+        return;
+      }
+
+      // Barcha kanallarni tekshiramiz
       const hasAccess = await this.checkSubscription(ctx, 0, 'check');
 
-      this.logger.log(`📊 User ${ctx.from.id} check result: hasAccess=${hasAccess}`);
-
-      // Keyin callback query ga javob beramiz
-      await ctx.answerCallbackQuery({ text: hasAccess ? '✅ Muvaffaqiyatli!' : '⏳ Tekshirilmoqda...' });
+      this.logger.log(`📊 User ${ctx.from.id}: hasAccess = ${hasAccess}`);
 
       if (hasAccess) {
-        this.logger.log(`🎯 Attempting to send success message to user ${ctx.from.id}`);
-        
-        // Barcha kanallarga qo'shilgan yoki so'rov yuborilgan
-        try {
-          if (ctx.callbackQuery.message) {
-            try {
-              await ctx.api.deleteMessage(
-                ctx.callbackQuery.message.chat.id,
-                ctx.callbackQuery.message.message_id,
-              );
-              this.logger.log(`🗑️ Deleted old message for user ${ctx.from.id}`);
-            } catch (deleteError) {
-              this.logger.warn(`Could not delete message for user ${ctx.from.id}: ${deleteError.message}`);
-            }
-          }
+        // ✅ Barcha kanallarga qo'shilgan yoki so'rov yuborilgan
+        this.logger.log(`✅ User ${ctx.from.id} has access!`);
 
-          const successMessage = '✅ Siz barcha kanallarga qo\'shildingiz!\n\n' +
-            '🎬 Endi botdan foydalanishingiz mumkin.\n\n' +
-            '🔍 Kino yoki serial kodini yuboring.';
-
+        // Eski xabarni o'chirish
+        if (ctx.callbackQuery.message) {
           try {
-            const keyboard = MainMenuKeyboard.getMainMenu(user.isPremium, user.isPremiumBanned);
-            await ctx.reply(successMessage, keyboard);
-            this.logger.log(`✅ SUCCESS: User ${ctx.from.id} has full access - message sent with keyboard!`);
-          } catch (keyboardError) {
-            this.logger.warn(`Keyboard error, sending without keyboard: ${keyboardError.message}`);
-            await ctx.reply(successMessage);
-            this.logger.log(`✅ SUCCESS: User ${ctx.from.id} has full access - message sent without keyboard!`);
-          }
-        } catch (replyError) {
-          this.logger.error(`❌ CRITICAL: Error sending reply for user ${ctx.from.id}:`, replyError);
-          this.logger.error(`Error stack:`, replyError.stack);
-          
-          // Agar reply ishlamasa, kamida callback answerni qaytaramiz
-          try {
-            await ctx.api.sendMessage(
-              ctx.from.id,
-              '✅ Siz barcha kanallarga qo\'shildingiz!\n\n' +
-              '🎬 Endi botdan foydalanishingiz mumkin.\n\n' +
-              '🔍 Kino yoki serial kodini yuboring.',
+            await ctx.api.deleteMessage(
+              ctx.callbackQuery.message.chat.id,
+              ctx.callbackQuery.message.message_id,
             );
-            this.logger.log(`✅ Sent message via direct sendMessage for user ${ctx.from.id}`);
-          } catch (sendError) {
-            this.logger.error(`❌ Could not send via sendMessage either:`, sendError);
+            this.logger.log(`🗑️ Eski xabar o'chirildi`);
+          } catch (err) {
+            this.logger.warn(`Xabarni o'chirib bo'lmadi: ${err.message}`);
           }
         }
+
+        // Success xabarni yuborish
+        const successMessage = 
+          '✅ Siz barcha kanallarga qo\'shildingiz!\n\n' +
+          '🎬 Endi botdan foydalanishingiz mumkin.\n\n' +
+          '🔍 Kino yoki serial kodini yuboring.';
+
+        await ctx.reply(
+          successMessage,
+          MainMenuKeyboard.getMainMenu(user.isPremium, user.isPremiumBanned),
+        );
+
+        this.logger.log(`✅ SUCCESS xabar yuborildi user ${ctx.from.id} ga!`);
       } else {
-        this.logger.log(`⚠️ User ${ctx.from.id} still needs to join some channels`);
+        // ❌ Hali qo'shilishi kerak - checkSubscription allaqachon xabar yuborgan
+        this.logger.log(`⚠️ User ${ctx.from.id} hali kanallar kerak - xabar allaqachon yuborilgan`);
       }
     } catch (error) {
-      this.logger.error(`❌ Error in handleCheckSubscription for user ${ctx.from.id}:`, error);
-      this.logger.error(`Error stack:`, error.stack);
-      try {
-        await ctx.reply('❌ Xatolik yuz berdi. Iltimos qaytadan urinib ko\'ring.');
-      } catch (fallbackError) {
-        this.logger.error(`Could not send error message:`, fallbackError);
-      }
+      this.logger.error(`❌ Xatolik handleCheckSubscription da:`, error);
+      this.logger.error(`Stack:`, error.stack);
+      await ctx.reply('❌ Xatolik yuz berdi. Qaytadan urinib ko\'ring.').catch(() => {});
     }
   }
 
