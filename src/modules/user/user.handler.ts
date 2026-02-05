@@ -1382,11 +1382,11 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
         externalChannels.forEach(channel => {
           keyboard
-            .text(`🔗 ${channel.channelName}`, `external_${channel.id}`)
+            .text(`${channel.channelName}`, `external_${channel.id}`)
             .row();
         });
 
-        const message = `🌟 Bizning ijtimoiy tarmoqlarda ham kuzatib boring:\n\n` +
+        const message = 
           `<i>Bu sahifalarga azolik majburiy emas, lekin yangiliklar va qiziqarli postlar topasiz!</i>`;
 
         try {

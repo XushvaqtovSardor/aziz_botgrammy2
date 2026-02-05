@@ -4353,7 +4353,7 @@ Qaysi rol berasiz?
       const caption =
         '╭────────────────────\n' +
         `├‣  ${contentType === 'serial' ? 'Serial' : 'Kino'} nomi : ${content.title}\n` +
-        `├‣  ${contentType === 'serial' ? 'Serial' : 'Kino'} kodi: ${contentType === 'serial' ? 's' : ''}${content.code}\n` +
+        `├‣  ${contentType === 'serial' ? 'Serial' : 'Kino'} kodi: ${contentType === 'serial' ? '' : ''}${content.code}\n` +
         `├‣  Qism: ${episodesCount}\n` +
         `├‣  Janrlari: ${content.genre || "Noma'lum"}\n` +
         `├‣  Kanal: ${channelLink}\n` +
