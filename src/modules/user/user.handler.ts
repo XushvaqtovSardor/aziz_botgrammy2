@@ -1432,7 +1432,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
         externalChannels.forEach(channel => {
           keyboard
-            .text(`🔗 ${channel.channelName}`, `external_${channel.id}`)
+            .text(`${channel.channelName}`, `external_${channel.id}`)
             .row();
         });
 
@@ -2032,7 +2032,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
       // Open URL in popup
       await ctx.answerCallbackQuery({
-        text: `🔗 ${channel.channelName} sahifasiga o'tish...`,
+        text: `${channel.channelName} sahifasiga o'tish...`,
         url: channel.channelLink,
       });
 
