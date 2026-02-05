@@ -5746,7 +5746,7 @@ Qaysi rol berasiz?
 
         const formattedCaption = `╭────────────────────
 ├‣ ${contentType === 'serial' ? 'Serial' : 'Kino'} nomi : ${title || 'Noma\'lum'}
-├‣ ${contentType === 'serial' ? 'Serial' : 'Kino'} kodi: ${contentType === 'serial' ? 's' : ''}${code}
+├‣ ${contentType === 'serial' ? 'Serial' : 'Kino'} kodi: ${contentType === 'serial' ? '' : ''}${code}
 ├‣ Janrlari: ${genre || 'Janr ko\'rsatilmadi'}
 ├‣ Kanal: ${targetChannelLink}
 ╰────────────────────
@@ -5760,7 +5760,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 🔞 Ba’zi sahnalar 18+ bo‘lishi mumkin – agar noqulay bo‘lsa, ko‘rishni to‘xtating.</blockquote>`;
         // ------------------------
 
-        const deepLink = `https://t.me/${botUsername}?start=${contentType === 'serial' ? 's' : ''}${code}`;
+        const deepLink = `https://t.me/${botUsername}?start=${contentType === 'serial' ? '' : ''}${code}`;
         const keyboard = new InlineKeyboard().url('▶️ Tomosha qilish', deepLink);
 
         if (poster) {
