@@ -1436,8 +1436,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
             .row();
         });
 
-        const message = `🌟 Bizning ijtimoiy tarmoqlarda ham kuzatib boring:\n\n` +
-          `<i>Bu sahifalarga azolik majburiy emas!</i>`;
+        const message = ``;
 
         try {
           await ctx.reply(message, {
@@ -1656,12 +1655,12 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     message += `<blockquote>💎 Premium obuna sotib olib, kanallarga obuna bo'lmasdan foydalanishingiz mumkin.</blockquote>`;
 
     if (contentCode && contentType) {
-      message += `\n\n🎬 Kino kodi: <b>${contentCode}</b>`;
+      message += ``;
     }
 
     // Agar external kanallar bo'lsa, ularga ham e'tibor qarating
     if (externalChannelsToShow.length > 0) {
-      message += `\n\n<i>🌟 Ijtimoiy tarmoqlarimizda ham kuzatib boring!</i>`;
+      message += ``;
     }
 
     // Keyboard yaratish
