@@ -986,7 +986,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
 ▶️ Kinoning to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!
 
-        < blockquote expandable>⚠️ ESLATMA:
+<blockquote expandable>⚠️ ESLATMA:
 Biz yuklayotgan kinolar turli saytlardan olinadi.
 🎰 Ba'zi kinolarda kazino, qimor yoki "pulni ko'paytirib beramiz" degan reklama chiqishi mumkin.
 🚫 Bunday reklamalarga aslo ishonmang! Ular firibgarlar va sizni aldaydi.
