@@ -134,12 +134,14 @@ export class ChannelStatusService {
       canAccess,
       statuses: [
         ...nonExternalStatuses.map((s) => ({
+          channelId: s.channelId,
           channelName: s.channelName,
           channelLink: s.channelLink,
           channelType: s.channelType,
           status: s.status,
         })),
         ...externalStatuses.map((s) => ({
+          channelId: s.channelId,
           channelName: s.channelName,
           channelLink: s.channelLink,
           channelType: s.channelType,
@@ -214,11 +216,8 @@ export class ChannelStatusService {
             `Error checking channel ${channel.channelName} for user ${userTelegramId}:`,
             error instanceof Error ? error.message : String(error),
           );
-          await this.updateStatus(
-            userTelegramId,
-            channel.channelId,
-            ChannelStatus.left,
-          );
+          // Don't update status on error - preserve existing status
+          // This prevents overwriting 'requested' status when API fails
         }
       }
     } catch (error) {
