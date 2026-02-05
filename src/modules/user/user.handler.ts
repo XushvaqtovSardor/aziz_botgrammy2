@@ -245,6 +245,19 @@ export class UserHandler implements OnModuleInit {
       }
     });
 
+    bot.callbackQuery(/^external_(\d+)$/, async (ctx) => {
+      try {
+        await this.handleExternalChannel(ctx);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error in external channel callback for user ${ctx.from?.id}: ${error.message}`,
+        );
+        await ctx
+          .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
+          .catch(() => { });
+      }
+    });
+
     bot.callbackQuery(/^show_premium$/, async (ctx) => {
       try {
         await this.showPremium(ctx);
@@ -1338,16 +1351,6 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       return false;
     }
 
-    // Premium foydalanuvchilar uchun tekshirish shart emas
-    if (
-      user.isPremium &&
-      user.premiumExpiresAt &&
-      user.premiumExpiresAt > new Date()
-    ) {
-      this.logger.log(`✅ User ${ctx.from.id} premium, subscriptions kerak emas`);
-      return true;
-    }
-
     // Barcha faol kanallarni olish
     const allChannels = await this.prisma.mandatoryChannel.findMany({
       where: { isActive: true },
@@ -1358,6 +1361,94 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     if (!allChannels.length) {
       this.logger.log(`✅ Kanallar yo'q, access granted`);
+      return true;
+    }
+
+    // External kanallarni ajratib olish
+    const externalChannels = allChannels.filter(ch => ch.type === 'EXTERNAL');
+    const mandatoryChannels = allChannels.filter(ch => ch.type !== 'EXTERNAL');
+
+    // Premium foydalanuvchilar uchun - faqat external kanallarni ko'rsatish
+    const isPremium = user.isPremium &&
+      user.premiumExpiresAt &&
+      user.premiumExpiresAt > new Date();
+
+    if (isPremium) {
+      this.logger.log(`✅ User ${ctx.from.id} premium, majburiy kanallar tekshirilmaydi`);
+
+      // Agar external kanallar bo'lsa, ularni ko'rsatish
+      if (externalChannels.length > 0) {
+        const keyboard = new InlineKeyboard();
+
+        externalChannels.forEach(channel => {
+          keyboard
+            .text(`🔗 ${channel.channelName}`, `external_${channel.id}`)
+            .row();
+        });
+
+        const message = `🌟 Bizning ijtimoiy tarmoqlarda ham kuzatib boring:\n\n` +
+          `<i>Bu sahifalarga azolik majburiy emas, lekin yangiliklar va qiziqarli postlar topasiz!</i>`;
+
+        try {
+          if (ctx.callbackQuery?.message) {
+            try {
+              await ctx.api.editMessageText(
+                ctx.callbackQuery.message.chat.id,
+                ctx.callbackQuery.message.message_id,
+                message,
+                {
+                  parse_mode: 'HTML',
+                  reply_markup: keyboard,
+                },
+              );
+            } catch (error) {
+              // If edit fails, send new message
+              await ctx.reply(message, {
+                parse_mode: 'HTML',
+                reply_markup: keyboard,
+              });
+            }
+          } else {
+            await ctx.reply(message, {
+              parse_mode: 'HTML',
+              reply_markup: keyboard,
+            });
+          }
+        } catch (error) {
+          this.logger.error(`Error showing external channels to premium user:`, error);
+        }
+      }
+
+      return true;
+    }
+
+    // Oddiy userlar uchun - majburiy kanallarni tekshirish
+    if (!mandatoryChannels.length) {
+      this.logger.log(`✅ Majburiy kanallar yo'q, access granted`);
+
+      // Faqat external kanallar bo'lsa, ularni ko'rsatish
+      if (externalChannels.length > 0) {
+        const keyboard = new InlineKeyboard();
+
+        externalChannels.forEach(channel => {
+          keyboard
+            .text(`🔗 ${channel.channelName}`, `external_${channel.id}`)
+            .row();
+        });
+
+        const message = `🌟 Bizning ijtimoiy tarmoqlarda ham kuzatib boring:\n\n` +
+          `<i>Bu sahifalarga azolik majburiy emas!</i>`;
+
+        try {
+          await ctx.reply(message, {
+            parse_mode: 'HTML',
+            reply_markup: keyboard,
+          });
+        } catch (error) {
+          this.logger.error(`Error showing external channels:`, error);
+        }
+      }
+
       return true;
     }
 
@@ -1383,17 +1474,19 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       type: ChannelType;
     }> = [];
 
-    // API chaqiriqlarni parallel qilish uchun barcha promise'larni to'playmiz
-    const channelCheckPromises = allChannels.map(async (channel) => {
-      const currentStatus = statusMap.get(channel.id);
-      
-      this.logger.log(`🔍 Channel tekshirilmoqda: ${channel.channelName} (ID: ${channel.id}, Type: ${channel.type}, Current Status: ${currentStatus || 'none'})`);
+    // External kanallar ro'yxati (yuqorida allChannels dan filter qilingan)
+    const externalChannelsToShow = externalChannels.map(ch => ({
+      id: ch.id,
+      name: ch.channelName,
+      link: ch.channelLink,
+      type: ch.type,
+    }));
 
-      // EXTERNAL kanallar uchun tekshirish yo'q (blocking emas)
-      if (channel.type === 'EXTERNAL') {
-        this.logger.log(`   ✅ EXTERNAL kanal, o'tkazildi`);
-        return null;
-      }
+    // API chaqiriqlarni parallel qilish uchun barcha promise'larni to'playmiz (faqat majburiy kanallar)
+    const channelCheckPromises = mandatoryChannels.map(async (channel) => {
+      const currentStatus = statusMap.get(channel.id);
+
+      this.logger.log(`🔍 Channel tekshirilmoqda: ${channel.channelName} (ID: ${channel.id}, Type: ${channel.type}, Current Status: ${currentStatus || 'none'})`);
 
       // PRIVATE_WITH_ADMIN_APPROVAL: so'rov yuborgan bo'lsa yetarli
       if (channel.type === 'PRIVATE_WITH_ADMIN_APPROVAL') {
@@ -1428,7 +1521,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
       try {
         this.logger.log(`   🌐 API chaqirilmoqda: ${channel.channelId}`);
-        
+
         // 5 sekundlik timeout bilan API chaqiriq
         const memberPromise = ctx.api.getChatMember(
           channel.channelId,
@@ -1440,7 +1533,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         );
 
         const member = await Promise.race([memberPromise, timeoutPromise]) as any;
-        
+
         this.logger.log(`   📡 API javob: status = ${member.status}`);
 
         const isJoined =
@@ -1451,7 +1544,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
         if (isJoined) {
           this.logger.log(`   ✅ API: User qo'shilgan! DB yangilanadi.`);
-          
+
           // Database'ni yangilash (async, kutmaymiz)
           this.prisma.userChannelStatus.upsert({
             where: {
@@ -1524,13 +1617,13 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       }
     });
 
-    this.logger.log(`⏳ ${allChannels.length} ta kanal parallel tekshirilmoqda...`);
+    this.logger.log(`⏳ ${mandatoryChannels.length} ta majburiy kanal parallel tekshirilmoqda...`);
 
     // Barcha tekshiruvlarni parallel bajaramiz
     const results = await Promise.all(channelCheckPromises);
-    
+
     this.logger.log(`✅ Tekshiruvlar tugadi, natijalar tahlil qilinmoqda...`);
-    
+
     // null bo'lmaganlarni channelsToShow ga qo'shamiz
     results.forEach((result, index) => {
       if (result !== null) {
@@ -1581,12 +1674,21 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         .row();
     });
 
+    // EXTERNAL kanallar uchun tracking button (blocking qilmaydi)
+    if (externalChannels.length > 0) {
+      externalChannels.forEach(channel => {
+        keyboard
+          .text(`🔗 ${channel.name}`, `external_${channel.id}`)
+          .row();
+      });
+    }
+
     keyboard.text('✅ Tekshirish', 'check_subscription').row();
     keyboard.text('💎 Premium sotib olish', 'show_premium');
 
     // Xabar yuborish - har doim yuboramiz (contentType ga qaramay)
     this.logger.log(`📤 Xabar yuborilmoqda: ${channelsToShow.length} ta kanal`);
-    
+
     try {
       if (ctx.callbackQuery?.message) {
         try {
@@ -1642,7 +1744,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     try {
       this.logger.log(`👤 User ${ctx.from.id} ni qidiramiz...`);
-      
+
       const user = await this.userService.findByTelegramId(String(ctx.from.id));
       if (!user) {
         this.logger.error(`❌ User ${ctx.from.id} topilmadi`);
@@ -1656,7 +1758,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       this.logger.log(`🔍 checkSubscription chaqirilmoqda...`);
       const hasAccess = await this.checkSubscription(ctx, 0, 'check');
       this.logger.log(`🔍 checkSubscription tugadi! Natija: ${hasAccess}`);
-      
+
       this.logger.log(`📊 📊 📊 User ${ctx.from.id}: hasAccess = ${hasAccess} (type: ${typeof hasAccess})`);
 
       if (hasAccess === true) {
@@ -1681,8 +1783,8 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
         // Success xabarni yuborish
         this.logger.log(`📤📤📤 Success xabar yuborilmoqda user ${ctx.from.id} ga...`);
-        
-        const successMessage = 
+
+        const successMessage =
           '✅ Siz barcha kanallarga qo\'shildingiz!\n\n' +
           '🎬 Endi botdan foydalanishingiz mumkin.\n\n' +
           '🔍 Kino yoki serial kodini yuboring.';
@@ -1693,18 +1795,18 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
           this.logger.log(`⌨️ Keyboard tayyorlanmoqda...`);
           const keyboard = MainMenuKeyboard.getMainMenu(user.isPremium, user.isPremiumBanned);
           this.logger.log(`✅ Keyboard tayyor!`);
-          
+
           this.logger.log(`📨 ctx.reply chaqirilmoqda...`);
           await ctx.reply(successMessage, keyboard);
           this.logger.log(`✅ ctx.reply tugadi!`);
-          
+
           this.logger.log(`🎊🎊🎊 SUCCESS xabar YUBORILDI user ${ctx.from.id} ga!`);
         } catch (sendError) {
           this.logger.error(`❌❌❌ Success xabar yuborishda XATOLIK:`, sendError);
           this.logger.error(`Error name: ${sendError?.name}`);
           this.logger.error(`Error message: ${sendError?.message}`);
           this.logger.error(`Error stack: ${sendError?.stack}`);
-          
+
           // Fallback: oddiy xabar yuborish (keyboard siz)
           try {
             this.logger.log(`🔄 Fallback - keyboard siz yuboramiz...`);
@@ -1722,7 +1824,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       this.logger.error(`❌❌❌ XATOLIK handleCheckSubscription da:`, error);
       this.logger.error(`Error message: ${error?.message || 'unknown'}`);
       this.logger.error(`Error stack: ${error?.stack || 'no stack'}`);
-      
+
       try {
         await ctx.reply('❌ Xatolik yuz berdi. Qaytadan urinib ko\'ring.');
       } catch (replyError) {
@@ -1873,6 +1975,65 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     } catch (error) {
       this.logger.error(`Error in handleRequestJoin: ${error.message}`);
+      await ctx.answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' });
+    }
+  }
+
+  private async handleExternalChannel(ctx: BotContext) {
+    if (!ctx.callbackQuery || !ctx.from) return;
+
+    const match = ctx.callbackQuery.data?.match(/^external_(\d+)$/);
+    if (!match) return;
+
+    const channelId = parseInt(match[1]);
+
+    try {
+      const user = await this.userService.findByTelegramId(String(ctx.from.id));
+      if (!user) {
+        await ctx.answerCallbackQuery({ text: '❌ Foydalanuvchi topilmadi.' });
+        return;
+      }
+
+      // Get channel
+      const channel = await this.prisma.mandatoryChannel.findUnique({
+        where: { id: channelId },
+      });
+
+      if (!channel || channel.type !== 'EXTERNAL') {
+        await ctx.answerCallbackQuery({ text: '❌ Kanal topilmadi.' });
+        return;
+      }
+
+      // Track user click - update status to 'joined' for external channels
+      await this.prisma.userChannelStatus.upsert({
+        where: {
+          userId_channelId: {
+            userId: user.id,
+            channelId: channelId,
+          },
+        },
+        create: {
+          userId: user.id,
+          channelId: channelId,
+          status: 'joined',
+          lastUpdated: new Date(),
+        },
+        update: {
+          status: 'joined',
+          lastUpdated: new Date(),
+        },
+      });
+
+      this.logger.log(`✅ User ${ctx.from.id} clicked external channel: ${channel.channelName}`);
+
+      // Open URL in popup
+      await ctx.answerCallbackQuery({
+        text: `🔗 ${channel.channelName} sahifasiga o'tish...`,
+        url: channel.channelLink,
+      });
+
+    } catch (error) {
+      this.logger.error(`Error in handleExternalChannel: ${error.message}`);
       await ctx.answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' });
     }
   }

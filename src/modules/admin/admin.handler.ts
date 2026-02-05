@@ -4237,7 +4237,7 @@ Qaysi rol berasiz?
       this.sessionService.updateSessionData(ctx.from.id, {});
 
       await ctx.reply(
-        '🎬 Kino yoki serial kodini kiriting:\n\n' + 'Masalan: 100 200 300',
+        '🎬 Kino yoki serial kodini kiriting:\n\nMasalan: 2, 57, 100',
         {
           reply_markup: {
             keyboard: [[{ text: '❌ Bekor qilish' }]],
@@ -4281,27 +4281,29 @@ Qaysi rol berasiz?
         return;
       }
 
-      const isSerial = text.toLowerCase().startsWith('s');
-      const code = isSerial ? text.substring(1) : text;
+      const code = text.trim();
 
       if (!code || isNaN(Number(code))) {
         await ctx.reply(
-          "❌ Noto'g'ri format! Masalan: 100 yoki s200\n\nQayta kiriting:",
+          "❌ Noto'g'ri format! Faqat raqam kiriting:\n\nMasalan: 2, 57, 100",
         );
         return;
       }
 
       const codeNumber = parseInt(code);
 
+      // Try to find movie first, then serial
       let content: any;
       let contentType: string;
 
-      if (isSerial) {
-        content = await this.serialService.findByCode(code);
-        contentType = 'serial';
-      } else {
-        content = await this.movieService.findByCode(code);
+      content = await this.movieService.findByCode(code);
+      if (content) {
         contentType = 'movie';
+      } else {
+        content = await this.serialService.findByCode(code);
+        if (content) {
+          contentType = 'serial';
+        }
       }
 
       if (!content) {
@@ -4315,11 +4317,11 @@ Qaysi rol berasiz?
       const field = await this.fieldService.findOne(content.fieldId);
 
       let episodesCount = content.totalEpisodes || 0;
-      if (isSerial && episodesCount === 0) {
+      if (contentType === 'serial' && episodesCount === 0) {
         episodesCount = await this.prisma.episode.count({
           where: { serialId: content.id }
         });
-      } else if (!isSerial && episodesCount === 0) {
+      } else if (contentType === 'movie' && episodesCount === 0) {
         episodesCount = await this.prisma.movieEpisode.count({
           where: { movieId: content.id }
         });
@@ -4350,13 +4352,13 @@ Qaysi rol berasiz?
 
       const caption =
         '╭────────────────────\n' +
-        `├‣  ${isSerial ? 'Serial' : 'Kino'} nomi : ${content.title}\n` +
-        `├‣  ${isSerial ? 'Serial' : 'Kino'} kodi: ${isSerial ? 's' : ''}${content.code}\n` +
+        `├‣  ${contentType === 'serial' ? 'Serial' : 'Kino'} nomi : ${content.title}\n` +
+        `├‣  ${contentType === 'serial' ? 'Serial' : 'Kino'} kodi: ${contentType === 'serial' ? 's' : ''}${content.code}\n` +
         `├‣  Qism: ${episodesCount}\n` +
         `├‣  Janrlari: ${content.genre || "Noma'lum"}\n` +
         `├‣  Kanal: ${channelLink}\n` +
         '╰────────────────────\n' +
-        `▶️ ${isSerial ? 'Serialning' : 'Kinoning'} to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!`;
+        `▶️ ${contentType === 'serial' ? 'Serialning' : 'Kinoning'} to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!`;
 
       const messageText = "🎬 Premyera e'loni\n\n" + caption + '\n\n📢 Bu kontentni qayerga yubormoqchisiz?';
 
