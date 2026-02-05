@@ -1659,6 +1659,11 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       message += `\n\n🎬 Kino kodi: <b>${contentCode}</b>`;
     }
 
+    // Agar external kanallar bo'lsa, ularga ham e'tibor qarating
+    if (externalChannelsToShow.length > 0) {
+      message += `\n\n<i>🌟 Ijtimoiy tarmoqlarimizda ham kuzatib boring!</i>`;
+    }
+
     // Keyboard yaratish
     const keyboard = new InlineKeyboard();
 
@@ -1675,8 +1680,8 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     });
 
     // EXTERNAL kanallar uchun tracking button (blocking qilmaydi)
-    if (externalChannels.length > 0) {
-      externalChannels.forEach(channel => {
+    if (externalChannelsToShow.length > 0) {
+      externalChannelsToShow.forEach(channel => {
         keyboard
           .text(`🔗 ${channel.name}`, `external_${channel.id}`)
           .row();
