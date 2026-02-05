@@ -221,7 +221,7 @@ export class UserHandler implements OnModuleInit {
 
     bot.callbackQuery(/^check_subscription$/, async (ctx) => {
       try {
-        await this.checkSubscription(ctx);
+        await this.handleCheckSubscription(ctx);
       } catch (error) {
         this.logger.error(
           `❌ Error in check subscription callback for user ${ctx.from?.id}: ${error.message}`,
