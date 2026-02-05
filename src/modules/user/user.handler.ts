@@ -1585,46 +1585,64 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     keyboard.text('💎 Premium sotib olish', 'show_premium');
 
     // Xabar yuborish - har doim yuboramiz (contentType ga qaramay)
-    if (ctx.callbackQuery?.message) {
-      try {
-        await ctx.api.editMessageText(
-          ctx.callbackQuery.message.chat.id,
-          ctx.callbackQuery.message.message_id,
-          message,
-          {
+    this.logger.log(`📤 Xabar yuborilmoqda: ${channelsToShow.length} ta kanal`);
+    
+    try {
+      if (ctx.callbackQuery?.message) {
+        try {
+          await ctx.api.editMessageText(
+            ctx.callbackQuery.message.chat.id,
+            ctx.callbackQuery.message.message_id,
+            message,
+            {
+              parse_mode: 'HTML',
+              reply_markup: keyboard,
+            },
+          );
+          this.logger.log(`📝 Edited message for user ${ctx.from.id} - showing ${channelsToShow.length} channels`);
+        } catch (error) {
+          this.logger.warn(`Could not edit message, sending new one: ${error.message}`);
+          await ctx.reply(message, {
             parse_mode: 'HTML',
             reply_markup: keyboard,
-          },
-        );
-        this.logger.log(`📝 Edited message for user ${ctx.from.id} - showing ${channelsToShow.length} channels`);
-      } catch (error) {
-        this.logger.warn(`Could not edit message, sending new one: ${error.message}`);
+          });
+          this.logger.log(`📝 Sent new message showing ${channelsToShow.length} channels`);
+        }
+      } else {
         await ctx.reply(message, {
           parse_mode: 'HTML',
           reply_markup: keyboard,
         });
+        this.logger.log(`📝 Sent message showing ${channelsToShow.length} channels`);
       }
-    } else {
-      await ctx.reply(message, {
-        parse_mode: 'HTML',
-        reply_markup: keyboard,
-      });
+    } catch (error) {
+      this.logger.error(`❌ Xabar yuborishda XATOLIK:`, error);
+      this.logger.error(`Error: ${error?.message}`);
     }
 
+    this.logger.log(`❌❌❌ checkSubscription RETURNS FALSE!`);
     return false;
   }
 
   private async handleCheckSubscription(ctx: BotContext) {
-    if (!ctx.callbackQuery || !ctx.from) return;
+    if (!ctx.callbackQuery || !ctx.from) {
+      this.logger.error(`❌ handleCheckSubscription: ctx.callbackQuery yoki ctx.from yo'q`);
+      return;
+    }
 
     this.logger.log(`🔍 User ${ctx.from.id} bosdi Tekshirish tugmasini`);
 
     // Callback query ni darhol javob beramiz (timeout bo'lmasligi uchun)
-    await ctx.answerCallbackQuery({ text: 'Tekshirilmoqda...' }).catch(err => {
+    try {
+      await ctx.answerCallbackQuery({ text: 'Tekshirilmoqda...' });
+      this.logger.log(`✅ answerCallbackQuery yuborildi`);
+    } catch (err) {
       this.logger.warn(`⚠️ Callback query javob berishda xato: ${err.message}`);
-    });
+    }
 
     try {
+      this.logger.log(`👤 User ${ctx.from.id} ni qidiramiz...`);
+      
       const user = await this.userService.findByTelegramId(String(ctx.from.id));
       if (!user) {
         this.logger.error(`❌ User ${ctx.from.id} topilmadi`);
@@ -1632,51 +1650,64 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         return;
       }
 
-      this.logger.log(`👤 User ${ctx.from.id} topildi, kanallarni tekshiramiz...`);
+      this.logger.log(`✅ User ${ctx.from.id} topildi, kanallarni tekshiramiz...`);
 
       // Barcha kanallarni tekshiramiz
+      this.logger.log(`🔍 checkSubscription chaqirilmoqda...`);
       const hasAccess = await this.checkSubscription(ctx, 0, 'check');
+      this.logger.log(`🔍 checkSubscription tugadi! Natija: ${hasAccess}`);
+      
+      this.logger.log(`📊 📊 📊 User ${ctx.from.id}: hasAccess = ${hasAccess} (type: ${typeof hasAccess})`);
 
-      this.logger.log(`📊 User ${ctx.from.id}: hasAccess = ${hasAccess}`);
-
-      if (hasAccess) {
+      if (hasAccess === true) {
         // ✅ Barcha kanallarga qo'shilgan yoki so'rov yuborilgan
-        this.logger.log(`✅ User ${ctx.from.id} barcha kanallarga qo'shilgan!`);
+        this.logger.log(`🎉🎉🎉 IF BLOCK ICHIGA KIRDIK! User ${ctx.from.id} barcha kanallarga qo'shilgan!`);
 
         // Eski xabarni o'chirishga harakat qilamiz
+        this.logger.log(`🗑️ Eski xabarni o'chirishga harakat...`);
         if (ctx.callbackQuery.message) {
           try {
             await ctx.api.deleteMessage(
               ctx.callbackQuery.message.chat.id,
               ctx.callbackQuery.message.message_id,
             );
-            this.logger.log(`🗑️ Eski xabar o'chirildi`);
+            this.logger.log(`✅ Eski xabar o'chirildi!`);
           } catch (err) {
             this.logger.warn(`⚠️ Xabarni o'chirib bo'lmadi: ${err.message}`);
           }
+        } else {
+          this.logger.log(`⚠️ ctx.callbackQuery.message yo'q`);
         }
 
         // Success xabarni yuborish
-        this.logger.log(`📤 Success xabar yuborilmoqda user ${ctx.from.id} ga...`);
+        this.logger.log(`📤📤📤 Success xabar yuborilmoqda user ${ctx.from.id} ga...`);
         
         const successMessage = 
           '✅ Siz barcha kanallarga qo\'shildingiz!\n\n' +
           '🎬 Endi botdan foydalanishingiz mumkin.\n\n' +
           '🔍 Kino yoki serial kodini yuboring.';
 
+        this.logger.log(`📝 Success message tayyor: ${successMessage.substring(0, 50)}...`);
+
         try {
+          this.logger.log(`⌨️ Keyboard tayyorlanmoqda...`);
           const keyboard = MainMenuKeyboard.getMainMenu(user.isPremium, user.isPremiumBanned);
+          this.logger.log(`✅ Keyboard tayyor!`);
           
+          this.logger.log(`📨 ctx.reply chaqirilmoqda...`);
           await ctx.reply(successMessage, keyboard);
+          this.logger.log(`✅ ctx.reply tugadi!`);
           
-          this.logger.log(`✅✅✅ SUCCESS xabar YUBORILDI user ${ctx.from.id} ga!`);
+          this.logger.log(`🎊🎊🎊 SUCCESS xabar YUBORILDI user ${ctx.from.id} ga!`);
         } catch (sendError) {
-          this.logger.error(`❌ Success xabar yuborishda XATOLIK:`, sendError);
-          this.logger.error(`Message: ${sendError.message}`);
-          this.logger.error(`Stack: ${sendError.stack}`);
+          this.logger.error(`❌❌❌ Success xabar yuborishda XATOLIK:`, sendError);
+          this.logger.error(`Error name: ${sendError?.name}`);
+          this.logger.error(`Error message: ${sendError?.message}`);
+          this.logger.error(`Error stack: ${sendError?.stack}`);
           
           // Fallback: oddiy xabar yuborish (keyboard siz)
           try {
+            this.logger.log(`🔄 Fallback - keyboard siz yuboramiz...`);
             await ctx.reply(successMessage);
             this.logger.log(`✅ Fallback xabar yuborildi (keyboard siz)`);
           } catch (fallbackError) {
@@ -1685,7 +1716,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         }
       } else {
         // ❌ Hali qo'shilishi kerak - checkSubscription allaqachon xabar yuborgan
-        this.logger.log(`⚠️ User ${ctx.from.id} hali kanallar kerak - xabar allaqachon yuborilgan`);
+        this.logger.log(`❌❌❌ ELSE BLOCK! hasAccess = ${hasAccess}, User ${ctx.from.id} hali kanallar kerak`);
       }
     } catch (error) {
       this.logger.error(`❌❌❌ XATOLIK handleCheckSubscription da:`, error);
