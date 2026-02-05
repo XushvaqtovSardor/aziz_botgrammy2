@@ -1387,7 +1387,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         });
 
         const message = 
-          `<i>Bu sahifalarga azolik majburiy emas, lekin yangiliklar va qiziqarli postlar topasiz!</i>`;
+          ``;
 
         try {
           if (ctx.callbackQuery?.message) {
