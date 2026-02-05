@@ -4360,12 +4360,15 @@ Qaysi rol berasiz?
 
       const messageText = "🎬 Premyera e'loni\n\n" + caption + '\n\n📢 Bu kontentni qayerga yubormoqchisiz?';
 
+      // Determine poster type (video or photo)
+      let posterType: 'video' | 'photo' = 'photo';
       if (content.posterFileId) {
-        // Check if poster is video or photo
-        const isVideoFile = content.posterFileId.startsWith('BAAC');
-        const posterType = (content as any).posterType || (isVideoFile ? 'video' : 'photo');
+        // Video file IDs start with 'BAAC', photo file IDs start with 'AgAC'
+        posterType = content.posterFileId.startsWith('BAAC') ? 'video' : 'photo';
+      }
 
-        if (posterType === 'video' || isVideoFile) {
+      if (content.posterFileId) {
+        if (posterType === 'video') {
           await ctx.replyWithVideo(content.posterFileId, {
             caption: messageText,
             reply_markup: keyboard,
@@ -4389,11 +4392,12 @@ Qaysi rol berasiz?
           code: codeNumber,
           caption,
           poster: content.posterFileId,
+          posterType,
           fieldId: content.fieldId,
           title: content.title,
           genre: content.genre,
           fieldChannelId: field?.channelId,
-          fieldChannelLink: field?.channelLink,
+          fieldChannelLink: channelLink,
           databaseChannelId: field?.databaseChannelId,
         },
       });
@@ -5710,7 +5714,7 @@ Qaysi rol berasiz?
         return;
       }
 
-      const { contentType, code, caption: originalCaption, poster, fieldId, title, genre } = session.data;
+      const { contentType, code, poster, posterType, fieldId, title, genre } = session.data;
 
       let targetChannelId: string | null = null;
       let targetChannelName: string | null = null;
@@ -5738,10 +5742,9 @@ Qaysi rol berasiz?
         const botInfo = await ctx.api.getMe();
         const botUsername = botInfo.username || 'bot';
 
-        // --- FORMATLASH QISMI ---
         const formattedCaption = `╭────────────────────
 ├‣ ${contentType === 'serial' ? 'Serial' : 'Kino'} nomi : ${title || 'Noma\'lum'}
-├‣ ${contentType === 'serial' ? 'Serial' : 'Kino'} kodi: ${code}
+├‣ ${contentType === 'serial' ? 'Serial' : 'Kino'} kodi: ${contentType === 'serial' ? 's' : ''}${code}
 ├‣ Janrlari: ${genre || 'Janr ko\'rsatilmadi'}
 ├‣ Kanal: ${targetChannelLink}
 ╰────────────────────
@@ -5755,15 +5758,24 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 🔞 Ba’zi sahnalar 18+ bo‘lishi mumkin – agar noqulay bo‘lsa, ko‘rishni to‘xtating.</blockquote>`;
         // ------------------------
 
-        const deepLink = `https://t.me/${botUsername}?start=${code}`;
+        const deepLink = `https://t.me/${botUsername}?start=${contentType === 'serial' ? 's' : ''}${code}`;
         const keyboard = new InlineKeyboard().url('▶️ Tomosha qilish', deepLink);
 
         if (poster) {
-          await ctx.api.sendPhoto(targetChannelId, poster, {
-            caption: formattedCaption,
-            reply_markup: keyboard,
-            parse_mode: "HTML"
-          });
+          // Send based on poster type (video or photo)
+          if (posterType === 'video') {
+            await ctx.api.sendVideo(targetChannelId, poster, {
+              caption: formattedCaption,
+              reply_markup: keyboard,
+              parse_mode: "HTML"
+            });
+          } else {
+            await ctx.api.sendPhoto(targetChannelId, poster, {
+              caption: formattedCaption,
+              reply_markup: keyboard,
+              parse_mode: "HTML"
+            });
+          }
         } else {
           await ctx.api.sendMessage(targetChannelId, formattedCaption, {
             reply_markup: keyboard,
@@ -5809,7 +5821,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         return;
       }
 
-      const { poster, contentType, code, title, genre, fieldChannelLink } = session.data;
+      const { poster, posterType, contentType, code, title, genre, fieldChannelLink } = session.data;
 
       const users = await this.prisma.user.findMany({
         where: { isBlocked: false },
@@ -5821,7 +5833,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       // Format caption with new structure
       const formattedCaption = `╭────────────────────
 ├‣ ${contentType === 'serial' ? 'Serial' : 'Kino'} nomi : ${title || 'Noma\'lum'}
-├‣ ${contentType === 'serial' ? 'Serial' : 'Kino'} kodi: ${code}
+├‣ ${contentType === 'serial' ? 'Serial' : 'Kino'} kodi: ${contentType === 'serial' ? 's' : ''}${code}
 ├‣ Janrlari: ${genre || 'Janr ko\'rsatilmadi'}
 ├‣ Kanal: ${fieldChannelLink || '@Kanal'}
 ╰────────────────────
@@ -5850,11 +5862,20 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
           );
 
           if (poster) {
-            await ctx.api.sendPhoto(user.telegramId, poster, {
-              caption: formattedCaption,
-              reply_markup: keyboard,
-              parse_mode: 'HTML',
-            });
+            // Send based on poster type (video or photo)
+            if (posterType === 'video') {
+              await ctx.api.sendVideo(user.telegramId, poster, {
+                caption: formattedCaption,
+                reply_markup: keyboard,
+                parse_mode: 'HTML',
+              });
+            } else {
+              await ctx.api.sendPhoto(user.telegramId, poster, {
+                caption: formattedCaption,
+                reply_markup: keyboard,
+                parse_mode: 'HTML',
+              });
+            }
           } else {
             await ctx.api.sendMessage(user.telegramId, formattedCaption, {
               reply_markup: keyboard,
