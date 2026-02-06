@@ -706,10 +706,10 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 ├‣ Serial kodi: ${serialCode}
 ├‣ Qism: ${ep.episodeNumber}
 ├‣ Janrlari: ${serialGenre || "Noma'lum"}
-├‣ Kanal: ${dbChannel.channelLink || 'https://t.me/' + dbChannel.channelName}
+├‣ Kanal: ${dbChannel.channelLink || dbChannel}
 ╰────────────────────
 
-▶️ Serialning to'liq qismini https://t.me/${botUsername}?start=s${serialCode} dan tomosha qilishingiz mumkin!
+▶️ Serialning to'liq qismini https://t.me/${botUsername}?start=${serialCode} dan tomosha qilishingiz mumkin!
 
 <blockquote expandable>⚠️ ESLATMA:
 Biz yuklayotgan kinolar turli saytlardan olinadi.

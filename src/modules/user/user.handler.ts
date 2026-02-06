@@ -1386,7 +1386,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
             .row();
         });
 
-        const message = 
+        const message =
           ``;
 
         try {
@@ -1602,10 +1602,33 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       } catch (error) {
         // API xato bersa yoki timeout bo'lsa, database statusga qarab qaror qabul qilamiz
         this.logger.warn(`   ⚠️ API xato: ${channel.channelName} - ${error.message}`);
+
+        // Agar bot kanal a'zosi bo'lmasa (403 Forbidden), user qo'shilmagan deb hisoblaymiz
+        if (error.message && error.message.includes('403')) {
+          this.logger.warn(`   ⚠️ Bot kanal a'zosi emas yoki admin emas (403 xato)`);
+
+          // PRIVATE kanal uchun requested status qabul qilinadi
+          if (channel.type === 'PRIVATE' && currentStatus === 'requested') {
+            this.logger.log(`   ✅ PRIVATE kanal, status 'requested', OK`);
+            return null;
+          }
+
+          // Boshqa hollarda kanal ko'rsatiladi
+          this.logger.log(`   ❌ Bot access yo'q, kanal ko'rsatiladi`);
+          return {
+            id: channel.id,
+            name: channel.channelName,
+            link: channel.channelLink,
+            type: channel.type,
+          };
+        }
+
+        // Timeout yoki boshqa xatolar uchun: database statusga ishonish mumkin
         if (currentStatus === 'joined' || currentStatus === 'requested') {
-          this.logger.log(`   ✅ DB status ${currentStatus}, access granted`);
+          this.logger.log(`   ✅ DB status ${currentStatus}, access granted (timeout/other error)`);
           return null;
         }
+
         this.logger.log(`   ❌ DB status ${currentStatus || 'none'}, kanal ko'rsatiladi`);
         return {
           id: channel.id,
@@ -2030,11 +2053,16 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
       this.logger.log(`✅ User ${ctx.from.id} clicked external channel: ${channel.channelName}`);
 
-      // Open URL in popup
+      // answerCallbackQuery doesn't support URL parameter, just send text
       await ctx.answerCallbackQuery({
-        text: `${channel.channelName} sahifasiga o'tish...`,
-        url: channel.channelLink,
+        text: `✅ ${channel.channelName}`,
       });
+
+      // Send the link as a message so user can click it
+      await ctx.reply(
+        `🔗 <b>${channel.channelName}</b> sahifasiga o'tish:\n\n${channel.channelLink}`,
+        { parse_mode: 'HTML' }
+      );
 
     } catch (error) {
       this.logger.error(`Error in handleExternalChannel: ${error.message}`);
