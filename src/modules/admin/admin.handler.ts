@@ -52,9 +52,7 @@ export class AdminHandler implements OnModuleInit {
     try {
       this.registerHandlers();
     } catch (error) {
-      this.logger.error('❌ Failed to initialize AdminHandler');
-      this.logger.error(`Error: ${error.message}`);
-      this.logger.error('Stack:', error.stack);
+      this.logger.error(`[AdminHandler.onModuleInit] Failed to initialize - ${error.message}`, error.stack);
       throw error;
     }
   }
@@ -86,7 +84,7 @@ export class AdminHandler implements OnModuleInit {
       try {
         await this.withAdminCheck(this.showStatistics.bind(this))(ctx);
       } catch (error) {
-        this.logger.error(`❌ Error in statistics handler: ${error.message}`);
+        this.logger.error(`[AdminHandler.statisticsHandler] Error - Admin: ${ctx.from?.id}, Error: ${error.message}`);
         await ctx.reply('❌ Xatolik yuz berdi.').catch(() => { });
       }
     });
@@ -95,7 +93,7 @@ export class AdminHandler implements OnModuleInit {
       try {
         await this.withAdminCheck(this.handleBack.bind(this))(ctx);
       } catch (error) {
-        this.logger.error(`❌ Error in back handler: ${error.message}`);
+        this.logger.error(`[AdminHandler.backHandler] Error - Admin: ${ctx.from?.id}, Error: ${error.message}`);
       }
     });
 
@@ -103,7 +101,7 @@ export class AdminHandler implements OnModuleInit {
       try {
         await this.withAdminCheck(this.handleCancel.bind(this))(ctx);
       } catch (error) {
-        this.logger.error(`❌ Error in cancel handler: ${error.message}`);
+        this.logger.error(`[AdminHandler.cancelHandler] Error - Admin: ${ctx.from?.id}, Error: ${error.message}`);
       }
     });
 
@@ -241,10 +239,10 @@ export class AdminHandler implements OnModuleInit {
 
     bot.hears('💾 Database kanallar', async (ctx) => {
       try {
-        this.logger.log(`📢 Database channels requested by ${ctx.from?.id}`);
+
         const admin = await this.getAdmin(ctx);
         if (!admin) {
-          this.logger.warn(`⚠️ Non-admin ${ctx.from?.id} tried to access database channels`);
+
           await ctx.reply('❌ Siz admin emassiz!');
           return;
         }
@@ -1745,14 +1743,13 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
   private async showDatabaseChannels(ctx: BotContext) {
     const admin = await this.getAdmin(ctx);
     if (!admin) {
-      this.logger.warn('Admin not found in showDatabaseChannels');
+
       return;
     }
 
     try {
-      this.logger.log(`Fetching database channels for admin ${admin.telegramId}`);
+
       const channels = await this.channelService.findAllDatabase();
-      this.logger.log(`Found ${channels.length} database channels`);
 
       if (channels.length === 0) {
         const keyboard = new Keyboard()
@@ -2008,8 +2005,6 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
       // O'chirish
       await this.channelService.deleteDatabaseChannel(channelId);
-
-      this.logger.log(`Database channel ${channelId} (${channelName}) deleted by admin ${admin.telegramId}`);
 
       await ctx.reply(
         `✅ **Database kanal o'chirildi!**\n\n` +
@@ -2317,8 +2312,6 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         ctx.callbackQuery?.message?.text + '\n\n✅ So\'rov tasdiqlandi!'
       );
 
-      this.logger.log(`✅ Admin ${ctx.from.id} approved join request for user ${userId} to channel ${channelId}`);
-
     } catch (error) {
       this.logger.error(`Error approving join request: ${error.message}`);
       await ctx.reply("❌ So'rovni tasdiqlashda xatolik yuz berdi.");
@@ -2418,8 +2411,6 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       await ctx.editMessageText(
         ctx.callbackQuery?.message?.text + '\n\n❌ So\'rov rad etildi!'
       );
-
-      this.logger.log(`❌ Admin ${ctx.from.id} rejected join request for user ${userId} to channel ${channelId}`);
 
     } catch (error) {
       this.logger.error(`Error rejecting join request: ${error.message}`);
@@ -3088,7 +3079,7 @@ Qaysi guruhga xabar yubormoqchisiz?
             }
           } catch (getChatError) {
             // Bot can't access the chat - ask admin to provide channel name
-            this.logger.warn(`Cannot access chat ${channelId}, asking for manual input`);
+
             this.sessionService.updateSessionData(ctx.from.id, { channelId });
             this.sessionService.nextStep(ctx.from.id);
             await ctx.reply(

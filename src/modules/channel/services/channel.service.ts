@@ -382,14 +382,12 @@ export class ChannelService {
                   },
                 });
 
-                this.logger.log(`User ${userId} joined channel ${channel.channelName}. Member count: incremented (via check).`);
               } else if (userChannelStatus.status === 'requested') {
                 // User was in pending state and now joined
                 await this.incrementMemberCount(channel.id);
 
                 if (channel.type === 'PRIVATE') {
                   await this.decrementPendingRequests(channel.id);
-                  this.logger.log(`User ${userId} approved in channel ${channel.channelName}. Decremented pending requests.`);
                 }
 
                 // Update status to joined
@@ -405,8 +403,6 @@ export class ChannelService {
                     lastUpdated: new Date(),
                   },
                 });
-
-                this.logger.log(`User ${userId} status updated to joined in channel ${channel.channelName}.`);
               } else if (userChannelStatus.status === 'left') {
                 // User rejoined after leaving
                 await this.incrementMemberCount(channel.id);
@@ -423,8 +419,6 @@ export class ChannelService {
                     lastUpdated: new Date(),
                   },
                 });
-
-                this.logger.log(`User ${userId} rejoined channel ${channel.channelName}. Member count: incremented.`);
               }
             }
           }
@@ -566,9 +560,6 @@ export class ChannelService {
             channelName: channel.channelName,
             ...stats,
           });
-          this.logger.log(
-            `Channel ${channel.channelName}: ${stats.memberCount} members, ${stats.pendingCount} pending`,
-          );
         }
       }
 

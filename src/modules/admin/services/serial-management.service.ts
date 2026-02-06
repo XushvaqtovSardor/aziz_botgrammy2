@@ -351,7 +351,6 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         } catch (error) {
           // Skip if episode already exists (unique constraint error)
           if (error.code === 'P2002') {
-            this.logger.warn(`Episode ${epData.episodeNumber} already exists for serial ${serial.id}, skipping...`);
           } else {
             throw error;
           }
@@ -424,7 +423,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         AdminKeyboard.getAdminMainMenu('ADMIN'),
       );
     } catch (error) {
-      this.logger.error('Error creating serial:', error);
+      this.logger.error(`[SerialManagementService.createSerial] Error - Admin: ${ctx.from.id}, Error: ${error.message}`, error.stack);
       await ctx.reply(`❌ Xatolik: ${error.message}`);
     }
   }
@@ -623,7 +622,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
                 messageId: sentVideo.message_id,
               });
             } catch (error) {
-              this.logger.error('Error uploading movie episode:', error);
+              this.logger.error(`[SerialManagementService.uploadMovieEpisodes] Error uploading - Movie: ${movieId}, Episode: ${ep.episodeNumber}, Error: ${error.message}`, error.stack);
             }
           }
 
@@ -727,7 +726,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
                 messageId: sentVideo.message_id,
               });
             } catch (error) {
-              this.logger.error('Error uploading episode:', error);
+              this.logger.error(`[SerialManagementService.uploadEpisodes] Error uploading - Serial: ${serialId}, Episode: ${ep.episodeNumber}, Error: ${error.message}`, error.stack);
             }
           }
 
@@ -797,7 +796,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         this.sessionService.clearSession(ctx.from.id);
       }
     } catch (error: any) {
-      this.logger.error('Error finalizing episodes:', error);
+      this.logger.error(`[SerialManagementService.finalizeEpisodes] Error - SerialID: ${serialId}, Error: ${error.message}`, error.stack);
       await ctx.reply(`❌ Xatolik: ${error?.message || "Noma'lum xatolik"}`);
       this.sessionService.clearSession(ctx.from.id);
     }

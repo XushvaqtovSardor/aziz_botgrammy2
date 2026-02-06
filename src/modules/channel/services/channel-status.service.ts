@@ -15,14 +15,11 @@ export class ChannelStatusService {
     status: ChannelStatus,
   ): Promise<void> {
     try {
-      this.logger.debug(`updateStatus called: user=${userTelegramId}, channel=${channelTelegramId}, status=${status}`);
-
       const user = await this.prisma.user.findUnique({
         where: { telegramId: userTelegramId },
       });
 
       if (!user) {
-        this.logger.warn(`User ${userTelegramId} not found`);
         return;
       }
 
@@ -31,7 +28,6 @@ export class ChannelStatusService {
       });
 
       if (!channel) {
-        this.logger.warn(`Channel ${channelTelegramId} not found (user: ${userTelegramId})`);
         return;
       }
 
@@ -163,7 +159,6 @@ export class ChannelStatusService {
       });
 
       if (!user) {
-        this.logger.warn(`User ${userTelegramId} not found for sync`);
         return;
       }
 

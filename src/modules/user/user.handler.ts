@@ -52,9 +52,7 @@ export class UserHandler implements OnModuleInit {
     try {
       this.registerHandlers();
     } catch (error) {
-      this.logger.error('❌ Failed to initialize UserHandler');
-      this.logger.error(`Error: ${error.message}`);
-      this.logger.error('Stack:', error.stack);
+      this.logger.error(`[UserHandler.onModuleInit] Failed to initialize - ${error.message}`, error.stack);
       throw error;
     }
   }
@@ -73,9 +71,8 @@ export class UserHandler implements OnModuleInit {
           });
         } catch (error) {
           this.logger.error(
-            `❌ Failed to update telegram premium status for user ${ctx.from.id}`,
+            `[UserHandler.registerHandlers.middleware] Failed to update premium status - User: ${ctx.from.id}, Error: ${error.message}`,
           );
-          this.logger.error(`Error: ${error.message}`);
         }
       }
       await next();
@@ -86,14 +83,13 @@ export class UserHandler implements OnModuleInit {
         await this.handleStart(ctx);
       } catch (error) {
         this.logger.error(
-          `❌ Error in /start command for user ${ctx.from?.id}`,
+          `[UserHandler./start] Error in start command - User: ${ctx.from?.id}, Error: ${error.message}`,
+          error.stack,
         );
-        this.logger.error(`Error: ${error.message}`);
-        this.logger.error('Stack:', error.stack);
         await ctx
           .reply("❌ Xatolik yuz berdi. Iltimos qaytadan urinib ko'ring.")
           .catch((e) =>
-            this.logger.error('Failed to send error message:', e.message),
+            this.logger.error(`[UserHandler./start] Failed to send error reply - User: ${ctx.from?.id}, Error: ${e.message}`),
           );
       }
     });
@@ -103,7 +99,7 @@ export class UserHandler implements OnModuleInit {
         await this.handleSearch(ctx);
       } catch (error) {
         this.logger.error(
-          `❌ Error in search handler for user ${ctx.from?.id}: ${error.message}`,
+          `[UserHandler.searchHandler] Error - User: ${ctx.from?.id}, Error: ${error.message}`,
         );
         await ctx.reply('❌ Xatolik yuz berdi.').catch(() => { });
       }
@@ -114,7 +110,7 @@ export class UserHandler implements OnModuleInit {
         await this.showPremium(ctx);
       } catch (error) {
         this.logger.error(
-          `❌ Error in premium handler for user ${ctx.from?.id}: ${error.message}`,
+          `[UserHandler.premiumHandler] Error - User: ${ctx.from?.id}, Error: ${error.message}`,
         );
         await ctx.reply('❌ Xatolik yuz berdi.').catch(() => { });
       }
@@ -125,7 +121,7 @@ export class UserHandler implements OnModuleInit {
         await this.showAbout(ctx);
       } catch (error) {
         this.logger.error(
-          `❌ Error in about handler for user ${ctx.from?.id}: ${error.message}`,
+          `[UserHandler.aboutHandler] Error - User: ${ctx.from?.id}, Error: ${error.message}`,
         );
         await ctx.reply('❌ Xatolik yuz berdi.').catch(() => { });
       }
@@ -136,7 +132,7 @@ export class UserHandler implements OnModuleInit {
         await this.showContact(ctx);
       } catch (error) {
         this.logger.error(
-          `❌ Error in contact handler for user ${ctx.from?.id}: ${error.message}`,
+          `[UserHandler.contactHandler] Error - User: ${ctx.from?.id}, Error: ${error.message}`,
         );
         await ctx.reply('❌ Xatolik yuz berdi.').catch(() => { });
       }
@@ -147,7 +143,7 @@ export class UserHandler implements OnModuleInit {
         await this.handleBack(ctx);
       } catch (error) {
         this.logger.error(
-          `❌ Error in back handler for user ${ctx.from?.id}: ${error.message}`,
+          `[UserHandler.backHandler] Error - User: ${ctx.from?.id}, Error: ${error.message}`,
         );
         await ctx.reply('❌ Xatolik yuz berdi.').catch(() => { });
       }
@@ -158,9 +154,9 @@ export class UserHandler implements OnModuleInit {
         await this.handleMovieCallback(ctx);
       } catch (error) {
         this.logger.error(
-          `❌ Error in movie callback for user ${ctx.from?.id}: ${error.message}`,
+          `[UserHandler.movieCallback] Error - User: ${ctx.from?.id}, Data: ${ctx.callbackQuery?.data}, Error: ${error.message}`,
+          error.stack,
         );
-        this.logger.error('Stack:', error.stack);
         await ctx
           .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
           .catch(() => { });
@@ -172,7 +168,7 @@ export class UserHandler implements OnModuleInit {
         await this.handleSerialCallback(ctx);
       } catch (error) {
         this.logger.error(
-          `❌ Error in serial callback for user ${ctx.from?.id}: ${error.message}`,
+          `[UserHandler.serialCallback] Error - User: ${ctx.from?.id}, Data: ${ctx.callbackQuery?.data}, Error: ${error.message}`,
         );
         await ctx
           .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
@@ -185,7 +181,7 @@ export class UserHandler implements OnModuleInit {
         await this.handleEpisodeCallback(ctx);
       } catch (error) {
         this.logger.error(
-          `❌ Error in episode callback for user ${ctx.from?.id}: ${error.message}`,
+          `[UserHandler.episodeCallback] Error - User: ${ctx.from?.id}, Data: ${ctx.callbackQuery?.data}, Error: ${error.message}`,
         );
         await ctx
           .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
@@ -198,7 +194,7 @@ export class UserHandler implements OnModuleInit {
         await this.handleMovieEpisodeCallback(ctx);
       } catch (error) {
         this.logger.error(
-          `❌ Error in movie episode callback for user ${ctx.from?.id}: ${error.message}`,
+          `[UserHandler.movieEpisodeCallback] Error - User: ${ctx.from?.id}, Data: ${ctx.callbackQuery?.data}, Error: ${error.message}`,
         );
         await ctx
           .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
@@ -211,7 +207,7 @@ export class UserHandler implements OnModuleInit {
         await this.handleFieldChannelCallback(ctx);
       } catch (error) {
         this.logger.error(
-          `❌ Error in field channel callback for user ${ctx.from?.id}: ${error.message}`,
+          `[UserHandler.fieldChannelCallback] Error - User: ${ctx.from?.id}, Data: ${ctx.callbackQuery?.data}, Error: ${error.message}`,
         );
         await ctx
           .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
@@ -224,7 +220,7 @@ export class UserHandler implements OnModuleInit {
         await this.handleCheckSubscription(ctx);
       } catch (error) {
         this.logger.error(
-          `❌ Error in check subscription callback for user ${ctx.from?.id}: ${error.message}`,
+          `[UserHandler.checkSubscriptionCallback] Error - User: ${ctx.from?.id}, Error: ${error.message}`,
         );
         await ctx
           .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
@@ -237,7 +233,7 @@ export class UserHandler implements OnModuleInit {
         await this.handleRequestJoin(ctx);
       } catch (error) {
         this.logger.error(
-          `❌ Error in request join callback for user ${ctx.from?.id}: ${error.message}`,
+          `[UserHandler.requestJoinCallback] Error - User: ${ctx.from?.id}, Data: ${ctx.callbackQuery?.data}, Error: ${error.message}`,
         );
         await ctx
           .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
@@ -252,7 +248,7 @@ export class UserHandler implements OnModuleInit {
         await this.showPremium(ctx);
       } catch (error) {
         this.logger.error(
-          `❌ Error in show premium callback for user ${ctx.from?.id}: ${error.message}`,
+          `[UserHandler.showPremiumCallback] Error - User: ${ctx.from?.id}, Error: ${error.message}`,
         );
         await ctx
           .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
@@ -265,7 +261,7 @@ export class UserHandler implements OnModuleInit {
         await this.handleBackCallback(ctx);
       } catch (error) {
         this.logger.error(
-          `❌ Error in back callback for user ${ctx.from?.id}: ${error.message}`,
+          `[UserHandler.backCallback] Error - User: ${ctx.from?.id}, Error: ${error.message}`,
         );
         await ctx
           .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
@@ -278,7 +274,7 @@ export class UserHandler implements OnModuleInit {
         await this.handlePremiumPurchase(ctx);
       } catch (error) {
         this.logger.error(
-          `❌ Error in premium purchase callback for user ${ctx.from?.id}: ${error.message}`,
+          `[UserHandler.premiumPurchaseCallback] Error - User: ${ctx.from?.id}, Data: ${ctx.callbackQuery?.data}, Error: ${error.message}`,
         );
         await ctx
           .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
@@ -291,7 +287,7 @@ export class UserHandler implements OnModuleInit {
         await this.handleUploadReceipt(ctx);
       } catch (error) {
         this.logger.error(
-          `❌ Error in upload receipt callback for user ${ctx.from?.id}: ${error.message}`,
+          `[UserHandler.uploadReceiptCallback] Error - User: ${ctx.from?.id}, Error: ${error.message}`,
         );
         await ctx
           .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
@@ -304,7 +300,7 @@ export class UserHandler implements OnModuleInit {
         await this.handleInlineQuery(ctx);
       } catch (error) {
         this.logger.error(
-          `❌ Error in inline query for user ${ctx.from?.id}: ${error.message}`,
+          `[UserHandler.inlineQuery] Error - User: ${ctx.from?.id}, Query: ${ctx.inlineQuery?.query}, Error: ${error.message}`,
         );
       }
     });
@@ -313,7 +309,7 @@ export class UserHandler implements OnModuleInit {
       try {
         await this.handleJoinRequest(ctx);
       } catch (error) {
-        this.logger.error(`❌ Error in join request handler: ${error.message}`);
+        this.logger.error(`[UserHandler.joinRequest] Error - Chat: ${ctx.chatJoinRequest?.chat?.id}, User: ${ctx.chatJoinRequest?.from?.id}, Error: ${error.message}`);
       }
     });
 
@@ -321,7 +317,7 @@ export class UserHandler implements OnModuleInit {
       try {
         await this.handleChatMemberUpdate(ctx);
       } catch (error) {
-        this.logger.error(`❌ Error in chat member handler: ${error.message}`);
+        this.logger.error(`[UserHandler.chatMember] Error - Chat: ${ctx.chatMember?.chat?.id}, User: ${ctx.chatMember?.from?.id}, Error: ${error.message}`);
       }
     });
 
@@ -330,7 +326,7 @@ export class UserHandler implements OnModuleInit {
         await this.handleChatMemberUpdate(ctx);
       } catch (error) {
         this.logger.error(
-          `❌ Error in my_chat_member handler: ${error.message}`,
+          `[UserHandler.myChatMember] Error - Chat: ${ctx.myChatMember?.chat?.id}, Error: ${error.message}`,
         );
       }
     });
@@ -340,7 +336,7 @@ export class UserHandler implements OnModuleInit {
         await this.handlePhotoMessage(ctx);
       } catch (error) {
         this.logger.error(
-          `❌ Error in photo message handler for user ${ctx.from?.id}: ${error.message}`,
+          `[UserHandler.photoMessage] Error - User: ${ctx.from?.id}, Error: ${error.message}`,
         );
         await ctx.reply('❌ Xatolik yuz berdi.').catch(() => { });
       }
@@ -356,9 +352,9 @@ export class UserHandler implements OnModuleInit {
         }
       } catch (error) {
         this.logger.error(
-          `❌ Error in text message handler for user ${ctx.from?.id}: ${error.message}`,
+          `[UserHandler.textMessage] Error - User: ${ctx.from?.id}, Text: ${ctx.message?.text?.substring(0, 50)}, Error: ${error.message}`,
+          error.stack,
         );
-        this.logger.error('Stack:', error.stack);
       }
     });
   }
@@ -366,9 +362,6 @@ export class UserHandler implements OnModuleInit {
   private async handleStart(ctx: BotContext) {
     if (!ctx.from) return;
 
-    this.logger.log(
-      `👤 User ${ctx.from.id} (${ctx.from.username || ctx.from.first_name}) started the bot`,
-    );
 
     try {
       const payload = ctx.match;
@@ -404,17 +397,9 @@ export class UserHandler implements OnModuleInit {
         String(ctx.from.id),
       );
       const isAdmin = !!admin;
-
-      this.logger.log(
-        `User ${ctx.from.id} - isPremium: ${isPremium}, isAdmin: ${isAdmin}`,
-      );
-
       if (!isPremium && !isAdmin) {
         const hasSubscription = await this.checkSubscription(ctx, 0, 'start');
         if (!hasSubscription) {
-          this.logger.log(
-            `User ${ctx.from.id} needs to subscribe to mandatory channels`,
-          );
           return;
         }
       }
@@ -444,14 +429,8 @@ export class UserHandler implements OnModuleInit {
         welcomeMessage,
         MainMenuKeyboard.getMainMenu(isPremium, user.isPremiumBanned),
       );
-
-      this.logger.log(
-        `✅ Start command completed successfully for user ${ctx.from.id}`,
-      );
     } catch (error) {
-      this.logger.error(`❌ Error in handleStart for user ${ctx.from.id}`);
-      this.logger.error(`Error: ${error.message}`);
-      this.logger.error('Stack:', error.stack);
+      this.logger.error(`[UserHandler.handleStart] Error - User: ${ctx.from.id}, Error: ${error.message}`, error.stack);
       throw error;
     }
   }
@@ -778,7 +757,7 @@ To'lov qilgandan keyin chekni botga yuboring.
 
       await this.notifyAdminsNewPayment(payment, user, paymentInfo);
     } catch (error) {
-      this.logger.error('Error processing receipt:', error);
+      this.logger.error(`[UserHandler.handlePhotoMessage] Error processing receipt - User: ${ctx.from.id}, Error: ${error.message}`, error.stack);
       await ctx.reply(
         "❌ Chekni qayta ishlashda xatolik yuz berdi. Iltimos qayta urinib ko'ring.",
       );
@@ -828,7 +807,7 @@ To'lov qilgandan keyin chekni botga yuboring.
         }
       }
     } catch (error) {
-      this.logger.error('Error notifying admins:', error);
+      this.logger.error(`[UserHandler.notifyAdmins] Error notifying admins about payment - Payment: ${payment.id}, Error: ${error.message}`, error.stack);
     }
   }
 
@@ -841,7 +820,7 @@ To'lov qilgandan keyin chekni botga yuboring.
     const merchantId = process.env.PAYME_MERCHANT_ID || '';
 
     if (!merchantId) {
-      this.logger.error('PAYME_MERCHANT_ID not configured in .env');
+      this.logger.error('[UserHandler.showPremium] PAYME_MERCHANT_ID not configured');
       return 'https://checkout.paycom.uz';
     }
 
@@ -898,7 +877,7 @@ To'lov qilgandan keyin chekni botga yuboring.
     try {
       await ctx.deleteMessage();
     } catch (error) {
-      this.logger.error('Error deleting message:', error);
+      this.logger.error(`[UserHandler.handleBack] Failed to delete message - Error: ${error.message}`);
     }
 
     await ctx.reply(
@@ -957,7 +936,7 @@ Savollaringiz bo'lsa murojaat qiling:
 
     const user = await this.userService.findByTelegramId(String(ctx.from.id));
     if (!user) {
-      this.logger.error(`[handleCodeSearch] User not found: ${ctx.from.id}`);
+      this.logger.error(`[UserHandler.handleCodeSearch] User not found - TelegramID: ${ctx.from.id}`);
       return;
     }
 
@@ -971,9 +950,6 @@ Savollaringiz bo'lsa murojaat qiling:
     if (!isPremium) {
       const hasSubscription = await this.checkSubscription(ctx, code, 'search');
       if (!hasSubscription) {
-        this.logger.log(
-          `User ${ctx.from.id} (admin: ${isAdmin}) doesn't have subscription to required channels`,
-        );
         return;
       }
     }
@@ -1000,9 +976,6 @@ Savollaringiz bo'lsa murojaat qiling:
       // Check subscription before sending movie
       const hasSubscription = await this.checkSubscription(ctx, code, 'movie');
       if (!hasSubscription) {
-        this.logger.log(
-          `User ${ctx.from.id} tried to access movie ${code} without subscription`,
-        );
         return;
       }
 
@@ -1074,9 +1047,6 @@ ${movieDeepLink}`.trim();
             // Check if poster is video or photo
             const isVideoFile = movie.posterFileId.startsWith('BAAC');
             const posterType = (movie as any).posterType || (isVideoFile ? 'video' : 'photo');
-
-            this.logger.log(`[sendMovieToUser] Sending with ${posterType} poster`);
-
             if (posterType === 'video' || isVideoFile) {
               await ctx.replyWithVideo(movie.posterFileId, {
                 caption,
@@ -1089,7 +1059,6 @@ ${movieDeepLink}`.trim();
               });
             }
           } else {
-            this.logger.log(`[sendMovieToUser] Sending without poster`);
             await ctx.reply(caption, {
               reply_markup: keyboard,
             });
@@ -1097,10 +1066,7 @@ ${movieDeepLink}`.trim();
 
           await this.watchHistoryService.recordMovieWatch(user.id, movie.id);
         } catch (sendError) {
-          this.logger.error(`[sendMovieToUser] Error sending message with poster:`);
-          this.logger.error(`Poster type: ${(movie as any).posterType || 'unknown'}`);
-          this.logger.error(`Caption length: ${caption.length}`);
-          this.logger.error(`Keyboard buttons: ${totalButtons}`);
+          this.logger.error(`[UserHandler.sendMovieToUser] Failed to send with poster - Code: ${code}, User: ${ctx.from.id}, Error: ${sendError.message}`, sendError.stack);
           throw sendError;
         }
       } else {
@@ -1146,20 +1112,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         }
       }
     } catch (error) {
-      this.logger.error(`❌ Error sending movie ${code} to user ${ctx.from.id}:`);
-      if (error) {
-        this.logger.error(`Error message: ${error?.message || 'N/A'}`);
-        this.logger.error(`Error name: ${error?.name || 'N/A'}`);
-        if (error?.stack) {
-          this.logger.error(`Error stack: ${error.stack}`);
-        }
-        if (error?.response) {
-          this.logger.error(`API Response: ${JSON.stringify(error.response)}`);
-        }
-        this.logger.error(`Full error: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`);
-      } else {
-        this.logger.error('Error object is undefined or null');
-      }
+      this.logger.error(`[UserHandler.sendMovieToUser] Error - Code: ${code}, User: ${ctx.from.id}, Error: ${error?.message || 'Unknown'}, Name: ${error?.name || 'N/A'}`, error?.stack);
       await ctx.reply(
         "❌ Kino yuklashda xatolik yuz berdi. Iltimos admin bilan bog'laning.",
       ).catch(() => { });
@@ -1170,45 +1123,30 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     if (!ctx.from) return;
 
     try {
-      this.logger.log(`[sendSerialToUser] Starting for code: ${code}`);
-
       // Check subscription before sending serial
       const hasSubscription = await this.checkSubscription(ctx, code, 'serial');
       if (!hasSubscription) {
-        this.logger.log(
-          `User ${ctx.from.id} tried to access serial ${code} without subscription`,
-        );
         return;
       }
 
       // 1. Serial ma'lumotlarini olish
       const serial = await this.serialService.findByCode(String(code));
       if (!serial) {
-        this.logger.warn(`[sendSerialToUser] Serial not found: ${code}`);
         await ctx.reply(`❌ ${code} kodli serial topilmadi.`);
         return;
       }
-      this.logger.log(`[sendSerialToUser] Serial found: ${serial.title}`);
-
       // 2. User ma'lumotlarini olish
       const user = await this.userService.findByTelegramId(String(ctx.from.id));
       if (!user) {
-        this.logger.warn(`[sendSerialToUser] User not found: ${ctx.from.id}`);
         await ctx.reply('❌ Foydalanuvchi topilmadi.');
         return;
       }
-      this.logger.log(`[sendSerialToUser] User found: ${user.id}`);
-
       // 3. Serial qismlarini olish
       const episodes = await this.episodeService.findBySerialId(serial.id);
-      this.logger.log(`[sendSerialToUser] Episodes found: ${episodes.length}`);
-
       // 4. Bot va field ma'lumotlarini olish
       const botInfo = await ctx.api.getMe();
       const botUsername = botInfo.username || 'bot';
       const field = await this.fieldService.findOne(serial.fieldId);
-      this.logger.log(`[sendSerialToUser] Bot: ${botUsername}, Field: ${field?.name || 'N/A'}`);
-
       // 5. Deep link yaratish
       const serialDeepLink = `https://t.me/${botUsername}?start=s${serial.code}`;
 
@@ -1271,9 +1209,6 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         .switchInline('📤 Ulashish', shareText)
         .row()
         .text('🔙 Orqaga', 'back_to_main');
-
-      this.logger.log(`[sendSerialToUser] Keyboard created with ${episodes.length} episodes`);
-
       // 11. Poster bilan yuborish
       if (serial.posterFileId) {
         // Check poster type by file ID or database field
@@ -1282,14 +1217,12 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         const posterType = (serial as any).posterType || (isVideoFile ? 'video' : 'photo');
 
         if (posterType === 'video' || isVideoFile) {
-          this.logger.log(`[sendSerialToUser] Sending with video poster: ${serial.posterFileId}`);
           await ctx.replyWithVideo(serial.posterFileId, {
             caption,
             parse_mode: 'HTML',
             reply_markup: keyboard,
           });
         } else {
-          this.logger.log(`[sendSerialToUser] Sending with photo poster: ${serial.posterFileId}`);
           await ctx.replyWithPhoto(serial.posterFileId, {
             caption,
             parse_mode: 'HTML',
@@ -1297,19 +1230,13 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
           });
         }
       } else {
-        this.logger.log(`[sendSerialToUser] Sending without poster`);
         await ctx.reply(caption, {
           parse_mode: 'HTML',
           reply_markup: keyboard,
         });
       }
-
-      this.logger.log(`[sendSerialToUser] Message sent successfully`);
-
       // 12. Tarix yozish
       await this.watchHistoryService.recordSerialWatch(user.id, serial.id);
-      this.logger.log(`[sendSerialToUser] Watch history recorded`);
-
     } catch (error) {
       this.logger.error(`❌ [sendSerialToUser] Error sending serial ${code}:`);
       this.logger.error(`Message: ${error?.message || 'No error message'}`);
@@ -1332,7 +1259,6 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
   ): Promise<boolean> {
     if (!ctx.from) return false;
 
-    this.logger.log(`🔍 checkSubscription boshlandi user ${ctx.from.id} uchun (contentType: ${contentType})`);
 
     const user = await this.userService.findByTelegramId(String(ctx.from.id));
     if (!user) {
@@ -1345,11 +1271,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       where: { isActive: true },
       orderBy: { order: 'asc' },
     });
-
-    this.logger.log(`📊 Jami ${allChannels.length} ta faol kanal topildi`);
-
     if (!allChannels.length) {
-      this.logger.log(`✅ Kanallar yo'q, access granted`);
       return true;
     }
 
@@ -1363,8 +1285,6 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       user.premiumExpiresAt > new Date();
 
     if (isPremium) {
-      this.logger.log(`✅ User ${ctx.from.id} premium, majburiy kanallar tekshirilmaydi`);
-
       // Agar external kanallar bo'lsa, ularni ko'rsatish
       if (externalChannels.length > 0) {
         const keyboard = new InlineKeyboard();
@@ -1413,8 +1333,6 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     // Oddiy userlar uchun - majburiy kanallarni tekshirish
     if (!mandatoryChannels.length) {
-      this.logger.log(`✅ Majburiy kanallar yo'q, access granted`);
-
       // Faqat external kanallar bo'lsa, ularni ko'rsatish
       if (externalChannels.length > 0) {
         const keyboard = new InlineKeyboard();
@@ -1445,13 +1363,9 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       where: { userId: user.id },
       include: { channel: true },
     });
-
-    this.logger.log(`📊 User ${ctx.from.id} uchun ${userStatuses.length} ta status yozuv topildi`);
-
     const statusMap = new Map<number, ChannelStatus>();
     userStatuses.forEach(s => {
       statusMap.set(s.channelId, s.status);
-      this.logger.log(`   - Channel ${s.channelId}: ${s.status}`);
     });
 
     // Kanallarni tekshirish va filtrlash
@@ -1474,17 +1388,14 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     const channelCheckPromises = mandatoryChannels.map(async (channel) => {
       const currentStatus = statusMap.get(channel.id);
 
-      this.logger.log(`🔍 Channel tekshirilmoqda: ${channel.channelName} (ID: ${channel.id}, Type: ${channel.type}, Current Status: ${currentStatus || 'none'})`);
 
       // PRIVATE_WITH_ADMIN_APPROVAL: so'rov yuborgan bo'lsa yetarli
       if (channel.type === 'PRIVATE_WITH_ADMIN_APPROVAL') {
         // joined yoki requested bo'lsa OK
         if (currentStatus === 'joined' || currentStatus === 'requested') {
-          this.logger.log(`   ✅ PRIVATE_WITH_ADMIN_APPROVAL: status ${currentStatus}, OK`);
           return null;
         }
         // Aks holda ko'rsatish
-        this.logger.log(`   ❌ PRIVATE_WITH_ADMIN_APPROVAL: so'rov yuborilmagan, ko'rsatiladi`);
         return {
           id: channel.id,
           name: channel.channelName,
@@ -1508,8 +1419,6 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       }
 
       try {
-        this.logger.log(`   🌐 API chaqirilmoqda: ${channel.channelId}`);
-
         // 5 sekundlik timeout bilan API chaqiriq
         const memberPromise = ctx.api.getChatMember(
           channel.channelId,
@@ -1521,9 +1430,6 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         );
 
         const member = await Promise.race([memberPromise, timeoutPromise]) as any;
-
-        this.logger.log(`   📡 API javob: status = ${member.status}`);
-
         const isJoined =
           member.status === 'member' ||
           member.status === 'administrator' ||
@@ -1531,8 +1437,6 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
           (member.status === 'restricted' && 'is_member' in member && member.is_member);
 
         if (isJoined) {
-          this.logger.log(`   ✅ API: User qo'shilgan! DB yangilanadi.`);
-
           // Database'ni yangilash (async, kutmaymiz)
           this.prisma.userChannelStatus.upsert({
             where: {
@@ -1548,22 +1452,19 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
               status: 'joined',
               lastUpdated: new Date(),
             },
-          }).catch(err => this.logger.error('Error updating status:', err));
+          }).catch(err => this.logger.error(`[UserHandler.checkSubscription.joined] DB update failed - User: ${user.id}, Channel: ${channel.id}, Error: ${err.message}`));
           return null;
         }
 
-        this.logger.log(`   ❌ API: User qo'shilmagan (status: ${member.status})`);
 
         // PRIVATE kanallar uchun: so'rov yuborgan bo'lsa OK
         if (channel.type === 'PRIVATE' && currentStatus === 'requested') {
-          this.logger.log(`   ✅ PRIVATE kanal, status 'requested', OK`);
           return null;
         }
 
         // Agar qo'shilmagan bo'lsa, ro'yxatga qo'shish
         // Database'ni yangilash (async, kutmaymiz)
         if (currentStatus !== 'requested') {
-          this.logger.log(`   📝 DB yangilanadi: left`);
           this.prisma.userChannelStatus.upsert({
             where: {
               userId_channelId: { userId: user.id, channelId: channel.id },
@@ -1578,10 +1479,8 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
               status: 'left',
               lastUpdated: new Date(),
             },
-          }).catch(err => this.logger.error('Error updating status:', err));
+          }).catch(err => this.logger.error(`[UserHandler.checkSubscription.left] DB update failed - User: ${user.id}, Channel: ${channel.id}, Error: ${err.message}`));
         }
-
-        this.logger.log(`   ❌ Kanal ko'rsatilishi kerak: ${channel.channelName}`);
         return {
           id: channel.id,
           name: channel.channelName,
@@ -1590,20 +1489,15 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         };
       } catch (error) {
         // API xato bersa yoki timeout bo'lsa, database statusga qarab qaror qabul qilamiz
-        this.logger.warn(`   ⚠️ API xato: ${channel.channelName} - ${error.message}`);
-
         // Agar bot kanal a'zosi bo'lmasa (403 Forbidden), user qo'shilmagan deb hisoblaymiz
         if (error.message && error.message.includes('403')) {
-          this.logger.warn(`   ⚠️ Bot kanal a'zosi emas yoki admin emas (403 xato)`);
 
           // PRIVATE kanal uchun requested status qabul qilinadi
           if (channel.type === 'PRIVATE' && currentStatus === 'requested') {
-            this.logger.log(`   ✅ PRIVATE kanal, status 'requested', OK`);
             return null;
           }
 
           // Boshqa hollarda kanal ko'rsatiladi
-          this.logger.log(`   ❌ Bot access yo'q, kanal ko'rsatiladi`);
           return {
             id: channel.id,
             name: channel.channelName,
@@ -1614,11 +1508,8 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
         // Timeout yoki boshqa xatolar uchun: database statusga ishonish mumkin
         if (currentStatus === 'joined' || currentStatus === 'requested') {
-          this.logger.log(`   ✅ DB status ${currentStatus}, access granted (timeout/other error)`);
           return null;
         }
-
-        this.logger.log(`   ❌ DB status ${currentStatus || 'none'}, kanal ko'rsatiladi`);
         return {
           id: channel.id,
           name: channel.channelName,
@@ -1627,32 +1518,20 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         };
       }
     });
-
-    this.logger.log(`⏳ ${mandatoryChannels.length} ta majburiy kanal parallel tekshirilmoqda...`);
-
     // Barcha tekshiruvlarni parallel bajaramiz
     const results = await Promise.all(channelCheckPromises);
-
-    this.logger.log(`✅ Tekshiruvlar tugadi, natijalar tahlil qilinmoqda...`);
-
     // null bo'lmaganlarni channelsToShow ga qo'shamiz
     results.forEach((result, index) => {
       if (result !== null) {
-        this.logger.log(`   ❌ Kanal ${index + 1}: ${result.name} - ko'rsatilishi kerak`);
         channelsToShow.push(result);
       }
     });
 
     // Agar barcha kanallarga qo'shilgan yoki so'rov yuborilgan bo'lsa
     if (channelsToShow.length === 0) {
-      this.logger.log(`✅✅✅ User ${ctx.from.id} BARCHA KANALLARGA QOSHILGAN! (channelsToShow.length = 0)`);
-      this.logger.log(`✅✅✅ checkSubscription RETURNS TRUE!`);
       return true;
     }
-
-    this.logger.log(`⚠️ User ${ctx.from.id} needs to join ${channelsToShow.length} channels`);
     channelsToShow.forEach(ch => {
-      this.logger.log(`   - ${ch.name} (${ch.type})`);
     });
 
     // Kanallarni turlariga ajratish
@@ -1703,8 +1582,6 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     keyboard.text('💎 Premium sotib olish', 'show_premium');
 
     // Xabar yuborish - har doim yuboramiz (contentType ga qaramay)
-    this.logger.log(`📤 Xabar yuborilmoqda: ${channelsToShow.length} ta kanal`);
-
     try {
       if (ctx.callbackQuery?.message) {
         try {
@@ -1717,28 +1594,22 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
               reply_markup: keyboard,
             },
           );
-          this.logger.log(`📝 Edited message for user ${ctx.from.id} - showing ${channelsToShow.length} channels`);
         } catch (error) {
-          this.logger.warn(`Could not edit message, sending new one: ${error.message}`);
           await ctx.reply(message, {
             parse_mode: 'HTML',
             reply_markup: keyboard,
           });
-          this.logger.log(`📝 Sent new message showing ${channelsToShow.length} channels`);
         }
       } else {
         await ctx.reply(message, {
           parse_mode: 'HTML',
           reply_markup: keyboard,
         });
-        this.logger.log(`📝 Sent message showing ${channelsToShow.length} channels`);
       }
     } catch (error) {
       this.logger.error(`❌ Xabar yuborishda XATOLIK:`, error);
       this.logger.error(`Error: ${error?.message}`);
     }
-
-    this.logger.log(`❌❌❌ checkSubscription RETURNS FALSE!`);
     return false;
   }
 
@@ -1747,76 +1618,46 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       this.logger.error(`❌ handleCheckSubscription: ctx.callbackQuery yoki ctx.from yo'q`);
       return;
     }
-
-    this.logger.log(`🔍 User ${ctx.from.id} bosdi Tekshirish tugmasini`);
-
     // Callback query ni darhol javob beramiz (timeout bo'lmasligi uchun)
     try {
       await ctx.answerCallbackQuery({ text: 'Tekshirilmoqda...' });
-      this.logger.log(`✅ answerCallbackQuery yuborildi`);
     } catch (err) {
-      this.logger.warn(`⚠️ Callback query javob berishda xato: ${err.message}`);
     }
 
     try {
-      this.logger.log(`👤 User ${ctx.from.id} ni qidiramiz...`);
-
       const user = await this.userService.findByTelegramId(String(ctx.from.id));
       if (!user) {
         this.logger.error(`❌ User ${ctx.from.id} topilmadi`);
         await ctx.reply('❌ Foydalanuvchi topilmadi.');
         return;
       }
-
-      this.logger.log(`✅ User ${ctx.from.id} topildi, kanallarni tekshiramiz...`);
-
       // Barcha kanallarni tekshiramiz
-      this.logger.log(`🔍 checkSubscription chaqirilmoqda...`);
       const hasAccess = await this.checkSubscription(ctx, 0, 'check');
-      this.logger.log(`🔍 checkSubscription tugadi! Natija: ${hasAccess}`);
-
-      this.logger.log(`📊 📊 📊 User ${ctx.from.id}: hasAccess = ${hasAccess} (type: ${typeof hasAccess})`);
 
       if (hasAccess === true) {
         // ✅ Barcha kanallarga qo'shilgan yoki so'rov yuborilgan
-        this.logger.log(`🎉🎉🎉 IF BLOCK ICHIGA KIRDIK! User ${ctx.from.id} barcha kanallarga qo'shilgan!`);
-
         // Eski xabarni o'chirishga harakat qilamiz
-        this.logger.log(`🗑️ Eski xabarni o'chirishga harakat...`);
         if (ctx.callbackQuery.message) {
           try {
             await ctx.api.deleteMessage(
               ctx.callbackQuery.message.chat.id,
               ctx.callbackQuery.message.message_id,
             );
-            this.logger.log(`✅ Eski xabar o'chirildi!`);
           } catch (err) {
-            this.logger.warn(`⚠️ Xabarni o'chirib bo'lmadi: ${err.message}`);
           }
         } else {
-          this.logger.log(`⚠️ ctx.callbackQuery.message yo'q`);
         }
 
         // Success xabarni yuborish
-        this.logger.log(`📤📤📤 Success xabar yuborilmoqda user ${ctx.from.id} ga...`);
-
         const successMessage =
           '✅ Siz barcha kanallarga qo\'shildingiz!\n\n' +
           '🎬 Endi botdan foydalanishingiz mumkin.\n\n' +
           '🔍 Kino yoki serial kodini yuboring.';
 
-        this.logger.log(`📝 Success message tayyor: ${successMessage.substring(0, 50)}...`);
 
         try {
-          this.logger.log(`⌨️ Keyboard tayyorlanmoqda...`);
           const keyboard = MainMenuKeyboard.getMainMenu(user.isPremium, user.isPremiumBanned);
-          this.logger.log(`✅ Keyboard tayyor!`);
-
-          this.logger.log(`📨 ctx.reply chaqirilmoqda...`);
           await ctx.reply(successMessage, keyboard);
-          this.logger.log(`✅ ctx.reply tugadi!`);
-
-          this.logger.log(`🎊🎊🎊 SUCCESS xabar YUBORILDI user ${ctx.from.id} ga!`);
         } catch (sendError) {
           this.logger.error(`❌❌❌ Success xabar yuborishda XATOLIK:`, sendError);
           this.logger.error(`Error name: ${sendError?.name}`);
@@ -1825,16 +1666,13 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
           // Fallback: oddiy xabar yuborish (keyboard siz)
           try {
-            this.logger.log(`🔄 Fallback - keyboard siz yuboramiz...`);
             await ctx.reply(successMessage);
-            this.logger.log(`✅ Fallback xabar yuborildi (keyboard siz)`);
           } catch (fallbackError) {
             this.logger.error(`❌ Fallback xabar ham yuborilmadi:`, fallbackError);
           }
         }
       } else {
         // ❌ Hali qo'shilishi kerak - checkSubscription allaqachon xabar yuborgan
-        this.logger.log(`❌❌❌ ELSE BLOCK! hasAccess = ${hasAccess}, User ${ctx.from.id} hali kanallar kerak`);
       }
     } catch (error) {
       this.logger.error(`❌❌❌ XATOLIK handleCheckSubscription da:`, error);
@@ -1933,9 +1771,6 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
           lastUpdated: new Date(),
         },
       });
-
-      this.logger.log(`✅ Created join request for user ${ctx.from.id} to channel ${channel.channelName}`);
-
       // Send notification to admins
       try {
         const settings = await this.prisma.botSettings.findFirst();
@@ -1966,9 +1801,6 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         text: '✅ So\'rov yuborildi! Endi botdan foydalanishingiz mumkin.',
         show_alert: true
       });
-
-      this.logger.log(`✅ User ${ctx.from.id} sent join request for channel ${channel.channelName}. Status: requested`);
-
       // Xabarni yangilash - endi bu kanaldan so'rov yuborilgan
       try {
         const hasAccess = await this.checkSubscription(ctx, 0, 'request');
@@ -1986,7 +1818,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
           );
         }
       } catch (error) {
-        this.logger.error('Error updating message after request:', error);
+        this.logger.error(`[UserHandler.handleRequestJoin] Failed to update message after request - User: ${ctx.from.id}, Channel: ${channelId}, Error: ${error.message}`, error.stack);
       }
 
     } catch (error) {
@@ -2048,7 +1880,6 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         }
 
         await this.channelService.incrementPendingRequests(channel.id);
-        this.logger.log(`User ${userId} requested to join ${channel.channelName}. Pending: ${channel.pendingRequests + 1}`);
       }
     } catch (error) {
       this.logger.error(`Error handling join request: ${error.message}`);
@@ -2129,19 +1960,11 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
             // Increment member count only if this is a new join
             if (isNewMember) {
               await this.channelService.incrementMemberCount(channel.id);
-              this.logger.log(
-                `User ${userId} joined ${channel.channelName} (${channel.type}). ` +
-                `Member count incremented. Was: ${wasRequested ? 'requested' : wasLeft ? 'left' : 'new'}`,
-              );
             }
 
             // If user was in pending state, decrement pending count
             if (wasRequested && channel.type === 'PRIVATE') {
               await this.channelService.decrementPendingRequests(channel.id);
-              this.logger.log(
-                `User ${userId} approved in ${channel.channelName}. ` +
-                `Pending requests decremented.`,
-              );
             }
           }
         }
@@ -2204,10 +2027,6 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
                 where: { id: channel.id },
                 data: { currentMembers: { decrement: 1 } },
               });
-              this.logger.log(
-                `User ${userId} left ${channel.channelName}. ` +
-                `Member count decremented.`,
-              );
             }
           }
 
@@ -2264,9 +2083,6 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       // Check subscription before sending episode
       const hasSubscription = await this.checkSubscription(ctx, 0, 'episode');
       if (!hasSubscription) {
-        this.logger.log(
-          `User ${ctx.from.id} tried to access episode without subscription`,
-        );
         return;
       }
 
@@ -2336,12 +2152,12 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
             );
           }
         } catch (error) {
-          this.logger.error('Error copying episode video:', error);
+          this.logger.error(`[UserHandler.handleEpisodeCallback] Failed to copy video - Serial: ${serialId}, Episode: ${episodeNumber}, User: ${ctx.from.id}, Error: ${error.message}`, error.stack);
           await ctx.reply('❌ Video yuklashda xatolik.');
         }
       }
     } catch (error) {
-      this.logger.error('Error handling episode callback:', error);
+      this.logger.error(`[UserHandler.handleEpisodeCallback] Error - Serial: ${serialId}, Episode: ${episodeNumber}, User: ${ctx.from.id}, Error: ${error.message}`, error.stack);
       await ctx.reply('❌ Qism yuklashda xatolik yuz berdi.');
     }
   }
@@ -2364,9 +2180,6 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       // Check subscription before sending movie episode
       const hasSubscription = await this.checkSubscription(ctx, 0, 'movie_episode');
       if (!hasSubscription) {
-        this.logger.log(
-          `User ${ctx.from.id} tried to access movie episode without subscription`,
-        );
         return;
       }
 
@@ -2435,7 +2248,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
               );
             }
           } catch (error) {
-            this.logger.error('Error copying movie video:', error);
+            this.logger.error(`[UserHandler.handleMovieEpisodeCallback] Failed to copy movie video - Movie: ${movieId}, Episode: ${episodeNumber}, User: ${ctx.from.id}, Error: ${error.message}`, error.stack);
             await ctx.reply('❌ Video yuklashda xatolik.');
           }
         }
@@ -2473,13 +2286,13 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
               );
             }
           } catch (error) {
-            this.logger.error('Error copying movie episode video:', error);
+            this.logger.error(`[UserHandler.handleMovieEpisodeCallback] Failed to copy movie episode video - Movie: ${movieId}, Episode: ${episodeNumber}, User: ${ctx.from.id}, Error: ${error.message}`, error.stack);
             await ctx.reply('❌ Video yuklashda xatolik.');
           }
         }
       }
     } catch (error) {
-      this.logger.error('Error handling movie episode callback:', error);
+      this.logger.error(`[UserHandler.handleMovieEpisodeCallback] Error - Movie: ${movieId}, Episode: ${episodeNumber}, User: ${ctx.from.id}, Error: ${error.message}`, error.stack);
       await ctx.reply('❌ Qism yuklashda xatolik yuz berdi.');
     }
   }
@@ -2519,7 +2332,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         },
       );
     } catch (error) {
-      this.logger.error('Error handling field channel callback:', error);
+      this.logger.error(`[UserHandler.handleFieldChannelCallback] Error - FieldID: ${fieldId}, User: ${ctx.from.id}, Error: ${error.message}`, error.stack);
       await ctx.answerCallbackQuery({
         text: '❌ Xatolik yuz berdi.',
         show_alert: true,
@@ -2639,7 +2452,7 @@ ${shareLink}`;
         is_personal: true,
       });
     } catch (error) {
-      this.logger.error('Error handling inline query:', error);
+      this.logger.error(`[UserHandler.handleInlineQuery] Error - User: ${ctx.from.id}, Query: ${ctx.inlineQuery.query}, Error: ${error.message}`, error.stack);
       await ctx.answerInlineQuery([]);
     }
   }
