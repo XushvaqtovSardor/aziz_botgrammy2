@@ -38,19 +38,5 @@ services:
         pnpm run start:prod
       "
 
-  nginx:
-    image: nginx:alpine
-    container_name: aziz_nginx
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - ./public:/usr/share/nginx/html/public
-      - /etc/letsencrypt:/etc/letsencrypt
-    depends_on:
-      - app
-
 volumes:
   baza_data:
