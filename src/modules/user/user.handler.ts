@@ -245,18 +245,7 @@ export class UserHandler implements OnModuleInit {
       }
     });
 
-    bot.callbackQuery(/^external_(\d+)$/, async (ctx) => {
-      try {
-        await this.handleExternalChannel(ctx);
-      } catch (error) {
-        this.logger.error(
-          `❌ Error in external channel callback for user ${ctx.from?.id}: ${error.message}`,
-        );
-        await ctx
-          .answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' })
-          .catch(() => { });
-      }
-    });
+    // External kanallar URL button sifatida yaratiladi, callback handler kerak emas
 
     bot.callbackQuery(/^show_premium$/, async (ctx) => {
       try {
@@ -1382,7 +1371,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
         externalChannels.forEach(channel => {
           keyboard
-            .text(`${channel.channelName}`, `external_${channel.id}`)
+            .url(`${channel.channelName}`, channel.channelLink)
             .row();
         });
 
@@ -1432,7 +1421,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
         externalChannels.forEach(channel => {
           keyboard
-            .text(`${channel.channelName}`, `external_${channel.id}`)
+            .url(`${channel.channelName}`, channel.channelLink)
             .row();
         });
 
@@ -1701,11 +1690,11 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         .row();
     });
 
-    // EXTERNAL kanallar uchun tracking button (blocking qilmaydi)
+    // EXTERNAL kanallar uchun URL button (to'g'ridan-to'g'ri saytga o'tadi)
     if (externalChannelsToShow.length > 0) {
       externalChannelsToShow.forEach(channel => {
         keyboard
-          .text(` ${channel.name}`, `external_${channel.id}`)
+          .url(` ${channel.name}`, channel.link)
           .row();
       });
     }
@@ -2006,69 +1995,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     }
   }
 
-  private async handleExternalChannel(ctx: BotContext) {
-    if (!ctx.callbackQuery || !ctx.from) return;
-
-    const match = ctx.callbackQuery.data?.match(/^external_(\d+)$/);
-    if (!match) return;
-
-    const channelId = parseInt(match[1]);
-
-    try {
-      const user = await this.userService.findByTelegramId(String(ctx.from.id));
-      if (!user) {
-        await ctx.answerCallbackQuery({ text: '❌ Foydalanuvchi topilmadi.' });
-        return;
-      }
-
-      // Get channel
-      const channel = await this.prisma.mandatoryChannel.findUnique({
-        where: { id: channelId },
-      });
-
-      if (!channel || channel.type !== 'EXTERNAL') {
-        await ctx.answerCallbackQuery({ text: '❌ Kanal topilmadi.' });
-        return;
-      }
-
-      // Track user click - update status to 'joined' for external channels
-      await this.prisma.userChannelStatus.upsert({
-        where: {
-          userId_channelId: {
-            userId: user.id,
-            channelId: channelId,
-          },
-        },
-        create: {
-          userId: user.id,
-          channelId: channelId,
-          status: 'joined',
-          lastUpdated: new Date(),
-        },
-        update: {
-          status: 'joined',
-          lastUpdated: new Date(),
-        },
-      });
-
-      this.logger.log(`✅ User ${ctx.from.id} clicked external channel: ${channel.channelName}`);
-
-      // answerCallbackQuery doesn't support URL parameter, just send text
-      await ctx.answerCallbackQuery({
-        text: `✅ ${channel.channelName}`,
-      });
-
-      // Send the link as a message so user can click it
-      await ctx.reply(
-        `🔗 <b>${channel.channelName}</b> sahifasiga o'tish:\n\n${channel.channelLink}`,
-        { parse_mode: 'HTML' }
-      );
-
-    } catch (error) {
-      this.logger.error(`Error in handleExternalChannel: ${error.message}`);
-      await ctx.answerCallbackQuery({ text: '❌ Xatolik yuz berdi.' });
-    }
-  }
+  // handleExternalChannel o'chirildi - external kanallar endi URL button sifatida ishlatiladi
 
   private async handleJoinRequest(ctx: BotContext) {
     if (!ctx.chatJoinRequest) return;
