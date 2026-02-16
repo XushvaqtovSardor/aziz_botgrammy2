@@ -45,7 +45,7 @@ async function bootstrap() {
     process.on('SIGINT', async () => {
       try {
         await grammyBot.bot.stop();
-      } catch (error) { }
+      } catch (error) {}
       await app.close();
       process.exit(0);
     });
@@ -53,7 +53,7 @@ async function bootstrap() {
     process.on('SIGTERM', async () => {
       try {
         await grammyBot.bot.stop();
-      } catch (error) { }
+      } catch (error) {}
       await app.close();
       process.exit(0);
     });

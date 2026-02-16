@@ -11,7 +11,7 @@ interface BroadcastResult {
 
 @Injectable()
 export class BroadcastService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async create(data: {
     type: BroadcastType;
@@ -129,7 +129,11 @@ export class BroadcastService {
         ...options,
       });
     } else {
-      await bot.api.sendMessage(telegramId, broadcast.messageText || broadcast.message, options);
+      await bot.api.sendMessage(
+        telegramId,
+        broadcast.messageText || broadcast.message,
+        options,
+      );
     }
   }
 

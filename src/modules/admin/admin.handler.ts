@@ -46,13 +46,16 @@ export class AdminHandler implements OnModuleInit {
     private settingsService: SettingsService,
     private grammyBot: GrammyBotService,
     private prisma: PrismaService,
-  ) { }
+  ) {}
 
   onModuleInit() {
     try {
       this.registerHandlers();
     } catch (error) {
-      this.logger.error(`[AdminHandler.onModuleInit] Failed to initialize - ${error.message}`, error.stack);
+      this.logger.error(
+        `[AdminHandler.onModuleInit] Failed to initialize - ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -76,7 +79,7 @@ export class AdminHandler implements OnModuleInit {
         );
         this.logger.error(`Error: ${error.message}`);
         this.logger.error('Stack:', error.stack);
-        await ctx.reply('❌ Xatolik yuz berdi.').catch(() => { });
+        await ctx.reply('❌ Xatolik yuz berdi.').catch(() => {});
       }
     });
 
@@ -84,8 +87,10 @@ export class AdminHandler implements OnModuleInit {
       try {
         await this.withAdminCheck(this.showStatistics.bind(this))(ctx);
       } catch (error) {
-        this.logger.error(`[AdminHandler.statisticsHandler] Error - Admin: ${ctx.from?.id}, Error: ${error.message}`);
-        await ctx.reply('❌ Xatolik yuz berdi.').catch(() => { });
+        this.logger.error(
+          `[AdminHandler.statisticsHandler] Error - Admin: ${ctx.from?.id}, Error: ${error.message}`,
+        );
+        await ctx.reply('❌ Xatolik yuz berdi.').catch(() => {});
       }
     });
 
@@ -93,7 +98,9 @@ export class AdminHandler implements OnModuleInit {
       try {
         await this.withAdminCheck(this.handleBack.bind(this))(ctx);
       } catch (error) {
-        this.logger.error(`[AdminHandler.backHandler] Error - Admin: ${ctx.from?.id}, Error: ${error.message}`);
+        this.logger.error(
+          `[AdminHandler.backHandler] Error - Admin: ${ctx.from?.id}, Error: ${error.message}`,
+        );
       }
     });
 
@@ -101,7 +108,9 @@ export class AdminHandler implements OnModuleInit {
       try {
         await this.withAdminCheck(this.handleCancel.bind(this))(ctx);
       } catch (error) {
-        this.logger.error(`[AdminHandler.cancelHandler] Error - Admin: ${ctx.from?.id}, Error: ${error.message}`);
+        this.logger.error(
+          `[AdminHandler.cancelHandler] Error - Admin: ${ctx.from?.id}, Error: ${error.message}`,
+        );
       }
     });
 
@@ -215,7 +224,7 @@ export class AdminHandler implements OnModuleInit {
       }
     });
 
-    bot.hears("� Qayta yangilash", async (ctx) => {
+    bot.hears('� Qayta yangilash', async (ctx) => {
       try {
         await this.withAdminCheck(this.showAllChannelsHistory.bind(this))(ctx);
       } catch (error) {
@@ -239,18 +248,20 @@ export class AdminHandler implements OnModuleInit {
 
     bot.hears('💾 Database kanallar', async (ctx) => {
       try {
-
         const admin = await this.getAdmin(ctx);
         if (!admin) {
-
           await ctx.reply('❌ Siz admin emassiz!');
           return;
         }
         await this.showDatabaseChannels(ctx);
       } catch (error) {
-        this.logger.error(`❌ Error in database channels handler: ${error.message}`);
+        this.logger.error(
+          `❌ Error in database channels handler: ${error.message}`,
+        );
         this.logger.error('Stack:', error.stack);
-        await ctx.reply('❌ Xatolik yuz berdi. Iltimos qaytadan urinib ko\'ring.').catch(() => { });
+        await ctx
+          .reply("❌ Xatolik yuz berdi. Iltimos qaytadan urinib ko'ring.")
+          .catch(() => {});
       }
     });
 
@@ -683,7 +694,7 @@ export class AdminHandler implements OnModuleInit {
   }
 
   private async handleAdminStart(ctx: BotContext, admin: any) {
-    this.sessionService.clearSession(ctx.from!.id);
+    this.sessionService.clearSession(ctx.from.id);
 
     const welcomeMessage = `👋 Assalomu alaykum, ${admin.username || 'Admin'}!\n\n🔐 Siz admin panelidasiz.`;
 
@@ -775,9 +786,9 @@ export class AdminHandler implements OnModuleInit {
 
     await ctx.reply(
       '🎬 Kino yuklash boshlandi!\n\n' +
-      '1️⃣ Kino kodini kiriting:\n' +
-      "⚠️ Kod FAQAT raqamlardan iborat bo'lishi kerak!\n" +
-      'Masalan: 12345',
+        '1️⃣ Kino kodini kiriting:\n' +
+        "⚠️ Kod FAQAT raqamlardan iborat bo'lishi kerak!\n" +
+        'Masalan: 12345',
       AdminKeyboard.getCancelButton(),
     );
   }
@@ -925,7 +936,10 @@ export class AdminHandler implements OnModuleInit {
           const field = data.selectedField;
           const botInfo = await ctx.api.getMe();
           const botUsername = botInfo.username || 'bot';
-          const fieldLink = field.channelLink || 'https://t.me/' + field.channelId?.replace('@', '').replace('-100', '');
+          const fieldLink =
+            field.channelLink ||
+            'https://t.me/' +
+              field.channelId?.replace('@', '').replace('-100', '');
           const dbCaption = `╭────────────────────
 ├‣ Kino nomi : ${data.title}
 ├‣ Kino kodi: ${data.code}
@@ -972,7 +986,9 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       const field = data.selectedField;
       const botInfo = await ctx.api.getMe();
       const botUsername = botInfo.username || 'bot';
-      const fieldLink = field.channelLink || 'https://t.me/' + field.channelId?.replace('@', '').replace('-100', '');
+      const fieldLink =
+        field.channelLink ||
+        'https://t.me/' + field.channelId?.replace('@', '').replace('-100', '');
 
       const caption = `╭────────────────────
 ├‣ Kino nomi : ${data.title}
@@ -1178,8 +1194,8 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
           return;
         }
 
-        this.sessionService.updateSessionData(ctx.from!.id, { code });
-        this.sessionService.setStep(ctx.from!.id, MovieCreateStep.TITLE);
+        this.sessionService.updateSessionData(ctx.from.id, { code });
+        this.sessionService.setStep(ctx.from.id, MovieCreateStep.TITLE);
         await ctx.reply(
           'Kino nomini kiriting:\nMasalan: Avatar 2',
           AdminKeyboard.getCancelButton(),
@@ -1187,8 +1203,8 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         break;
 
       case MovieCreateStep.TITLE:
-        this.sessionService.updateSessionData(ctx.from!.id, { title: text });
-        this.sessionService.setStep(ctx.from!.id, MovieCreateStep.GENRE);
+        this.sessionService.updateSessionData(ctx.from.id, { title: text });
+        this.sessionService.setStep(ctx.from.id, MovieCreateStep.GENRE);
         await ctx.reply(
           '🎭 Janr kiriting:\nMasalan: Action, Drama',
           AdminKeyboard.getCancelButton(),
@@ -1196,8 +1212,8 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         break;
 
       case MovieCreateStep.GENRE:
-        this.sessionService.updateSessionData(ctx.from!.id, { genre: text });
-        this.sessionService.setStep(ctx.from!.id, MovieCreateStep.DESCRIPTION);
+        this.sessionService.updateSessionData(ctx.from.id, { genre: text });
+        this.sessionService.setStep(ctx.from.id, MovieCreateStep.DESCRIPTION);
 
         const keyboard = new Keyboard()
           .text('Next')
@@ -1211,22 +1227,22 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
       case MovieCreateStep.DESCRIPTION:
         if (text.toLowerCase() === 'next') {
-          this.sessionService.updateSessionData(ctx.from!.id, {
+          this.sessionService.updateSessionData(ctx.from.id, {
             description: null,
           });
         } else {
-          this.sessionService.updateSessionData(ctx.from!.id, {
+          this.sessionService.updateSessionData(ctx.from.id, {
             description: text,
           });
         }
-        this.sessionService.setStep(ctx.from!.id, MovieCreateStep.FIELD);
+        this.sessionService.setStep(ctx.from.id, MovieCreateStep.FIELD);
 
         const allFields = await this.fieldService.findAll();
         if (allFields.length === 0) {
           await ctx.reply(
             '❌ Hech qanday field topilmadi. Avval field yarating.',
           );
-          this.sessionService.clearSession(ctx.from!.id);
+          this.sessionService.clearSession(ctx.from.id);
           return;
         }
 
@@ -1236,7 +1252,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         });
         message += '\nRaqamini kiriting (masalan: 1)';
 
-        this.sessionService.updateSessionData(ctx.from!.id, {
+        this.sessionService.updateSessionData(ctx.from.id, {
           fields: allFields,
         });
         await ctx.reply(message, AdminKeyboard.getCancelButton());
@@ -1255,10 +1271,10 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
           return;
         }
 
-        this.sessionService.updateSessionData(ctx.from!.id, {
+        this.sessionService.updateSessionData(ctx.from.id, {
           selectedField: userFields[fieldIndex],
         });
-        this.sessionService.setStep(ctx.from!.id, MovieCreateStep.PHOTO);
+        this.sessionService.setStep(ctx.from.id, MovieCreateStep.PHOTO);
         await ctx.reply(
           '📸 Endi kino rasmi yoki vediosini yuboring:',
           AdminKeyboard.getCancelButton(),
@@ -1284,8 +1300,8 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     await ctx.reply(
       '📺 Serial boshqaruvi\n\nQaysi amalni bajarmoqchisiz?\n\n' +
-      '• Yangi serial yaratish\n' +
-      "• Kino yoki serialga yangi qism qo'shish",
+        '• Yangi serial yaratish\n' +
+        "• Kino yoki serialga yangi qism qo'shish",
       {
         reply_markup: keyboard,
       },
@@ -1304,9 +1320,9 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     await ctx.reply(
       '📺 Yangi serial yaratish boshlandi!\n\n' +
-      '1️⃣ Serial kodini kiriting:\n' +
-      "⚠️ Kod FAQAT raqamlardan iborat bo'lishi kerak!\n" +
-      'Masalan: 12345',
+        '1️⃣ Serial kodini kiriting:\n' +
+        "⚠️ Kod FAQAT raqamlardan iborat bo'lishi kerak!\n" +
+        'Masalan: 12345',
       AdminKeyboard.getCancelButton(),
     );
   }
@@ -1326,8 +1342,8 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     await ctx.reply(
       "📺 Kino yoki Serialga qism qo'shish\n\n" +
-      '🔢 Kino yoki serial kodini kiriting:\n' +
-      "⚠️ Kod raqamlardan iborat bo'lishi kerak",
+        '🔢 Kino yoki serial kodini kiriting:\n' +
+        "⚠️ Kod raqamlardan iborat bo'lishi kerak",
       AdminKeyboard.getCancelButton(),
     );
   }
@@ -1396,7 +1412,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
   }
 
   private async showFieldDetail(ctx: BotContext) {
-    const fieldId = parseInt(ctx.match![1] as string);
+    const fieldId = parseInt(ctx.match[1]);
     const field = await this.fieldService.findOne(fieldId);
 
     if (!field) {
@@ -1434,7 +1450,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     const admin = await this.getAdmin(ctx);
     if (!admin) return;
 
-    const fieldId = parseInt(ctx.match![1] as string);
+    const fieldId = parseInt(ctx.match[1]);
     await this.fieldService.delete(fieldId);
 
     await ctx.answerCallbackQuery({ text: '✅ Field ochirildi' });
@@ -1483,7 +1499,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     });
 
     // So'rovlarni ko'rish tugmasini qo'shish
-    inlineKeyboard.text('📋 So\'rovlarni ko\'rish', 'view_join_requests').row();
+    inlineKeyboard.text("📋 So'rovlarni ko'rish", 'view_join_requests').row();
 
     await ctx.reply(message, { reply_markup: inlineKeyboard });
 
@@ -1517,10 +1533,10 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     await ctx.reply(
       '📝 Kanal turini tanlang:\n\n' +
-      '🌐 Public kanal - Ochiq kanal (ID/username + link)\n' +
-      '🔒 Private kanal - Yopiq kanal (ID + link)\n' +
-      '🔗 Boshqa link - Instagram, YouTube va boshqalar\n\n' +
-      "❌ Bekor qilish uchun 'Bekor qilish' tugmasini bosing",
+        '🌐 Public kanal - Ochiq kanal (ID/username + link)\n' +
+        '🔒 Private kanal - Yopiq kanal (ID + link)\n' +
+        '🔗 Boshqa link - Instagram, YouTube va boshqalar\n\n' +
+        "❌ Bekor qilish uchun 'Bekor qilish' tugmasini bosing",
       { reply_markup: keyboard },
     );
   }
@@ -1529,7 +1545,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     const admin = await this.getAdmin(ctx);
     if (!admin) return;
 
-    const channelId = parseInt(ctx.match![1] as string);
+    const channelId = parseInt(ctx.match[1]);
     await this.channelService.delete(channelId);
 
     await ctx.answerCallbackQuery({ text: '✅ Majburiy kanal ochirildi' });
@@ -1640,12 +1656,12 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     }
 
     message += '\n📌 <i>Eslatma:</i>\n';
-    message += '• Public - Ochiq kanal, to\'g\'ridan-to\'g\'ri qo\'shilish\n';
-    message += '• Private - So\'rov yuborish va admin tasdiqini kutish\n';
+    message += "• Public - Ochiq kanal, to'g'ridan-to'g'ri qo'shilish\n";
+    message += "• Private - So'rov yuborish va admin tasdiqini kutish\n";
     message += '• Statistika har safar yangilanadi\n';
 
     const keyboard = new Keyboard()
-      .text("🔄 Qayta yangilash")
+      .text('🔄 Qayta yangilash')
       .text("🔍 Link bo'yicha qidirish")
       .row()
       .text('🗑️ Tarixni tozalash')
@@ -1672,8 +1688,8 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     await ctx.reply(
       '🔍 Kanal linkini yuboring:\n\n' +
-      'Misol: https://t.me/mychannel\n\n' +
-      "❌ Bekor qilish uchun 'Bekor qilish' tugmasini bosing",
+        'Misol: https://t.me/mychannel\n\n' +
+        "❌ Bekor qilish uchun 'Bekor qilish' tugmasini bosing",
       { reply_markup: keyboard },
     );
   }
@@ -1692,7 +1708,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       return;
     }
 
-    this.sessionService.clearSession(ctx.from!.id);
+    this.sessionService.clearSession(ctx.from.id);
 
     let message = `📊 <b>Kanal ma'lumotlari:</b>\n\n`;
     message += `📢 <b>${channel.channelName}</b>\n`;
@@ -1743,12 +1759,10 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
   private async showDatabaseChannels(ctx: BotContext) {
     const admin = await this.getAdmin(ctx);
     if (!admin) {
-
       return;
     }
 
     try {
-
       const channels = await this.channelService.findAllDatabase();
 
       if (channels.length === 0) {
@@ -1774,7 +1788,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         message += `\n`;
       });
 
-      message += "\n📌 Amallarni tanlang:";
+      message += '\n📌 Amallarni tanlang:';
 
       const inlineKeyboard = new InlineKeyboard();
 
@@ -1790,7 +1804,9 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       }
 
       // O'chirish tugmasi
-      inlineKeyboard.text("🗑 Kanal o'chirish", 'show_delete_db_channels').row();
+      inlineKeyboard
+        .text("🗑 Kanal o'chirish", 'show_delete_db_channels')
+        .row();
 
       await ctx.reply(message, {
         reply_markup: inlineKeyboard,
@@ -1806,7 +1822,9 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     } catch (error) {
       this.logger.error(`Error showing database channels: ${error.message}`);
       this.logger.error('Stack:', error.stack);
-      await ctx.reply('❌ Database kanallarni yuklashda xatolik yuz berdi.').catch(() => { });
+      await ctx
+        .reply('❌ Database kanallarni yuklashda xatolik yuz berdi.')
+        .catch(() => {});
     }
   }
 
@@ -1835,7 +1853,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       return;
     }
 
-    let message = '🗑 Database kanallarni o\'chirish:\n\n';
+    let message = "🗑 Database kanallarni o'chirish:\n\n";
     channels.forEach((ch, i) => {
       message += `${i + 1}. ${ch.channelName}\n`;
       message += `   🆔 ID: ${ch.channelId}\n`;
@@ -1866,7 +1884,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     await ctx.answerCallbackQuery();
 
-    const channelId = ctx.match![1] as string;
+    const channelId = ctx.match[1];
 
     try {
       const chat = await this.grammyBot.bot.api.getChat(channelId);
@@ -1892,14 +1910,14 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
         await ctx.reply(
           `📢 Kanal: ${chat.title}\n\n` +
-          `Quyidagi tugma orqali kanalga o'tishingiz mumkin:`,
+            `Quyidagi tugma orqali kanalga o'tishingiz mumkin:`,
           { reply_markup: keyboard },
         );
       } else {
         await ctx.reply(
           '❌ Kanal linkini olishda xatolik yuz berdi.\n' +
-          `Kanal ID: \`${channelId}\`\n\n` +
-          "Kanalga qo'lda kirish uchun ID dan foydalaning.",
+            `Kanal ID: \`${channelId}\`\n\n` +
+            "Kanalga qo'lda kirish uchun ID dan foydalaning.",
           { parse_mode: 'Markdown' },
         );
       }
@@ -1907,7 +1925,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       this.logger.error('Error getting channel:', error);
       await ctx.reply(
         '❌ Kanalga ulanishda xatolik yuz berdi.\n' +
-        'Botning kanalda admin ekanligiga ishonch hosil qiling.',
+          'Botning kanalda admin ekanligiga ishonch hosil qiling.',
       );
     }
   }
@@ -1925,8 +1943,8 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     await ctx.reply(
       '📝 Database kanalning ID sini yuboring:\n\n' +
-      'Masalan: -1001234567890\n\n' +
-      "❌ Bekor qilish uchun 'Bekor qilish' tugmasini bosing",
+        'Masalan: -1001234567890\n\n' +
+        "❌ Bekor qilish uchun 'Bekor qilish' tugmasini bosing",
       { reply_markup: keyboard },
     );
   }
@@ -1941,7 +1959,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       // Ignore
     }
 
-    const channelId = parseInt(ctx.match![1] as string);
+    const channelId = parseInt(ctx.match[1]);
     const channel = await this.prisma.databaseChannel.findUnique({
       where: { id: channelId },
       include: {
@@ -1969,7 +1987,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     message += `\nRostdan ham o'chirmoqchimisiz?`;
 
     const keyboard = new InlineKeyboard()
-      .text('✅ Ha, o\'chirish', `delete_db_channel_${channelId}`)
+      .text("✅ Ha, o'chirish", `delete_db_channel_${channelId}`)
       .text('❌ Bekor qilish', 'show_delete_db_channels')
       .row();
 
@@ -1983,12 +2001,12 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     if (!admin) return;
 
     try {
-      await ctx.answerCallbackQuery({ text: '⏳ O\'chirilmoqda...' });
+      await ctx.answerCallbackQuery({ text: "⏳ O'chirilmoqda..." });
     } catch (error) {
       // Ignore
     }
 
-    const channelId = parseInt(ctx.match![1] as string);
+    const channelId = parseInt(ctx.match[1]);
 
     try {
       // Kanalni o'chirishdan oldin ma'lumotlarini saqlab qolamiz
@@ -2008,22 +2026,21 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
       await ctx.reply(
         `✅ **Database kanal o'chirildi!**\n\n` +
-        `📢 Kanal: ${channelName}\n` +
-        `🆔 ID: \`${channel.channelId}\``,
-        { parse_mode: 'Markdown' }
+          `📢 Kanal: ${channelName}\n` +
+          `🆔 ID: \`${channel.channelId}\``,
+        { parse_mode: 'Markdown' },
       );
 
       // Yangilangan ro'yxatni ko'rsatish
       setTimeout(() => {
         this.showDeleteDatabaseChannels(ctx);
       }, 1000);
-
     } catch (error) {
       this.logger.error(`Error deleting database channel ${channelId}:`, error);
       await ctx.reply(
-        '❌ **O\'chirishda xatolik yuz berdi!**\n\n' +
-        `Xatolik: ${error.message}`,
-        { parse_mode: 'Markdown' }
+        "❌ **O'chirishda xatolik yuz berdi!**\n\n" +
+          `Xatolik: ${error.message}`,
+        { parse_mode: 'Markdown' },
       );
     }
   }
@@ -2065,7 +2082,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         .text('✅ Tasdiqlash', `approve_payment_${payment.id}`)
         .text('❌ Rad etish', `reject_payment_${payment.id}`);
 
-      await ctx.api.sendPhoto(ctx.chat!.id, payment.receiptFileId, {
+      await ctx.api.sendPhoto(ctx.chat.id, payment.receiptFileId, {
         caption: message,
         parse_mode: 'Markdown',
         reply_markup: keyboard,
@@ -2147,7 +2164,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     await ctx.answerCallbackQuery();
 
-    const paymentId = parseInt(ctx.match![1] as string);
+    const paymentId = parseInt(ctx.match[1]);
     const payment = await this.paymentService.findById(paymentId);
 
     if (!payment) {
@@ -2174,10 +2191,10 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     await ctx.reply(
       `💎 **Premium berish**\n\n` +
-      `👤 Foydalanuvchi: ${payment.user.firstName}\n` +
-      `💰 Summa: ${payment.amount.toLocaleString()} UZS\n\n` +
-      `📅 Necha kunlik premium berasiz?\n` +
-      `Kunlar sonini yozing yoki pastdagi tugmalardan tanlang:`,
+        `👤 Foydalanuvchi: ${payment.user.firstName}\n` +
+        `💰 Summa: ${payment.amount.toLocaleString()} UZS\n\n` +
+        `📅 Necha kunlik premium berasiz?\n` +
+        `Kunlar sonini yozing yoki pastdagi tugmalardan tanlang:`,
       { parse_mode: 'Markdown', reply_markup: keyboard },
     );
   }
@@ -2188,7 +2205,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     await ctx.answerCallbackQuery();
 
-    const paymentId = parseInt(ctx.match![1] as string);
+    const paymentId = parseInt(ctx.match[1]);
     const payment = await this.paymentService.findById(paymentId);
 
     if (!payment) {
@@ -2212,9 +2229,9 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     await ctx.reply(
       `❌ **To'lovni rad etish**\n\n` +
-      `👤 Foydalanuvchi: ${payment.user.firstName}\n` +
-      `💰 Summa: ${payment.amount.toLocaleString()} UZS\n\n` +
-      `📝 Rad etish sababini yozing:`,
+        `👤 Foydalanuvchi: ${payment.user.firstName}\n` +
+        `💰 Summa: ${payment.amount.toLocaleString()} UZS\n\n` +
+        `📝 Rad etish sababini yozing:`,
       { parse_mode: 'Markdown', reply_markup: keyboard },
     );
   }
@@ -2247,7 +2264,9 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       }
 
       if (joinRequest.status !== 'PENDING') {
-        await ctx.editMessageText(`❌ So'rov allaqachon ${joinRequest.status === 'APPROVED' ? 'tasdiqlangan' : 'rad etilgan'}.`);
+        await ctx.editMessageText(
+          `❌ So'rov allaqachon ${joinRequest.status === 'APPROVED' ? 'tasdiqlangan' : 'rad etilgan'}.`,
+        );
         return;
       }
 
@@ -2301,17 +2320,18 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
           await ctx.api.sendMessage(
             user.telegramId,
             `✅ Sizning ${channel.channelName} kanaliga qo'shilish so'rovingiz tasdiqlandi!\n\n` +
-            `Endi botdan foydalanishingiz mumkin. /start ni bosing.`
+              `Endi botdan foydalanishingiz mumkin. /start ni bosing.`,
           );
         } catch (error) {
-          this.logger.error(`Failed to notify user ${user.telegramId}: ${error.message}`);
+          this.logger.error(
+            `Failed to notify user ${user.telegramId}: ${error.message}`,
+          );
         }
       }
 
       await ctx.editMessageText(
-        ctx.callbackQuery?.message?.text + '\n\n✅ So\'rov tasdiqlandi!'
+        ctx.callbackQuery?.message?.text + "\n\n✅ So'rov tasdiqlandi!",
       );
-
     } catch (error) {
       this.logger.error(`Error approving join request: ${error.message}`);
       await ctx.reply("❌ So'rovni tasdiqlashda xatolik yuz berdi.");
@@ -2346,7 +2366,9 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       }
 
       if (joinRequest.status !== 'PENDING') {
-        await ctx.editMessageText(`❌ So'rov allaqachon ${joinRequest.status === 'APPROVED' ? 'tasdiqlangan' : 'rad etilgan'}.`);
+        await ctx.editMessageText(
+          `❌ So'rov allaqachon ${joinRequest.status === 'APPROVED' ? 'tasdiqlangan' : 'rad etilgan'}.`,
+        );
         return;
       }
 
@@ -2401,17 +2423,18 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
           await ctx.api.sendMessage(
             user.telegramId,
             `❌ Sizning ${channel.channelName} kanaliga qo'shilish so'rovingiz rad etildi.\n\n` +
-            `Agar savol bo'lsa, admin bilan bog'laning.`
+              `Agar savol bo'lsa, admin bilan bog'laning.`,
           );
         } catch (error) {
-          this.logger.error(`Failed to notify user ${user.telegramId}: ${error.message}`);
+          this.logger.error(
+            `Failed to notify user ${user.telegramId}: ${error.message}`,
+          );
         }
       }
 
       await ctx.editMessageText(
-        ctx.callbackQuery?.message?.text + '\n\n❌ So\'rov rad etildi!'
+        ctx.callbackQuery?.message?.text + "\n\n❌ So'rov rad etildi!",
       );
-
     } catch (error) {
       this.logger.error(`Error rejecting join request: ${error.message}`);
       await ctx.reply("❌ So'rovni rad etishda xatolik yuz berdi.");
@@ -2433,11 +2456,13 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       });
 
       if (requests.length === 0) {
-        await ctx.reply('📋 Hozirda kutilayotgan kanalga qo\'shilish so\'rovlari yo\'q.');
+        await ctx.reply(
+          "📋 Hozirda kutilayotgan kanalga qo'shilish so'rovlari yo'q.",
+        );
         return;
       }
 
-      let message = '📋 <b>Kanalga qo\'shilish so\'rovlari:</b>\n\n';
+      let message = "📋 <b>Kanalga qo'shilish so'rovlari:</b>\n\n";
 
       const keyboard = new InlineKeyboard();
 
@@ -2455,12 +2480,15 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
         message += `${index + 1}. 👤 ${req.firstName || ''} ${req.lastName || ''}\n`;
         message += `   🆔 ID: <code>${req.telegramId}</code>\n`;
-        message += `   👤 Username: ${req.username ? '@' + req.username : 'Yo\'q'}\n`;
+        message += `   👤 Username: ${req.username ? '@' + req.username : "Yo'q"}\n`;
         message += `   📱 Kanal: ${channel.channelName}\n`;
         message += `   ⏰ Sana: ${req.requestedAt.toLocaleString('uz-UZ')}\n\n`;
 
         keyboard
-          .text(`✅ ${index + 1}`, `approve_join_${req.userId}_${req.channelId}`)
+          .text(
+            `✅ ${index + 1}`,
+            `approve_join_${req.userId}_${req.channelId}`,
+          )
           .text(`❌ ${index + 1}`, `reject_join_${req.userId}_${req.channelId}`)
           .row();
       }
@@ -2508,7 +2536,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       const keyboard = new InlineKeyboard();
 
       const currentAdmin = await this.adminService.getAdminByTelegramId(
-        ctx.from!.id.toString(),
+        ctx.from.id.toString(),
       );
 
       const deletableAdmins = admins.filter((a) => {
@@ -2545,7 +2573,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       this.logger.error('Error showing admins list:', error);
       await ctx.reply(
         "❌ Adminlar royxatini ko'rsatishda xatolik yuz berdi.\n\n" +
-        "Iltimos, qayta urinib ko'ring.",
+          "Iltimos, qayta urinib ko'ring.",
       );
     }
   }
@@ -2567,8 +2595,8 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     await ctx.reply(
       '📝 Yangi admin Telegram ID sini yuboring:\n\n' +
-      'Masalan: 123456789\n\n' +
-      "❌ Bekor qilish uchun 'Bekor qilish' tugmasini bosing",
+        'Masalan: 123456789\n\n' +
+        "❌ Bekor qilish uchun 'Bekor qilish' tugmasini bosing",
       { reply_markup: keyboard },
     );
     await ctx.answerCallbackQuery();
@@ -2584,7 +2612,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
     }
 
     try {
-      const adminTelegramId = ctx.match![1] as string;
+      const adminTelegramId = ctx.match[1];
 
       if (adminTelegramId === ctx.from?.id.toString()) {
         await ctx.answerCallbackQuery({
@@ -2606,7 +2634,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       }
 
       const currentAdmin = await this.adminService.getAdminByTelegramId(
-        ctx.from!.id.toString(),
+        ctx.from.id.toString(),
       );
 
       if (!currentAdmin) {
@@ -2618,7 +2646,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       }
 
       const canDelete =
-        adminToDelete.createdBy === ctx.from!.id.toString() ||
+        adminToDelete.createdBy === ctx.from.id.toString() ||
         adminToDelete.createdAt > currentAdmin.createdAt;
 
       if (!canDelete) {
@@ -2658,7 +2686,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
       return;
     }
 
-    const match = ctx.callbackQuery!.data!.match(
+    const match = ctx.callbackQuery.data.match(
       /^select_admin_role_(ADMIN|MANAGER|SUPERADMIN)_(.+)$/,
     );
     if (!match) {
@@ -2690,9 +2718,9 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
       await ctx.editMessageText(
         `✅ *${roleNames[role]} muvaffaqiyatli qo'shildi!*\n\n` +
-        `👤 Foydalanuvchi: @${username}\n` +
-        `🆔 Telegram ID: \`${telegramId}\`\n` +
-        `📋 Rol: ${roleNames[role]}`,
+          `👤 Foydalanuvchi: @${username}\n` +
+          `🆔 Telegram ID: \`${telegramId}\`\n` +
+          `📋 Rol: ${roleNames[role]}`,
         { parse_mode: 'Markdown' },
       );
 
@@ -2775,8 +2803,8 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     await ctx.reply(
       "💰 1 oylik premium narxini kiriting (so'mda):\n\n" +
-      'Masalan: 25000\n\n' +
-      "❌ Bekor qilish uchun 'Bekor qilish' tugmasini bosing",
+        'Masalan: 25000\n\n' +
+        "❌ Bekor qilish uchun 'Bekor qilish' tugmasini bosing",
       { reply_markup: keyboard },
     );
     await ctx.answerCallbackQuery();
@@ -2800,8 +2828,8 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     await ctx.reply(
       '💳 Yangi karta raqamini kiriting:\n\n' +
-      'Masalan: 8600 1234 5678 9012\n\n' +
-      "❌ Bekor qilish uchun 'Bekor qilish' tugmasini bosing",
+        'Masalan: 8600 1234 5678 9012\n\n' +
+        "❌ Bekor qilish uchun 'Bekor qilish' tugmasini bosing",
       { reply_markup: keyboard },
     );
     await ctx.answerCallbackQuery();
@@ -2829,14 +2857,14 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
     await ctx.reply(
       `📞 **Aloqa bo'limi matnini kiriting:**\n\n` +
-      `Hozirgi matn:\n${currentMessage}\n\n` +
-      `Yangi matnni yuboring (Markdown formatida):\n` +
-      `Masalan:\n` +
-      `📞 **Aloqa**\\n\\n` +
-      `Savollaringiz bo'lsa murojaat qiling:\\n` +
-      `👤 Admin: @username\\n` +
-      `📱 Telefon: +998901234567\n\n` +
-      "❌ Bekor qilish uchun 'Bekor qilish' tugmasini bosing",
+        `Hozirgi matn:\n${currentMessage}\n\n` +
+        `Yangi matnni yuboring (Markdown formatida):\n` +
+        `Masalan:\n` +
+        `📞 **Aloqa**\\n\\n` +
+        `Savollaringiz bo'lsa murojaat qiling:\\n` +
+        `👤 Admin: @username\\n` +
+        `📱 Telefon: +998901234567\n\n` +
+        "❌ Bekor qilish uchun 'Bekor qilish' tugmasini bosing",
       {
         reply_markup: keyboard,
         parse_mode: 'Markdown',
@@ -2860,7 +2888,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
       await ctx.reply(
         "✅ Aloqa bo'limi matni muvaffaqiyatli yangilandi!\n\n" +
-        'Userlar endi "📞 Aloqa" tugmasini bosganida yangi matnni ko\'rishadi.',
+          'Userlar endi "📞 Aloqa" tugmasini bosganida yangi matnni ko\'rishadi.',
         AdminKeyboard.getAdminMainMenu(admin.role),
       );
     } catch (error) {
@@ -2930,7 +2958,7 @@ Qaysi guruhga xabar yubormoqchisiz?
 
     await ctx.reply(
       "📝 Yubormoqchi bo'lgan xabaringizni yuboring:\n\n" +
-      "(Matn, rasm yoki video bo'lishi mumkin)",
+        "(Matn, rasm yoki video bo'lishi mumkin)",
       { reply_markup: keyboard },
     );
   }
@@ -2954,9 +2982,9 @@ Qaysi guruhga xabar yubormoqchisiz?
         .text('🔙 Orqaga', 'back_to_admin_menu');
       await ctx.reply(
         `🌐 Web Admin Panel\n\n` +
-        `👤 Admin: ${admin.username || admin.telegramId}\n` +
-        `🔐 Rol: ${admin.role}\n\n` +
-        `Quyidagi tugmani bosib admin panelga o'ting:`,
+          `👤 Admin: ${admin.username || admin.telegramId}\n` +
+          `🔐 Rol: ${admin.role}\n\n` +
+          `Quyidagi tugmani bosib admin panelga o'ting:`,
         {
           reply_markup: keyboard,
         },
@@ -3054,13 +3082,14 @@ Qaysi guruhga xabar yubormoqchisiz?
 
         try {
           // Check if channel already exists
-          const existingChannel = await this.channelService.findDatabaseChannelByChannelId(channelId);
+          const existingChannel =
+            await this.channelService.findDatabaseChannelByChannelId(channelId);
           if (existingChannel) {
             await ctx.reply(
               `⚠️ Bu kanal allaqachon database kanallar ro'yxatida mavjud!\n\n` +
-              `📢 ${existingChannel.channelName}\n` +
-              `🆔 ${channelId}\n` +
-              `${existingChannel.channelLink ? `🔗 ${existingChannel.channelLink}` : ''}`,
+                `📢 ${existingChannel.channelName}\n` +
+                `🆔 ${channelId}\n` +
+                `${existingChannel.channelLink ? `🔗 ${existingChannel.channelLink}` : ''}`,
               AdminKeyboard.getAdminMainMenu(admin.role),
             );
             this.sessionService.clearSession(ctx.from.id);
@@ -3084,10 +3113,10 @@ Qaysi guruhga xabar yubormoqchisiz?
             this.sessionService.nextStep(ctx.from.id);
             await ctx.reply(
               `⚠️ Bot bu kanalga kira olmadi.\n\n` +
-              `Bu quyidagi sabablarga ko'ra bo'lishi mumkin:\n` +
-              `• Bot kanalda admin emas\n` +
-              `• Kanal ID noto'g'ri\n\n` +
-              `📝 Agar kanal to'g'ri bo'lsa, botni kanalga admin qiling va kanal nomini kiriting:`,
+                `Bu quyidagi sabablarga ko'ra bo'lishi mumkin:\n` +
+                `• Bot kanalda admin emas\n` +
+                `• Kanal ID noto'g'ri\n\n` +
+                `📝 Agar kanal to'g'ri bo'lsa, botni kanalga admin qiling va kanal nomini kiriting:`,
               AdminKeyboard.getCancelButton(),
             );
             return;
@@ -3107,15 +3136,13 @@ Qaysi guruhga xabar yubormoqchisiz?
             AdminKeyboard.getAdminMainMenu(admin.role),
           );
         } catch (error) {
-          this.logger.error(
-            'Failed to get channel info or create channel',
-          );
+          this.logger.error('Failed to get channel info or create channel');
           this.logger.error(`Error message: ${error.message}`);
           this.logger.error(`Error stack: ${error.stack}`);
           await ctx.reply(
             "❌ Kanal ma'lumotlarini olishda xatolik yuz berdi.\n\n" +
-            `Xatolik: ${error.message}\n\n` +
-            "Botning kanalda admin ekanligiga ishonch hosil qiling va qaytadan urinib ko'ring.",
+              `Xatolik: ${error.message}\n\n` +
+              "Botning kanalda admin ekanligiga ishonch hosil qiling va qaytadan urinib ko'ring.",
             AdminKeyboard.getCancelButton(),
           );
         }
@@ -3143,13 +3170,16 @@ Qaysi guruhga xabar yubormoqchisiz?
           this.sessionService.clearSession(ctx.from.id);
           await ctx.reply(
             `✅ Database kanal muvaffaqiyatli qo'shildi!\n\n` +
-            `📢 ${channelName}\n` +
-            `🆔 ${data.channelId}\n\n` +
-            `⚠️ Bot kanalga kirish huquqiga ega emas. Videolarni yuklash uchun botni kanalga admin qiling.`,
+              `📢 ${channelName}\n` +
+              `🆔 ${data.channelId}\n\n` +
+              `⚠️ Bot kanalga kirish huquqiga ega emas. Videolarni yuklash uchun botni kanalga admin qiling.`,
             AdminKeyboard.getAdminMainMenu(admin.role),
           );
         } catch (error) {
-          this.logger.error('Failed to create database channel manually:', error);
+          this.logger.error(
+            'Failed to create database channel manually:',
+            error,
+          );
           await ctx.reply(
             `❌ Kanal yaratishda xatolik: ${error.message}`,
             AdminKeyboard.getAdminMainMenu(admin.role),
@@ -3208,8 +3238,8 @@ Qaysi guruhga xabar yubormoqchisiz?
           if (!channelLink.startsWith('-')) {
             await ctx.reply(
               "❌ Kanal ID noto'g'ri formatda!\n\n" +
-              "Kanal ID '-' belgisi bilan boshlanishi kerak.\n" +
-              'Masalan: -1001234567890',
+                "Kanal ID '-' belgisi bilan boshlanishi kerak.\n" +
+                'Masalan: -1001234567890',
               AdminKeyboard.getCancelButton(),
             );
             return;
@@ -3228,7 +3258,7 @@ Qaysi guruhga xabar yubormoqchisiz?
             ) {
               await ctx.reply(
                 '❌ Bot kanalda admin emas!\n\n' +
-                "Iltimos, botni kanalga admin qiling va qayta urinib ko'ring.",
+                  "Iltimos, botni kanalga admin qiling va qayta urinib ko'ring.",
                 AdminKeyboard.getCancelButton(),
               );
               return;
@@ -3253,17 +3283,17 @@ Qaysi guruhga xabar yubormoqchisiz?
 
             await ctx.reply(
               '🔢 Kanal uchun limitni tanlang:\n\n' +
-              "♾️ Cheksiz - Kanal doim majburiy bo'ladi (admin o'chirmaguncha)\n" +
-              "🔢 Limitli - Ma'lum sondagi a'zolar qo'shilgandan keyin avtomatik o'chiriladi\n\n" +
-              'Tanlang:',
+                "♾️ Cheksiz - Kanal doim majburiy bo'ladi (admin o'chirmaguncha)\n" +
+                "🔢 Limitli - Ma'lum sondagi a'zolar qo'shilgandan keyin avtomatik o'chiriladi\n\n" +
+                'Tanlang:',
               { reply_markup: keyboard },
             );
           } catch (error) {
             this.logger.error('Failed to verify private channel', error);
             await ctx.reply(
               '❌ Kanal topilmadi yoki bot admin emas!\n\n' +
-              '✅ Botning kanalda admin ekanligiga ishonch hosil qiling.\n' +
-              "✅ Kanal ID to'g'ri ekanligiga ishonch hosil qiling.",
+                '✅ Botning kanalda admin ekanligiga ishonch hosil qiling.\n' +
+                "✅ Kanal ID to'g'ri ekanligiga ishonch hosil qiling.",
               AdminKeyboard.getCancelButton(),
             );
           }
@@ -3288,12 +3318,12 @@ Qaysi guruhga xabar yubormoqchisiz?
           ) {
             await ctx.reply(
               "🔒 Private kanal uchun ID kerak bo'ladi.\n\n" +
-              '📱 Kanal ID sini olish uchun:\n' +
-              '1️⃣ Kanalga @userinfobot ni admin qiling\n' +
-              '2️⃣ Kanalda biror xabar yuboring\n' +
-              '3️⃣ Bot sizga kanal ID sini beradi\n\n' +
-              '🆔 Kanal ID sini yuboring:\n' +
-              'Masalan: -1001234567890',
+                '📱 Kanal ID sini olish uchun:\n' +
+                '1️⃣ Kanalga @userinfobot ni admin qiling\n' +
+                '2️⃣ Kanalda biror xabar yuboring\n' +
+                '3️⃣ Bot sizga kanal ID sini beradi\n\n' +
+                '🆔 Kanal ID sini yuboring:\n' +
+                'Masalan: -1001234567890',
               AdminKeyboard.getCancelButton(),
             );
             this.sessionService.updateSessionData(ctx.from.id, {
@@ -3326,7 +3356,7 @@ Qaysi guruhga xabar yubormoqchisiz?
             ) {
               await ctx.reply(
                 '❌ Bot kanalda admin emas!\n\n' +
-                "Iltimos, botni kanalga admin qiling va qayta urinib ko'ring.",
+                  "Iltimos, botni kanalga admin qiling va qayta urinib ko'ring.",
                 AdminKeyboard.getCancelButton(),
               );
               return;
@@ -3342,8 +3372,8 @@ Qaysi guruhga xabar yubormoqchisiz?
           this.logger.error('Failed to get channel info', error);
           await ctx.reply(
             '❌ Kanal topilmadi yoki bot admin emas!\n\n' +
-            '✅ Botning kanalda admin ekanligiga ishonch hosil qiling.\n' +
-            "✅ Kanal linki to'g'ri ekanligiga ishonch hosil qiling.",
+              '✅ Botning kanalda admin ekanligiga ishonch hosil qiling.\n' +
+              "✅ Kanal linki to'g'ri ekanligiga ishonch hosil qiling.",
             AdminKeyboard.getCancelButton(),
           );
           return;
@@ -3360,9 +3390,9 @@ Qaysi guruhga xabar yubormoqchisiz?
 
         await ctx.reply(
           '🔢 Kanal uchun limitni tanlang:\n\n' +
-          "♾️ Cheksiz - Kanal doim majburiy bo'ladi (admin o'chirmaguncha)\n" +
-          "🔢 Limitli - Ma'lum sondagi a'zolar qo'shilgandan keyin avtomatik o'chiriladi\n\n" +
-          'Tanlang:',
+            "♾️ Cheksiz - Kanal doim majburiy bo'ladi (admin o'chirmaguncha)\n" +
+            "🔢 Limitli - Ma'lum sondagi a'zolar qo'shilgandan keyin avtomatik o'chiriladi\n\n" +
+            'Tanlang:',
           { reply_markup: keyboard },
         );
         break;
@@ -3387,8 +3417,8 @@ Qaysi guruhga xabar yubormoqchisiz?
             this.sessionService.nextStep(ctx.from.id);
             await ctx.reply(
               "🔢 Nechta a'zo qo'shilgandan keyin kanal o'chirilsin?\n\n" +
-              'Masalan: 1000\n\n' +
-              'Faqat raqam kiriting:',
+                'Masalan: 1000\n\n' +
+                'Faqat raqam kiriting:',
               AdminKeyboard.getCancelButton(),
             );
           } else {
@@ -3418,9 +3448,9 @@ Qaysi guruhga xabar yubormoqchisiz?
             this.sessionService.clearSession(ctx.from.id);
             await ctx.reply(
               `✅ Tashqi link muvaffaqiyatli qo'shildi!\n\n` +
-              `📢 ${step3Data.channelName}\n` +
-              `🔗 ${step3Input}\n` +
-              `📁 Turi: Tashqi link`,
+                `📢 ${step3Data.channelName}\n` +
+                `🔗 ${step3Input}\n` +
+                `📁 Turi: Tashqi link`,
               AdminKeyboard.getAdminMainMenu(admin.role),
             );
           } catch (error) {
@@ -3462,17 +3492,17 @@ Qaysi guruhga xabar yubormoqchisiz?
         memberLimit,
       });
 
-      this.sessionService.clearSession(ctx.from!.id);
+      this.sessionService.clearSession(ctx.from.id);
 
       const limitText =
         memberLimit === null ? 'Cheksiz' : `Limit: ${memberLimit} ta a'zo`;
 
       await ctx.reply(
         `✅ Majburiy kanal muvaffaqiyatli qo'shildi!\n\n` +
-        `📢 ${data.channelName}\n` +
-        `🔗 ${data.channelLink}\n` +
-        `📁 Turi: ${data.channelType === 'PUBLIC' ? 'Public kanal' : 'Private kanal'}\n` +
-        `🔢 ${limitText}`,
+          `📢 ${data.channelName}\n` +
+          `🔗 ${data.channelLink}\n` +
+          `📁 Turi: ${data.channelType === 'PUBLIC' ? 'Public kanal' : 'Private kanal'}\n` +
+          `🔢 ${limitText}`,
         AdminKeyboard.getAdminMainMenu(admin.role),
       );
     } catch (error) {
@@ -3795,11 +3825,11 @@ Qaysi rol berasiz?
 
           await ctx.reply(
             `❌ ${code} kodi allaqachon ishlatilmoqda!\n\n` +
-            `📺 ${existingSerial.title}\n` +
-            `🎭 Janr: ${existingSerial.genre}\n` +
-            `📊 Qismlar: ${existingSerial.totalEpisodes}` +
-            codesList +
-            `\n\n⚠️ Boshqa kod kiriting:`,
+              `📺 ${existingSerial.title}\n` +
+              `🎭 Janr: ${existingSerial.genre}\n` +
+              `📊 Qismlar: ${existingSerial.totalEpisodes}` +
+              codesList +
+              `\n\n⚠️ Boshqa kod kiriting:`,
             AdminKeyboard.getCancelButton(),
           );
           return;
@@ -4018,9 +4048,9 @@ Qaysi rol berasiz?
 
       await ctx.reply(
         `✅ Xabar yuborish yakunlandi!\n\n` +
-        `📊 Jami: ${users.length}\n` +
-        `✅ Yuborildi: ${successCount}\n` +
-        `❌ Xato: ${failCount}`,
+          `📊 Jami: ${users.length}\n` +
+          `✅ Yuborildi: ${successCount}\n` +
+          `❌ Xato: ${failCount}`,
         AdminKeyboard.getAdminMainMenu(admin.role),
       );
     } catch (error) {
@@ -4075,10 +4105,10 @@ Qaysi rol berasiz?
         await this.grammyBot.bot.api.sendMessage(
           payment.user.telegramId,
           `✅ **To'lovingiz tasdiqlandi!**\n\n` +
-          `💎 Premium: Faol\n` +
-          `⏱ Muddati: ${durationDays} kun\n` +
-          `📅 Tugash sanasi: ${expiresDate.toLocaleDateString('uz-UZ')}\n\n` +
-          `🎉 Endi barcha imkoniyatlardan foydalanishingiz mumkin!`,
+            `💎 Premium: Faol\n` +
+            `⏱ Muddati: ${durationDays} kun\n` +
+            `📅 Tugash sanasi: ${expiresDate.toLocaleDateString('uz-UZ')}\n\n` +
+            `🎉 Endi barcha imkoniyatlardan foydalanishingiz mumkin!`,
           { parse_mode: 'Markdown' },
         );
       } catch (error) {
@@ -4089,9 +4119,9 @@ Qaysi rol berasiz?
 
       await ctx.reply(
         `✅ To'lov tasdiqlandi!\n\n` +
-        `👤 Foydalanuvchi: ${payment.user.firstName}\n` +
-        `💎 Premium muddati: ${durationDays} kun\n` +
-        `💰 Summa: ${amount.toLocaleString()} UZS`,
+          `👤 Foydalanuvchi: ${payment.user.firstName}\n` +
+          `💎 Premium muddati: ${durationDays} kun\n` +
+          `💰 Summa: ${amount.toLocaleString()} UZS`,
         AdminKeyboard.getAdminMainMenu(admin.role),
       );
     } catch (error) {
@@ -4179,10 +4209,10 @@ Qaysi rol berasiz?
 
       await ctx.reply(
         `❌ To'lov rad etildi!\n\n` +
-        `👤 Foydalanuvchi: ${payment.user.firstName}\n` +
-        `📝 Sabab: ${reason}\n` +
-        `⚠️ Ogohlantirish: ${banCount}/2` +
-        (banCount >= 2 ? '\n\n🚫 Foydalanuvchi premiumdan bloklandi!' : ''),
+          `👤 Foydalanuvchi: ${payment.user.firstName}\n` +
+          `📝 Sabab: ${reason}\n` +
+          `⚠️ Ogohlantirish: ${banCount}/2` +
+          (banCount >= 2 ? '\n\n🚫 Foydalanuvchi premiumdan bloklandi!' : ''),
         AdminKeyboard.getAdminMainMenu(admin.role),
       );
     } catch (error) {
@@ -4310,11 +4340,11 @@ Qaysi rol berasiz?
       let episodesCount = content.totalEpisodes || 0;
       if (contentType === 'serial' && episodesCount === 0) {
         episodesCount = await this.prisma.episode.count({
-          where: { serialId: content.id }
+          where: { serialId: content.id },
         });
       } else if (contentType === 'movie' && episodesCount === 0) {
         episodesCount = await this.prisma.movieEpisode.count({
-          where: { movieId: content.id }
+          where: { movieId: content.id },
         });
       }
 
@@ -4351,13 +4381,18 @@ Qaysi rol berasiz?
         '╰────────────────────\n' +
         `▶️ ${contentType === 'serial' ? 'Serialning' : 'Kinoning'} to'liq qismini @${botUsername} dan tomosha qilishingiz mumkin!`;
 
-      const messageText = "🎬 Premyera e'loni\n\n" + caption + '\n\n📢 Bu kontentni qayerga yubormoqchisiz?';
+      const messageText =
+        "🎬 Premyera e'loni\n\n" +
+        caption +
+        '\n\n📢 Bu kontentni qayerga yubormoqchisiz?';
 
       // Determine poster type (video or photo)
       let posterType: 'video' | 'photo' = 'photo';
       if (content.posterFileId) {
         // Video file IDs start with 'BAAC', photo file IDs start with 'AgAC'
-        posterType = content.posterFileId.startsWith('BAAC') ? 'video' : 'photo';
+        posterType = content.posterFileId.startsWith('BAAC')
+          ? 'video'
+          : 'photo';
       }
 
       if (content.posterFileId) {
@@ -4405,11 +4440,15 @@ Qaysi rol berasiz?
         if (error?.response) {
           this.logger.error(`API Response: ${JSON.stringify(error.response)}`);
         }
-        this.logger.error(`Full error: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`);
+        this.logger.error(
+          `Full error: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`,
+        );
       } else {
         this.logger.error('Error object is undefined or null');
       }
-      await ctx.reply("❌ Xatolik yuz berdi. Qaytadan urinib ko'ring.").catch(() => { });
+      await ctx
+        .reply("❌ Xatolik yuz berdi. Qaytadan urinib ko'ring.")
+        .catch(() => {});
       this.sessionService.clearSession(ctx.from.id);
     }
   }
@@ -4545,8 +4584,8 @@ Qaysi rol berasiz?
 
       await ctx.reply(
         `⭐️ Telegram Premium foydalanuvchilarga xabar yuborish\n\n` +
-        `👥 Telegram Premium foydalanuvchilar soni: ${premiumUserCount}\n\n` +
-        `📝 Yubormoqchi bo'lgan xabaringizni kiriting:`,
+          `👥 Telegram Premium foydalanuvchilar soni: ${premiumUserCount}\n\n` +
+          `📝 Yubormoqchi bo'lgan xabaringizni kiriting:`,
         {
           reply_markup: {
             keyboard: [[{ text: '❌ Bekor qilish' }]],
@@ -4601,9 +4640,9 @@ Qaysi rol berasiz?
 
       await ctx.reply(
         `📤 Quyidagi xabar barcha Telegram Premium foydalanuvchilarga yuboriladi:\n\n` +
-        `━━━━━━━━━━━━━━━━━━\n${message}\n━━━━━━━━━━━━━━━━━━\n\n` +
-        `👥 Qabul qiluvchilar: ${telegramPremiumUsers.length} ta\n\n` +
-        `Tasdiqlaysizmi?`,
+          `━━━━━━━━━━━━━━━━━━\n${message}\n━━━━━━━━━━━━━━━━━━\n\n` +
+          `👥 Qabul qiluvchilar: ${telegramPremiumUsers.length} ta\n\n` +
+          `Tasdiqlaysizmi?`,
         {
           reply_markup: {
             inline_keyboard: [
@@ -4769,15 +4808,15 @@ Qaysi rol berasiz?
       const admin = await this.getAdmin(ctx);
       if (!admin) return;
 
-      this.sessionService.startSession(ctx.from!.id, AdminState.BLOCK_USER);
-      this.sessionService.updateSessionData(ctx.from!.id, {});
+      this.sessionService.startSession(ctx.from.id, AdminState.BLOCK_USER);
+      this.sessionService.updateSessionData(ctx.from.id, {});
 
       await ctx.reply(
         '🚫 **Foydalanuvchini bloklash**\n\n' +
-        'Bloklash uchun foydalanuvchining username yoki Telegram ID raqamini kiriting:\n\n' +
-        '📝 Username: @username yoki username\n' +
-        '🆔 Telegram ID: 123456789\n\n' +
-        'Ikkalasidan birini kiriting.',
+          'Bloklash uchun foydalanuvchining username yoki Telegram ID raqamini kiriting:\n\n' +
+          '📝 Username: @username yoki username\n' +
+          '🆔 Telegram ID: 123456789\n\n' +
+          'Ikkalasidan birini kiriting.',
         {
           parse_mode: 'Markdown',
           reply_markup: {
@@ -4824,7 +4863,7 @@ Qaysi rol berasiz?
       if (!user) {
         await ctx.reply(
           '❌ Foydalanuvchi topilmadi!\n\n' +
-          "Iltimos, to'g'ri username yoki Telegram ID kiriting:",
+            "Iltimos, to'g'ri username yoki Telegram ID kiriting:",
         );
         return;
       }
@@ -4832,9 +4871,9 @@ Qaysi rol berasiz?
       if (user.isBlocked) {
         await ctx.reply(
           `⚠️ Bu foydalanuvchi allaqachon bloklangan!\n\n` +
-          `👤 Ism: ${user.firstName || "Noma'lum"}\n` +
-          `📝 Username: @${user.username}\n` +
-          `🚫 Bloklangan sana: ${user.blockedAt?.toLocaleString('uz-UZ') || "Noma'lum"}`,
+            `👤 Ism: ${user.firstName || "Noma'lum"}\n` +
+            `📝 Username: @${user.username}\n` +
+            `🚫 Bloklangan sana: ${user.blockedAt?.toLocaleString('uz-UZ') || "Noma'lum"}`,
         );
         this.sessionService.clearSession(ctx.from.id);
         return;
@@ -4842,12 +4881,12 @@ Qaysi rol berasiz?
 
       await ctx.reply(
         `⚠️ **Tasdiqlash**\n\n` +
-        `Haqiqatdan ham quyidagi foydalanuvchini bloklaysizmi?\n\n` +
-        `👤 Ism: ${user.firstName || "Noma'lum"}\n` +
-        `📝 Username: @${user.username}\n` +
-        `🆔 Telegram ID: \`${user.telegramId}\`\n` +
-        `📅 Ro'yxatdan o'tgan: ${user.createdAt.toLocaleString('uz-UZ')}\n\n` +
-        `Bu foydalanuvchi botdan qaytib foydalana olmaydi!`,
+          `Haqiqatdan ham quyidagi foydalanuvchini bloklaysizmi?\n\n` +
+          `👤 Ism: ${user.firstName || "Noma'lum"}\n` +
+          `📝 Username: @${user.username}\n` +
+          `🆔 Telegram ID: \`${user.telegramId}\`\n` +
+          `📅 Ro'yxatdan o'tgan: ${user.createdAt.toLocaleString('uz-UZ')}\n\n` +
+          `Bu foydalanuvchi botdan qaytib foydalana olmaydi!`,
         {
           parse_mode: 'Markdown',
           reply_markup: {
@@ -4910,9 +4949,9 @@ Qaysi rol berasiz?
       );
       await ctx.reply(
         `✅ Foydalanuvchi bloklandi!\n\n` +
-        `👤 Ism: ${user.firstName || "Noma'lum"}\n` +
-        `📝 Username: @${username}\n` +
-        `🚫 Bloklangan sana: ${new Date().toLocaleString('uz-UZ')}`,
+          `👤 Ism: ${user.firstName || "Noma'lum"}\n` +
+          `📝 Username: @${username}\n` +
+          `🚫 Bloklangan sana: ${new Date().toLocaleString('uz-UZ')}`,
         AdminKeyboard.getAdminMainMenu(admin?.role || 'ADMIN'),
       );
     } catch (error) {
@@ -4932,15 +4971,15 @@ Qaysi rol berasiz?
       const admin = await this.getAdmin(ctx);
       if (!admin) return;
 
-      this.sessionService.startSession(ctx.from!.id, AdminState.UNBLOCK_USER);
-      this.sessionService.updateSessionData(ctx.from!.id, {});
+      this.sessionService.startSession(ctx.from.id, AdminState.UNBLOCK_USER);
+      this.sessionService.updateSessionData(ctx.from.id, {});
 
       await ctx.reply(
         '✅ **Foydalanuvchini blokdan ochish**\n\n' +
-        'Blokdan ochish uchun foydalanuvchining username yoki Telegram ID raqamini kiriting:\n\n' +
-        '📝 Username: @username yoki username\n' +
-        '🆔 Telegram ID: 123456789\n\n' +
-        'Ikkalasidan birini kiriting.',
+          'Blokdan ochish uchun foydalanuvchining username yoki Telegram ID raqamini kiriting:\n\n' +
+          '📝 Username: @username yoki username\n' +
+          '🆔 Telegram ID: 123456789\n\n' +
+          'Ikkalasidan birini kiriting.',
         {
           parse_mode: 'Markdown',
           reply_markup: {
@@ -4987,7 +5026,7 @@ Qaysi rol berasiz?
       if (!user) {
         await ctx.reply(
           '❌ Foydalanuvchi topilmadi!\n\n' +
-          "Iltimos, to'g'ri username yoki Telegram ID kiriting:",
+            "Iltimos, to'g'ri username yoki Telegram ID kiriting:",
         );
         return;
       }
@@ -4995,9 +5034,9 @@ Qaysi rol berasiz?
       if (!user.isBlocked) {
         await ctx.reply(
           `⚠️ Bu foydalanuvchi bloklanmagan!\n\n` +
-          `👤 Ism: ${user.firstName || "Noma'lum"}\n` +
-          `📝 Username: @${user.username}\n` +
-          `✅ Holati: Faol`,
+            `👤 Ism: ${user.firstName || "Noma'lum"}\n` +
+            `📝 Username: @${user.username}\n` +
+            `✅ Holati: Faol`,
         );
         this.sessionService.clearSession(ctx.from.id);
         return;
@@ -5005,13 +5044,13 @@ Qaysi rol berasiz?
 
       await ctx.reply(
         `⚠️ **Tasdiqlash**\n\n` +
-        `Haqiqatdan ham quyidagi foydalanuvchini blokdan ochasizmi?\n\n` +
-        `👤 Ism: ${user.firstName || "Noma'lum"}\n` +
-        `📝 Username: @${user.username}\n` +
-        `🆔 Telegram ID: \`${user.telegramId}\`\n` +
-        `🚫 Bloklangan: ${user.blockedAt?.toLocaleString('uz-UZ') || "Noma'lum"}\n` +
-        `📝 Sabab: ${user.blockReason || "Noma'lum"}\n\n` +
-        `Bu foydalanuvchi qayta botdan foydalana oladi!`,
+          `Haqiqatdan ham quyidagi foydalanuvchini blokdan ochasizmi?\n\n` +
+          `👤 Ism: ${user.firstName || "Noma'lum"}\n` +
+          `📝 Username: @${user.username}\n` +
+          `🆔 Telegram ID: \`${user.telegramId}\`\n` +
+          `🚫 Bloklangan: ${user.blockedAt?.toLocaleString('uz-UZ') || "Noma'lum"}\n` +
+          `📝 Sabab: ${user.blockReason || "Noma'lum"}\n\n` +
+          `Bu foydalanuvchi qayta botdan foydalana oladi!`,
         {
           parse_mode: 'Markdown',
           reply_markup: {
@@ -5074,10 +5113,10 @@ Qaysi rol berasiz?
       );
       await ctx.reply(
         `✅ Foydalanuvchi blokdan ochildi!\n\n` +
-        `👤 Ism: ${user.firstName || "Noma'lum"}\n` +
-        `📝 Username: @${username}\n` +
-        `✅ Holati: Faol\n` +
-        `📅 Sana: ${new Date().toLocaleString('uz-UZ')}`,
+          `👤 Ism: ${user.firstName || "Noma'lum"}\n` +
+          `📝 Username: @${username}\n` +
+          `✅ Holati: Faol\n` +
+          `📅 Sana: ${new Date().toLocaleString('uz-UZ')}`,
         AdminKeyboard.getAdminMainMenu(admin?.role || 'ADMIN'),
       );
     } catch (error) {
@@ -5111,7 +5150,7 @@ Qaysi rol berasiz?
 
       await ctx.reply(
         '🚫 **Premium banned users**\n\n' +
-        "Yolg'on to'lov ma'lumotlarini ishlatgan va premium'dan bloklangan foydalanuvchilar.",
+          "Yolg'on to'lov ma'lumotlarini ishlatgan va premium'dan bloklangan foydalanuvchilar.",
         {
           parse_mode: 'Markdown',
           reply_markup: keyboard.resized(),
@@ -5177,7 +5216,7 @@ Qaysi rol berasiz?
 
       await ctx.reply(
         '🔍 Foydalanuvchini qidirish\n\n' +
-        'Username (@ belgisisiz) yoki User ID ni kiriting:',
+          'Username (@ belgisisiz) yoki User ID ni kiriting:',
         AdminKeyboard.getCancelButton(),
       );
     } catch (error) {
@@ -5210,7 +5249,7 @@ Qaysi rol berasiz?
         if (!user) {
           await ctx.reply(
             '❌ Foydalanuvchi topilmadi.\n\n' +
-            'Qaytadan kiriting yoki bekor qiling:',
+              'Qaytadan kiriting yoki bekor qiling:',
             AdminKeyboard.getCancelButton(),
           );
           return;
@@ -5219,7 +5258,7 @@ Qaysi rol berasiz?
         if (!user.isPremiumBanned) {
           await ctx.reply(
             "⚠️ Bu foydalanuvchi premium'dan bloklanmagan.\n\n" +
-            'Boshqa foydalanuvchini qidiring:',
+              'Boshqa foydalanuvchini qidiring:',
             AdminKeyboard.getCancelButton(),
           );
           return;
@@ -5234,12 +5273,12 @@ Qaysi rol berasiz?
 
         await ctx.reply(
           `📋 **Foydalanuvchi topildi:**\n\n` +
-          `👤 Ism: ${user.firstName || "Noma'lum"}\n` +
-          `📝 Username: ${username_display}\n` +
-          `🆔 ID: \`${user.telegramId}\`\n` +
-          `⚠️ Ogohlantirish: ${user.premiumBanCount}/2\n` +
-          `📅 Ban sanasi: ${banDate}\n\n` +
-          `❓ Haqiqatdan ham bu foydalanuvchini premium ban'dan ochmoqchimisiz?`,
+            `👤 Ism: ${user.firstName || "Noma'lum"}\n` +
+            `📝 Username: ${username_display}\n` +
+            `🆔 ID: \`${user.telegramId}\`\n` +
+            `⚠️ Ogohlantirish: ${user.premiumBanCount}/2\n` +
+            `📅 Ban sanasi: ${banDate}\n\n` +
+            `❓ Haqiqatdan ham bu foydalanuvchini premium ban'dan ochmoqchimisiz?`,
           {
             parse_mode: 'Markdown',
             reply_markup: {
@@ -5294,8 +5333,8 @@ Qaysi rol berasiz?
         await this.grammyBot.bot.api.sendMessage(
           user.telegramId,
           '✅ **Yaxshi xabar!**\n\n' +
-          'Sizning premium ban blokingiz ochildi. Endi premium sotib olishingiz mumkin.\n\n' +
-          "💡 Iltimos, to'g'ri to'lov ma'lumotlarini yuboring.",
+            'Sizning premium ban blokingiz ochildi. Endi premium sotib olishingiz mumkin.\n\n' +
+            "💡 Iltimos, to'g'ri to'lov ma'lumotlarini yuboring.",
           { parse_mode: 'Markdown' },
         );
       } catch (error) {
@@ -5313,9 +5352,9 @@ Qaysi rol berasiz?
       );
       await ctx.reply(
         `✅ Foydalanuvchi premium ban'dan ochildi!\n\n` +
-        `👤 Ism: ${user.firstName || "Noma'lum"}\n` +
-        `📝 Username: @${username || "Noma'lum"}\n` +
-        `🔓 Ochilgan sana: ${new Date().toLocaleString('uz-UZ')}`,
+          `👤 Ism: ${user.firstName || "Noma'lum"}\n` +
+          `📝 Username: @${username || "Noma'lum"}\n` +
+          `🔓 Ochilgan sana: ${new Date().toLocaleString('uz-UZ')}`,
         AdminKeyboard.getAdminMainMenu(admin?.role || 'ADMIN'),
       );
     } catch (error) {
@@ -5359,12 +5398,12 @@ Qaysi rol berasiz?
 
     await ctx.reply(
       "🗑️ **Kontent o'chirish**\n\n" +
-      '🔢 Kino yoki serial kodini kiriting:\n\n' +
-      '**Misol:** 100, 200, 350\n\n' +
-      '⚠️ **Ogohlantirish:**\n' +
-      '• Bu amal qaytarilmaydi!\n' +
-      "• Barcha qismlar va tarix o'chiriladi\n" +
-      "• Kod bo'sh holatga qaytadi",
+        '🔢 Kino yoki serial kodini kiriting:\n\n' +
+        '**Misol:** 100, 200, 350\n\n' +
+        '⚠️ **Ogohlantirish:**\n' +
+        '• Bu amal qaytarilmaydi!\n' +
+        "• Barcha qismlar va tarix o'chiriladi\n" +
+        "• Kod bo'sh holatga qaytadi",
       { parse_mode: 'Markdown', reply_markup: { remove_keyboard: true } },
     );
   }
@@ -5428,10 +5467,10 @@ Qaysi rol berasiz?
 
     await ctx.reply(
       `⚠️ **Tasdiqlash kerak!**\n\n` +
-      `🎬 Kino: ${movie.title}\n` +
-      `🆔 Kod: ${code}\n` +
-      `📹 Qismlar: ${movie.episodes.length}\n\n` +
-      `Bu kinoni va unga bog'langan barcha ma'lumotlarni o'chirmoqchimisiz?`,
+        `🎬 Kino: ${movie.title}\n` +
+        `🆔 Kod: ${code}\n` +
+        `📹 Qismlar: ${movie.episodes.length}\n\n` +
+        `Bu kinoni va unga bog'langan barcha ma'lumotlarni o'chirmoqchimisiz?`,
       { parse_mode: 'Markdown', reply_markup: keyboard },
     );
   }
@@ -5453,10 +5492,10 @@ Qaysi rol berasiz?
 
     await ctx.reply(
       `⚠️ **Tasdiqlash kerak!**\n\n` +
-      `📺 Serial: ${serial.title}\n` +
-      `🆔 Kod: ${code}\n` +
-      `📹 Qismlar: ${serial.episodes.length}\n\n` +
-      `Bu serialni va unga bog'langan barcha ma'lumotlarni o'chirmoqchimisiz?`,
+        `📺 Serial: ${serial.title}\n` +
+        `🆔 Kod: ${code}\n` +
+        `📹 Qismlar: ${serial.episodes.length}\n\n` +
+        `Bu serialni va unga bog'langan barcha ma'lumotlarni o'chirmoqchimisiz?`,
       { parse_mode: 'Markdown', reply_markup: keyboard },
     );
   }
@@ -5493,7 +5532,7 @@ Qaysi rol berasiz?
             movie.field.channelId,
             movie.channelMessageId,
           );
-        } catch (error) { }
+        } catch (error) {}
       }
 
       if (movie.channelMessageId && movie.field?.databaseChannel?.channelId) {
@@ -5502,7 +5541,7 @@ Qaysi rol berasiz?
             movie.field.databaseChannel.channelId,
             movie.channelMessageId,
           );
-        } catch (error) { }
+        } catch (error) {}
       }
 
       await this.prisma.movieEpisode.deleteMany({
@@ -5522,11 +5561,11 @@ Qaysi rol berasiz?
       );
       await ctx.reply(
         `✅ **Kino muvaffaqiyatli o'chirildi!**\n\n` +
-        `🎬 Nomi: ${movie.title}\n` +
-        `🆔 Kod: ${code}\n` +
-        `📹 O'chirilgan qismlar: ${movie.episodes.length}\n` +
-        `📤 Kanallardan o'chirildi: ${movie.channelMessageId ? 'Ha' : "Yo'q"}\n\n` +
-        `Kod endi bo'sh va qayta ishlatilishi mumkin.`,
+          `🎬 Nomi: ${movie.title}\n` +
+          `🆔 Kod: ${code}\n` +
+          `📹 O'chirilgan qismlar: ${movie.episodes.length}\n` +
+          `📤 Kanallardan o'chirildi: ${movie.channelMessageId ? 'Ha' : "Yo'q"}\n\n` +
+          `Kod endi bo'sh va qayta ishlatilishi mumkin.`,
         {
           parse_mode: 'Markdown',
           reply_markup: AdminKeyboard.getAdminMainMenu(admin?.role || 'ADMIN'),
@@ -5570,7 +5609,7 @@ Qaysi rol berasiz?
             serial.field.channelId,
             serial.channelMessageId,
           );
-        } catch (error) { }
+        } catch (error) {}
       }
 
       if (serial.channelMessageId && serial.field?.databaseChannel?.channelId) {
@@ -5579,7 +5618,7 @@ Qaysi rol berasiz?
             serial.field.databaseChannel.channelId,
             serial.channelMessageId,
           );
-        } catch (error) { }
+        } catch (error) {}
       }
 
       await this.prisma.episode.deleteMany({
@@ -5599,11 +5638,11 @@ Qaysi rol berasiz?
       );
       await ctx.reply(
         `✅ **Serial muvaffaqiyatli o'chirildi!**\n\n` +
-        `📺 Nomi: ${serial.title}\n` +
-        `🆔 Kod: ${code}\n` +
-        `📹 O'chirilgan qismlar: ${serial.episodes.length}\n` +
-        `📤 Kanallardan o'chirildi: ${serial.channelMessageId ? 'Ha' : "Yo'q"}\n\n` +
-        `Kod endi bo'sh va qayta ishlatilishi mumkin.`,
+          `📺 Nomi: ${serial.title}\n` +
+          `🆔 Kod: ${code}\n` +
+          `📹 O'chirilgan qismlar: ${serial.episodes.length}\n` +
+          `📤 Kanallardan o'chirildi: ${serial.channelMessageId ? 'Ha' : "Yo'q"}\n\n` +
+          `Kod endi bo'sh va qayta ishlatilishi mumkin.`,
         {
           parse_mode: 'Markdown',
           reply_markup: AdminKeyboard.getAdminMainMenu(admin?.role || 'ADMIN'),
@@ -5650,11 +5689,11 @@ Qaysi rol berasiz?
 
     await ctx.reply(
       '⚠️ **Tasdiqlash kerak!**\n\n' +
-      "Barcha majburiy kanallar tarixi o'chiriladi:\n" +
-      "• Nofaol kanallar o'chiriladi\n" +
-      '• Faol kanallar saqlanadi\n' +
-      "• A'zolar va statistika tozalanadi\n\n" +
-      'Davom etishni xohlaysizmi?',
+        "Barcha majburiy kanallar tarixi o'chiriladi:\n" +
+        "• Nofaol kanallar o'chiriladi\n" +
+        '• Faol kanallar saqlanadi\n' +
+        "• A'zolar va statistika tozalanadi\n\n" +
+        'Davom etishni xohlaysizmi?',
       { parse_mode: 'Markdown', reply_markup: keyboard },
     );
   }
@@ -5683,9 +5722,9 @@ Qaysi rol berasiz?
       );
       await ctx.reply(
         '✅ **Tarix muvaffaqiyatli tozalandi!**\n\n' +
-        `🗑️ O'chirilgan nofaol kanallar: ${result.count}\n` +
-        '📊 Faol kanallar statistikasi tozalandi\n\n' +
-        'Tarix qaytadan boshlanadi.',
+          `🗑️ O'chirilgan nofaol kanallar: ${result.count}\n` +
+          '📊 Faol kanallar statistikasi tozalandi\n\n' +
+          'Tarix qaytadan boshlanadi.',
         {
           parse_mode: 'Markdown',
           reply_markup: AdminKeyboard.getAdminMainMenu(admin?.role || 'ADMIN'),
@@ -5707,7 +5746,8 @@ Qaysi rol berasiz?
         return;
       }
 
-      const { contentType, code, poster, posterType, fieldId, title, genre } = session.data;
+      const { contentType, code, poster, posterType, fieldId, title, genre } =
+        session.data;
 
       let targetChannelId: string | null = null;
       let targetChannelName: string | null = null;
@@ -5722,12 +5762,14 @@ Qaysi rol berasiz?
         if (field) {
           targetChannelId = field.databaseChannel?.channelId || field.channelId;
           targetChannelName = field.databaseChannel?.channelName || field.name;
-          targetChannelLink = field.channelLink || `https://t.me/${targetChannelId?.replace('@', '').replace('-100', '')}`;
+          targetChannelLink =
+            field.channelLink ||
+            `https://t.me/${targetChannelId?.replace('@', '').replace('-100', '')}`;
         }
       }
 
       if (!targetChannelId) {
-        await ctx.reply("❌ Field kanal topilmadi!");
+        await ctx.reply('❌ Field kanal topilmadi!');
         return;
       }
 
@@ -5736,9 +5778,9 @@ Qaysi rol berasiz?
         const botUsername = botInfo.username || 'bot';
 
         const formattedCaption = `╭────────────────────
-├‣ ${contentType === 'serial' ? 'Serial' : 'Kino'} nomi : ${title || 'Noma\'lum'}
+├‣ ${contentType === 'serial' ? 'Serial' : 'Kino'} nomi : ${title || "Noma'lum"}
 ├‣ ${contentType === 'serial' ? 'Serial' : 'Kino'} kodi: ${contentType === 'serial' ? '' : ''}${code}
-├‣ Janrlari: ${genre || 'Janr ko\'rsatilmadi'}
+├‣ Janrlari: ${genre || "Janr ko'rsatilmadi"}
 ├‣ Kanal: ${targetChannelLink}
 ╰────────────────────
 
@@ -5752,7 +5794,10 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         // ------------------------
 
         const deepLink = `https://t.me/${botUsername}?start=${contentType === 'serial' ? '' : ''}${code}`;
-        const keyboard = new InlineKeyboard().url('▶️ Tomosha qilish', deepLink);
+        const keyboard = new InlineKeyboard().url(
+          '▶️ Tomosha qilish',
+          deepLink,
+        );
 
         if (poster) {
           // Send based on poster type (video or photo)
@@ -5760,19 +5805,19 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
             await ctx.api.sendVideo(targetChannelId, poster, {
               caption: formattedCaption,
               reply_markup: keyboard,
-              parse_mode: "HTML"
+              parse_mode: 'HTML',
             });
           } else {
             await ctx.api.sendPhoto(targetChannelId, poster, {
               caption: formattedCaption,
               reply_markup: keyboard,
-              parse_mode: "HTML"
+              parse_mode: 'HTML',
             });
           }
         } else {
           await ctx.api.sendMessage(targetChannelId, formattedCaption, {
             reply_markup: keyboard,
-            parse_mode: "HTML"
+            parse_mode: 'HTML',
           });
         }
 
@@ -5780,19 +5825,25 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
           reply_markup: { inline_keyboard: [] },
         });
 
-        const admin = await this.adminService.getAdminByTelegramId(String(ctx.from.id));
+        const admin = await this.adminService.getAdminByTelegramId(
+          String(ctx.from.id),
+        );
         await ctx.reply(
           '✅ Field kanalga yuborildi!\n\n' +
-          `📢 Kanal: ${targetChannelName}\n` +
-          `🎬 Kontent: ${contentType === 'movie' ? 'Kino' : 'Serial'}\n` +
-          `🆔 Kod: ${code}`,
+            `📢 Kanal: ${targetChannelName}\n` +
+            `🎬 Kontent: ${contentType === 'movie' ? 'Kino' : 'Serial'}\n` +
+            `🆔 Kod: ${code}`,
           {
-            reply_markup: AdminKeyboard.getAdminMainMenu(admin?.role || 'ADMIN'),
+            reply_markup: AdminKeyboard.getAdminMainMenu(
+              admin?.role || 'ADMIN',
+            ),
           },
         );
       } catch (error) {
         this.logger.error('Error sending to field channel:', error);
-        await ctx.reply('❌ Field kanalga yuborishda xatolik: ' + error.message);
+        await ctx.reply(
+          '❌ Field kanalga yuborishda xatolik: ' + error.message,
+        );
       }
 
       this.sessionService.clearSession(ctx.from.id);
@@ -5814,7 +5865,15 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         return;
       }
 
-      const { poster, posterType, contentType, code, title, genre, fieldChannelLink } = session.data;
+      const {
+        poster,
+        posterType,
+        contentType,
+        code,
+        title,
+        genre,
+        fieldChannelLink,
+      } = session.data;
 
       const users = await this.prisma.user.findMany({
         where: { isBlocked: false },
@@ -5825,9 +5884,9 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
       // Format caption with new structure
       const formattedCaption = `╭────────────────────
-├‣ ${contentType === 'serial' ? 'Serial' : 'Kino'} nomi : ${title || 'Noma\'lum'}
+├‣ ${contentType === 'serial' ? 'Serial' : 'Kino'} nomi : ${title || "Noma'lum"}
 ├‣ ${contentType === 'serial' ? 'Serial' : 'Kino'} kodi: ${contentType === 'serial' ? '' : ''}${code}
-├‣ Janrlari: ${genre || 'Janr ko\'rsatilmadi'}
+├‣ Janrlari: ${genre || "Janr ko'rsatilmadi"}
 ├‣ Kanal: ${fieldChannelLink || '@Kanal'}
 ╰────────────────────
 
@@ -5900,9 +5959,9 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         statusMsg.chat.id,
         statusMsg.message_id,
         `✅ **Yuborish yakunlandi!**\n\n` +
-        `👥 Jami: ${users.length}\n` +
-        `✅ Yuborildi: ${successCount}\n` +
-        `❌ Xatolik: ${failCount}`,
+          `👥 Jami: ${users.length}\n` +
+          `✅ Yuborildi: ${successCount}\n` +
+          `❌ Xatolik: ${failCount}`,
         { parse_mode: 'Markdown' },
       );
 

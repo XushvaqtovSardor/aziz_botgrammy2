@@ -7,7 +7,7 @@ import { Api } from 'grammy';
 export class ChannelStatusService {
   private readonly logger = new Logger(ChannelStatusService.name);
 
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async updateStatus(
     userTelegramId: string,

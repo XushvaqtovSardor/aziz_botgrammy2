@@ -16,7 +16,7 @@ export interface SubscriptionStatus {
 export class ChannelService {
   private readonly logger = new Logger(ChannelService.name);
 
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async create(
     channelId: string,
@@ -352,21 +352,25 @@ export class ChannelService {
         if (hasAccess) {
           // Track user subscription in UserChannelStatus to count members
           // This is a fallback for when chat_member updates are not available (bot not admin)
-          if (isSubscribed && (channel.type === 'PUBLIC' || channel.type === 'PRIVATE')) {
+          if (
+            isSubscribed &&
+            (channel.type === 'PUBLIC' || channel.type === 'PRIVATE')
+          ) {
             // Get the internal user ID from database
             const user = await this.prisma.user.findUnique({
               where: { telegramId: String(userId) },
             });
 
             if (user) {
-              const userChannelStatus = await this.prisma.userChannelStatus.findUnique({
-                where: {
-                  userId_channelId: {
-                    userId: user.id,
-                    channelId: channel.id,
+              const userChannelStatus =
+                await this.prisma.userChannelStatus.findUnique({
+                  where: {
+                    userId_channelId: {
+                      userId: user.id,
+                      channelId: channel.id,
+                    },
                   },
-                },
-              });
+                });
 
               // Only increment if this is a new join (not already tracked)
               if (!userChannelStatus) {
@@ -381,7 +385,6 @@ export class ChannelService {
                     lastUpdated: new Date(),
                   },
                 });
-
               } else if (userChannelStatus.status === 'requested') {
                 // User was in pending state and now joined
                 await this.incrementMemberCount(channel.id);
@@ -538,7 +541,10 @@ export class ChannelService {
 
       return { memberCount, pendingCount };
     } catch (error) {
-      this.logger.error(`Error recalculating stats for channel ${channelId}:`, error);
+      this.logger.error(
+        `Error recalculating stats for channel ${channelId}:`,
+        error,
+      );
       return null;
     }
   }

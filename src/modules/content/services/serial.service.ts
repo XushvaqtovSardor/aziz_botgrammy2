@@ -8,7 +8,7 @@ export class SerialService {
   constructor(
     private prisma: PrismaService,
     private codeGenerator: CodeGeneratorService,
-  ) { }
+  ) {}
 
   async create(data: SerialData) {
     const codeNum =

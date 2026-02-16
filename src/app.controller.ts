@@ -8,7 +8,6 @@ export class AppController {
 
   @Get()
   root(@Res() res: Response) {
-
     return res.redirect('/admin/');
   }
 
@@ -21,19 +20,20 @@ export class AppController {
   @Get('admin/dashboard')
   adminDashboard(@Req() req: Request, @Res() res: Response) {
     // Send the admin dashboard page
-    return res.sendFile(join(__dirname, '..', 'public', 'admin', 'dashboard.html'));
+    return res.sendFile(
+      join(__dirname, '..', 'public', 'admin', 'dashboard.html'),
+    );
   }
 
   @Get('health')
   health() {
-
     return {
       status: 'ok',
       timestamp: new Date().toISOString(),
       service: 'aziz-kino-bot',
       environment: process.env.NODE_ENV || 'development',
-      botToken: !!process.env.BOT_TOKEN ? 'SET' : 'NOT SET',
-      database: !!process.env.DATABASE_URL ? 'SET' : 'NOT SET',
+      botToken: process.env.BOT_TOKEN ? 'SET' : 'NOT SET',
+      database: process.env.DATABASE_URL ? 'SET' : 'NOT SET',
     };
   }
 }

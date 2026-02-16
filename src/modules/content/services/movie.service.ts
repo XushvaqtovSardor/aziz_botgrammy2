@@ -8,7 +8,7 @@ export class MovieService {
   constructor(
     private prisma: PrismaService,
     private codeGenerator: CodeGeneratorService,
-  ) { }
+  ) {}
 
   async create(data: MovieData) {
     const { thumbnailFileId, ...movieData } = data;

@@ -65,9 +65,10 @@ export function Action(action: string | RegExp) {
     descriptor.value = function (...args: any[]) {
       const [ctx] = args;
       if (ctx.callbackQuery?.data) {
-        const match = typeof action === 'string' 
-          ? ctx.callbackQuery.data === action
-          : action.test(ctx.callbackQuery.data);
+        const match =
+          typeof action === 'string'
+            ? ctx.callbackQuery.data === action
+            : action.test(ctx.callbackQuery.data);
         if (match) {
           if (action instanceof RegExp) {
             ctx.match = ctx.callbackQuery.data.match(action);
@@ -100,11 +101,13 @@ export function On(updateType: string) {
 }
 
 export function Ctx() {
-  return (target: any, propertyKey: string, parameterIndex: number) => {
-  };
+  return (target: any, propertyKey: string, parameterIndex: number) => {};
 }
 
 export function InjectBot() {
-  return (target: any, propertyKey: string | symbol, parameterIndex: number) => {
-  };
+  return (
+    target: any,
+    propertyKey: string | symbol,
+    parameterIndex: number,
+  ) => {};
 }

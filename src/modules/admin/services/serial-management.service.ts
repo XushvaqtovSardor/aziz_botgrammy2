@@ -36,7 +36,7 @@ export class SerialManagementService {
     private channelService: ChannelService,
     private sessionService: SessionService,
     private grammyBot: GrammyBotService,
-  ) { }
+  ) {}
 
   async handleNewSerialCode(ctx: BotContext, code: number) {
     if (!ctx.from) return;
@@ -258,13 +258,15 @@ export class SerialManagementService {
 
     try {
       // Check if serial already exists
-      const existingSerial = await this.serialService.findByCode(code.toString());
+      const existingSerial = await this.serialService.findByCode(
+        code.toString(),
+      );
       if (existingSerial) {
         this.sessionService.clearSession(ctx.from.id);
         await ctx.reply(
           `❌ ${code} kodli serial allaqachon yaratilgan!\n\n` +
-          `📺 ${existingSerial.title}\n` +
-          `📊 Qismlar: ${existingSerial.totalEpisodes}`,
+            `📺 ${existingSerial.title}\n` +
+            `📊 Qismlar: ${existingSerial.totalEpisodes}`,
           AdminKeyboard.getAdminMainMenu('ADMIN'),
         );
         return;
@@ -307,7 +309,7 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
             const sentVideo = await ctx.api.sendVideo(
               dbChannel.channelId,
               ep.videoFileId,
-              { caption, parse_mode: "HTML" }, // parse_mode qo'shish tavsiya etiladi
+              { caption, parse_mode: 'HTML' }, // parse_mode qo'shish tavsiya etiladi
             );
             // ... (davomi)
             videoMessages.push({
@@ -416,14 +418,17 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
       await ctx.reply(
         `✅ Serial muvaffaqiyatli yaratildi!\n\n` +
-        `📺 ${title}\n` +
-        `📹 Qismlar: ${episodes.length}\n` +
-        `📦 Field: ${selectedField.name}\n` +
-        (posterMessageId ? `🔗 Poster Message ID: ${posterMessageId}\n` : ''),
+          `📺 ${title}\n` +
+          `📹 Qismlar: ${episodes.length}\n` +
+          `📦 Field: ${selectedField.name}\n` +
+          (posterMessageId ? `🔗 Poster Message ID: ${posterMessageId}\n` : ''),
         AdminKeyboard.getAdminMainMenu('ADMIN'),
       );
     } catch (error) {
-      this.logger.error(`[SerialManagementService.createSerial] Error - Admin: ${ctx.from.id}, Error: ${error.message}`, error.stack);
+      this.logger.error(
+        `[SerialManagementService.createSerial] Error - Admin: ${ctx.from.id}, Error: ${error.message}`,
+        error.stack,
+      );
       await ctx.reply(`❌ Xatolik: ${error.message}`);
     }
   }
@@ -465,9 +470,9 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
       await ctx.reply(
         `🎬 Kino topildi!\n\n` +
-        `🏷 ${movie.title}\n` +
-        `📹 Mavjud qismlar: ${movie.totalEpisodes}\n\n` +
-        `📹 ${nextEpisodeNumber}-qism videosini yuboring:`,
+          `🏷 ${movie.title}\n` +
+          `📹 Mavjud qismlar: ${movie.totalEpisodes}\n\n` +
+          `📹 ${nextEpisodeNumber}-qism videosini yuboring:`,
         AdminKeyboard.getCancelButton(),
       );
     } else if (serial) {
@@ -493,9 +498,9 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
 
       await ctx.reply(
         `📺 Serial topildi!\n\n` +
-        `🏷 ${serial.title}\n` +
-        `📹 Mavjud qismlar: ${serial.totalEpisodes}\n\n` +
-        `📹 ${nextEpisodeNumber}-qism videosini yuboring:`,
+          `🏷 ${serial.title}\n` +
+          `📹 Mavjud qismlar: ${serial.totalEpisodes}\n\n` +
+          `📹 ${nextEpisodeNumber}-qism videosini yuboring:`,
         AdminKeyboard.getCancelButton(),
       );
     }
@@ -622,7 +627,10 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
                 messageId: sentVideo.message_id,
               });
             } catch (error) {
-              this.logger.error(`[SerialManagementService.uploadMovieEpisodes] Error uploading - Movie: ${movieId}, Episode: ${ep.episodeNumber}, Error: ${error.message}`, error.stack);
+              this.logger.error(
+                `[SerialManagementService.uploadMovieEpisodes] Error uploading - Movie: ${movieId}, Episode: ${ep.episodeNumber}, Error: ${error.message}`,
+                error.stack,
+              );
             }
           }
 
@@ -684,9 +692,9 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         this.sessionService.clearSession(ctx.from.id);
         await ctx.reply(
           `✅ Qismlar muvaffaqiyatli qo'shildi!\n\n` +
-          `🎬 ${movieTitle}\n` +
-          `📹 Jami qismlar: ${totalEpisodes}\n` +
-          `➕ Qo'shildi: ${addedEpisodes.length} ta`,
+            `🎬 ${movieTitle}\n` +
+            `📹 Jami qismlar: ${totalEpisodes}\n` +
+            `➕ Qo'shildi: ${addedEpisodes.length} ta`,
           AdminKeyboard.getAdminMainMenu('ADMIN'),
         );
       } else if (contentType === 'serial') {
@@ -726,7 +734,10 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
                 messageId: sentVideo.message_id,
               });
             } catch (error) {
-              this.logger.error(`[SerialManagementService.uploadEpisodes] Error uploading - Serial: ${serialId}, Episode: ${ep.episodeNumber}, Error: ${error.message}`, error.stack);
+              this.logger.error(
+                `[SerialManagementService.uploadEpisodes] Error uploading - Serial: ${serialId}, Episode: ${ep.episodeNumber}, Error: ${error.message}`,
+                error.stack,
+              );
             }
           }
 
@@ -786,9 +797,9 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         this.sessionService.clearSession(ctx.from.id);
         await ctx.reply(
           `✅ Qismlar muvaffaqiyatli qo'shildi!\n\n` +
-          `📺 ${serialTitle}\n` +
-          `📹 Jami qismlar: ${totalEpisodes}\n` +
-          `➕ Qo'shildi: ${addedEpisodes.length} ta`,
+            `📺 ${serialTitle}\n` +
+            `📹 Jami qismlar: ${totalEpisodes}\n` +
+            `➕ Qo'shildi: ${addedEpisodes.length} ta`,
           AdminKeyboard.getAdminMainMenu('ADMIN'),
         );
       } else {
@@ -796,7 +807,10 @@ Biz yuklayotgan kinolar turli saytlardan olinadi.
         this.sessionService.clearSession(ctx.from.id);
       }
     } catch (error: any) {
-      this.logger.error(`[SerialManagementService.finalizeEpisodes] Error - SerialID: ${serialId}, Error: ${error.message}`, error.stack);
+      this.logger.error(
+        `[SerialManagementService.finalizeEpisodes] Error - SerialID: ${serialId}, Error: ${error.message}`,
+        error.stack,
+      );
       await ctx.reply(`❌ Xatolik: ${error?.message || "Noma'lum xatolik"}`);
       this.sessionService.clearSession(ctx.from.id);
     }

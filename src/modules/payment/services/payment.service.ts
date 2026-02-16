@@ -6,7 +6,7 @@ import { PaymentStatus } from '@prisma/client';
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
 
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async create(
     userId: number,
@@ -177,7 +177,6 @@ export class PaymentService {
     }
 
     if (payment.status === PaymentStatus.SUCCESS) {
-
       return payment;
     }
 

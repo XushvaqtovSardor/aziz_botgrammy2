@@ -21,4 +21,4 @@ import { PaymentModule } from '../payment/payment.module';
   controllers: [AdminApiController, AdminPageController],
   providers: [AdminApiGuard],
 })
-export class AdminApiModule { }
+export class AdminApiModule {}

@@ -43,7 +43,7 @@ export class AdminApiController {
     private serialService: SerialService,
     private paymentService: PaymentService,
     private prisma: PrismaService,
-  ) { }
+  ) {}
 
   @Get('me')
   getMe(@Request() req: any) {
@@ -55,12 +55,13 @@ export class AdminApiController {
   async getStatistics() {
     this.logger.log('📊 Statistics endpoint accessed');
     try {
-      const [userStats, paymentStats, moviesCount, serialsCount] = await Promise.all([
-        this.userService.getUserStatistics(),
-        this.paymentService.getStatistics(),
-        this.movieService.getMovieCount(),
-        this.serialService.getSerialCount(),
-      ]);
+      const [userStats, paymentStats, moviesCount, serialsCount] =
+        await Promise.all([
+          this.userService.getUserStatistics(),
+          this.paymentService.getStatistics(),
+          this.movieService.getMovieCount(),
+          this.serialService.getSerialCount(),
+        ]);
 
       return {
         totalUsers: userStats.totalUsers || 0,
@@ -394,14 +395,14 @@ export class AdminApiController {
     if (movie.channelMessageId && movie.field?.channelId) {
       try {
         deletedFromFieldChannel = true;
-      } catch (error) { }
+      } catch (error) {}
     }
 
     let deletedFromDatabaseChannel = false;
     if (movie.channelMessageId && movie.field?.databaseChannel?.channelId) {
       try {
         deletedFromDatabaseChannel = true;
-      } catch (error) { }
+      } catch (error) {}
     }
 
     await this.prisma.movieEpisode.deleteMany({
@@ -516,7 +517,7 @@ export class AdminApiController {
     const admin = await this.adminService.getAdminByTelegramId(
       req.admin.telegramId,
     );
-    return this.paymentService.approve(+id, admin!.id, body.durationDays);
+    return this.paymentService.approve(+id, admin.id, body.durationDays);
   }
 
   @Put('payments/:id/reject')
@@ -539,7 +540,7 @@ export class AdminApiController {
     const admin = await this.adminService.getAdminByTelegramId(
       req.admin.telegramId,
     );
-    return this.paymentService.reject(+id, admin!.id, body.reason);
+    return this.paymentService.reject(+id, admin.id, body.reason);
   }
 
   @Get('users/premium-banned')

@@ -112,7 +112,7 @@ export class PremiumService {
     cardHolder?: string;
     description?: string;
   }) {
-    let settings = await this.prisma.premiumSettings.findFirst();
+    const settings = await this.prisma.premiumSettings.findFirst();
 
     if (!settings) {
       return this.prisma.premiumSettings.create({

@@ -7,7 +7,7 @@ export class AdminGuard implements CanActivate {
   constructor(private prisma: PrismaService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const ctx = context.getArgByIndex(0) as BotContext;
+    const ctx = context.getArgByIndex(0);
 
     if (!ctx.from) {
       return false;

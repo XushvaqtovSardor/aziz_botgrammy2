@@ -21,7 +21,7 @@ export class PremiumGuard implements CanActivate {
       return true;
     }
 
-    const ctx = context.getArgByIndex(0) as BotContext;
+    const ctx = context.getArgByIndex(0);
     const telegramId = ctx.from?.id.toString();
 
     if (!telegramId) {
