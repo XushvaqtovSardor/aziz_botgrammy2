@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: 12345
       POSTGRES_DB: aziz_db
     ports:
-      - "5432"
+      - "5465:5432"
     volumes:
       - baza_data:/var/lib/postgresql/data
       - ./backups:/backups
