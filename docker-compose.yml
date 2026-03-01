@@ -1,0 +1,72 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    container_name: aziz_database
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345
+      POSTGRES_DB: aziz_db
+    ports:
+      - "5432"
+    volumes:
+      - baza_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: aziz_bot
+    restart: always
+    env_file:
+      - .env
+    expose:
+      - "3098"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "
+         pnpm run build &&
+         npx prisma generate &&
+         npx prisma migrate deploy &&
+         pnpm run start:prod
+       "
+
+  backup:
+    image: postgres:16
+    container_name: aziz_backup
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345
+      POSTGRES_DB: aziz_db
+      PGHOST: db
+      BACKUP_RETENTION_DAYS: 180
+    volumes:
+      - ./backups:/backups
+      - ./scripts:/scripts
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: /bin/bash
+    command: >
+      -c "
+        chmod +x /scripts/*.sh &&
+        echo '⏳ Backup container boshlandi. Birinchi backup 5 daqiqada...' &&
+        sleep 300 && /scripts/backup.sh &&
+        echo '✅ Birinchi backup tugallandi. Keyingi backup 24 soatda...' &&
+        while true; do
+          sleep 21600
+          /scripts/backup.sh
+        done
+      "
+
+volumes:
+  baza_data:
