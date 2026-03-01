@@ -37,7 +37,7 @@ echo -e "${GREEN}✅ Permissions berildi${NC}"
 echo ""
 
 echo "3️⃣  Eski backuplarni o'chirish..."
-BACKUP_COUNT=$(ls backups/kino_db_backup_*.sql.gz 2>/dev/null | wc -l)
+BACKUP_COUNT=$(ls backups/aziz_db_backup_*.sql.gz 2>/dev/null | wc -l)
 
 if [ "$BACKUP_COUNT" -gt 0 ]; then
   echo -e "${YELLOW}⚠️  Eski backuplar topildi: ${BACKUP_COUNT} ta${NC}"
@@ -46,7 +46,7 @@ if [ "$BACKUP_COUNT" -gt 0 ]; then
   echo
   
   if [[ $REPLY =~ ^[Yy]es$ ]]; then
-    rm -f backups/kino_db_backup_*.sql.gz
+    rm -f backups/aziz_db_backup_*.sql.gz
     echo -e "${GREEN}✅ Eski backuplar o'chirildi${NC}"
   else
     echo -e "${YELLOW}ℹ️  Backuplar saqlanib qoldi${NC}"
@@ -66,7 +66,7 @@ if [ $? -eq 0 ]; then
   echo ""
   
   # Verify backup
-  LATEST_BACKUP=$(ls -t backups/kino_db_backup_*.sql.gz 2>/dev/null | head -1)
+  LATEST_BACKUP=$(ls -t backups/aziz_db_backup_*.sql.gz 2>/dev/null | head -1)
   
   if [ -n "$LATEST_BACKUP" ]; then
     echo "📦 Yangi backup:"

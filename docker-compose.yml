@@ -63,7 +63,7 @@ services:
         sleep 300 && /scripts/backup.sh &&
         echo '✅ Birinchi backup tugallandi. Keyingi backup 24 soatda...' &&
         while true; do
-          sleep 21600
+          sleep 86400
           /scripts/backup.sh
         done
       "

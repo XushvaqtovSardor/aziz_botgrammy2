@@ -15,8 +15,8 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 # Docker container tekshirish
-if ! docker ps | grep -q kino_database; then
-  echo -e "${RED}❌ kino_database container ishlamayapti!${NC}"
+if ! docker ps | grep -q aziz_database; then
+  echo -e "${RED}❌ aziz_database container ishlamayapti!${NC}"
   echo ""
   echo "Container ishga tushirish:"
   echo "  docker compose up -d db"
@@ -27,7 +27,7 @@ echo "📊 Hozirgi holatni tekshirish..."
 echo ""
 
 # Backuplar soni
-BACKUP_COUNT=$(ls backups/kino_db_backup_*.sql.gz 2>/dev/null | wc -l)
+BACKUP_COUNT=$(ls backups/aziz_db_backup_*.sql.gz 2>/dev/null | wc -l)
 echo "📦 Mavjud backuplar: ${BACKUP_COUNT} ta"
 
 if [ "$BACKUP_COUNT" -gt 0 ]; then
@@ -38,7 +38,7 @@ if [ "$BACKUP_COUNT" -gt 0 ]; then
   echo -e "${YELLOW}⚠️  Barcha eski backuplar o'chiriladi!${NC}"
   echo ""
   echo "So'nggi backuplar:"
-  ls -lht backups/kino_db_backup_*.sql.gz | head -5
+  ls -lht backups/aziz_db_backup_*.sql.gz | head -5
   echo ""
   
   read -p "Barcha eski backuplarni o'chirish va yangi backup yaratish? (yes/no): " -r
@@ -50,7 +50,7 @@ if [ "$BACKUP_COUNT" -gt 0 ]; then
   fi
   
   echo "🗑️  Eski backuplarni o'chirish..."
-  rm -f backups/kino_db_backup_*.sql.gz
+  rm -f backups/aziz_db_backup_*.sql.gz
   echo -e "${GREEN}✅ O'chirildi${NC}"
   echo ""
 fi
@@ -59,7 +59,7 @@ echo "🔧 Database holatini tekshirish..."
 echo ""
 
 # Database connectionni tekshirish
-if ! docker exec kino_database pg_isready -U postgres >/dev/null 2>&1; then
+if ! docker exec aziz_database pg_isready -U postgres >/dev/null 2>&1; then
   echo -e "${RED}❌ Database ulanishi xato!${NC}"
   exit 1
 fi
@@ -68,7 +68,7 @@ echo -e "${GREEN}✅ Database ishlayapti${NC}"
 echo ""
 
 # Database jadvallarini tekshirish
-TABLE_COUNT=$(docker exec kino_database psql -U postgres -d kino_db -t -c \
+TABLE_COUNT=$(docker exec aziz_database psql -U postgres -d aziz_db -t -c \
   "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public';" 2>/dev/null | tr -d ' ' || echo "0")
 
 echo "📊 Hozirgi jadvallar soni: ${TABLE_COUNT}"
@@ -115,11 +115,11 @@ if [ -f "./scripts/manual-backup.sh" ]; then
     echo -e "${GREEN}🎉 Muvaffaqiyat!${NC}"
     echo ""
     echo "📋 Yangi backup:"
-    ls -lht backups/kino_db_backup_*.sql.gz | head -1
+    ls -lht backups/aziz_db_backup_*.sql.gz | head -1
     echo ""
     
     # Backup integrity test
-    LATEST_BACKUP=$(ls -t backups/kino_db_backup_*.sql.gz | head -1)
+    LATEST_BACKUP=$(ls -t backups/aziz_db_backup_*.sql.gz | head -1)
     echo "🔍 Backup integrity test..."
     if gzip -t "$LATEST_BACKUP" 2>/dev/null; then
       echo -e "${GREEN}✅ Backup fayli to'g'ri${NC}"

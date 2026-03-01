@@ -9,8 +9,8 @@ echo "🔄 Manual backup boshlandi..."
 echo ""
 
 # Docker container ishlayotganini tekshirish
-if ! docker ps | grep -q kino_database; then
-  echo "❌ Xatolik: kino_database container ishlamayapti!"
+if ! docker ps | grep -q aziz_database; then
+  echo "❌ Xatolik: aziz_database container ishlamayapti!"
   echo ""
   echo "Container ishga tushirish:"
   echo "  docker compose up -d db"
@@ -18,11 +18,11 @@ if ! docker ps | grep -q kino_database; then
 fi
 
 # Docker container ichida backup scriptini ishga tushirish
-docker exec kino_database /bin/bash -c "
+docker exec aziz_database /bin/bash -c "
   BACKUP_DIR=/backups
   RETENTION_DAYS=180
   TIMESTAMP=\$(date +\"%Y%m%d_%H%M%S\")
-  BACKUP_FILE=\"kino_db_backup_\${TIMESTAMP}.sql.gz\"
+  BACKUP_FILE=\"aziz_db_backup_\${TIMESTAMP}.sql.gz\"
   BACKUP_PATH=\"\${BACKUP_DIR}/\${BACKUP_FILE}\"
 
   mkdir -p \${BACKUP_DIR}
@@ -32,7 +32,7 @@ docker exec kino_database /bin/bash -c "
   PGPASSWORD=12345 pg_dump \
     -h localhost \
     -U postgres \
-    -d kino_db \
+    -d aziz_db \
     --format=plain \
     --no-owner \
     --no-acl \
@@ -51,9 +51,9 @@ docker exec kino_database /bin/bash -c "
 
   # Eski backuplarni o'chirish
   if command -v find >/dev/null 2>&1; then
-    OLD_COUNT=\$(find \${BACKUP_DIR} -name 'kino_db_backup_*.sql.gz' -type f -mtime +\${RETENTION_DAYS} 2>/dev/null | wc -l)
+    OLD_COUNT=\$(find \${BACKUP_DIR} -name 'aziz_db_backup_*.sql.gz' -type f -mtime +\${RETENTION_DAYS} 2>/dev/null | wc -l)
     if [ \"\${OLD_COUNT}\" -gt 0 ]; then
-      find \${BACKUP_DIR} -name 'kino_db_backup_*.sql.gz' -type f -mtime +\${RETENTION_DAYS} -exec rm -f {} \; 2>/dev/null || true
+      find \${BACKUP_DIR} -name 'aziz_db_backup_*.sql.gz' -type f -mtime +\${RETENTION_DAYS} -exec rm -f {} \; 2>/dev/null || true
       echo \"Ochirildi: \${OLD_COUNT} ta eski backup\"
     fi
   fi
@@ -64,10 +64,10 @@ if [ $? -eq 0 ]; then
   echo "🎉 Manual backup tugallandi!"
   echo ""
   echo "📋 Mavjud backuplar:"
-  ls -lht backups/kino_db_backup_*.sql.gz 2>/dev/null | head -5 || echo "Backuplar topilmadi"
+  ls -lht backups/aziz_db_backup_*.sql.gz 2>/dev/null | head -5 || echo "Backuplar topilmadi"
   echo ""
   echo "📊 Jami:"
-  BACKUP_COUNT=$(ls backups/kino_db_backup_*.sql.gz 2>/dev/null | wc -l)
+  BACKUP_COUNT=$(ls backups/aziz_db_backup_*.sql.gz 2>/dev/null | wc -l)
   TOTAL_SIZE=$(du -sh backups 2>/dev/null | cut -f1)
   echo "  • Backuplar soni: ${BACKUP_COUNT}"
   echo "  • Jami hajm: ${TOTAL_SIZE}"

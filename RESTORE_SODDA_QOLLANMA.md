@@ -460,7 +460,7 @@ docker compose logs app | grep -i "start\|connect\|error"
 ./scripts/manual-backup.sh
 
 # Nusxa oling
-cp backups/kino_db_backup_*.sql.gz /safe/location/
+cp backups/aziz_db_backup_*.sql.gz /safe/location/
 ```
 
 ### 2. Test environmentda sinab ko'ring
@@ -527,7 +527,7 @@ docker exec aziz_database psql -U postgres -d aziz_db -c "\dt"
 ```bash
 cd ~/kinolarBot
 docker compose stop app
-./scripts/manual-restore.sh kino_db_backup_20260223_100000.sql.gz
+./scripts/manual-restore.sh aziz_db_backup_20260223_100000.sql.gz
 docker compose restart app
 ```
 

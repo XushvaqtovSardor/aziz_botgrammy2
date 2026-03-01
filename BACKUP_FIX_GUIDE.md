@@ -61,7 +61,7 @@ chmod +x scripts/*.sh
 ls -lh backups/
 
 # BARCHA eski (buzilgan) backuplarni o'chirish
-rm -f backups/kino_db_backup_*.sql.gz
+rm -f backups/aziz_db_backup_*.sql.gz
 
 # Tozalanganini tekshirish
 ls -lh backups/
@@ -77,7 +77,7 @@ ls -lh backups/
 **Natija:**
 ```
 🔄 Manual backup boshlandi...
-📁 Fayl: kino_db_backup_20260223_120000.sql.gz
+📁 Fayl: aziz_db_backup_20260223_120000.sql.gz
 ✅ Backup yaratildi: 8.0K
 🎉 Manual backup tugallandi!
 ```
@@ -86,7 +86,7 @@ ls -lh backups/
 
 ```bash
 # Eng so'nggi backupni olish
-LATEST_BACKUP=$(ls -t backups/kino_db_backup_*.sql.gz | head -1)
+LATEST_BACKUP=$(ls -t backups/aziz_db_backup_*.sql.gz | head -1)
 
 # Gzip integrity test
 gzip -t "$LATEST_BACKUP" && echo "✅ OK" || echo "❌ FAIL"
@@ -137,9 +137,9 @@ Yoki manual:
 ```bash
 ssh root@your-droplet-ip &&  cd ~/kinolarBot
 git pull && chmod +x scripts/*.sh
-rm -f backups/kino_db_backup_*.sql.gz
+rm -f backups/aziz_db_backup_*.sql.gz
 ./scripts/manual-backup.sh
-gunzip -c backups/kino_db_backup_*.sql.gz | head -n 30
+gunzip -c backups/aziz_db_backup_*.sql.gz | head -n 30
 # Tekshiring: "pg_dump:" yo'q bo'lishi kerak
 ```
 
