@@ -525,7 +525,7 @@ docker exec aziz_database psql -U postgres -d aziz_db -c "\dt"
 ### Oddiy restore (5 daqiqa):
 
 ```bash
-cd ~/kinolarBot
+cd ~/aziz_botgrammy2
 docker compose stop app
 ./scripts/manual-restore.sh aziz_db_backup_20260223_100000.sql.gz
 docker compose restart app

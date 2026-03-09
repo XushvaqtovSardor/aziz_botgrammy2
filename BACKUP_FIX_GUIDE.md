@@ -27,7 +27,7 @@ Scriptlar tuzatildi. Endi Dropletda bajarish kerak.
 ```bash
 # 1. SSH orqali kirish
 ssh root@your-droplet-ip
-cd ~/kinolarBot
+cd ~/aziz_botgrammy2
 
 # 2. Avtomatik tuzatish scripti
 chmod +x droplet-fix.sh
@@ -126,7 +126,7 @@ Agar hali ham `pg_dump:` yozuvlari ko'rinsa, scriptlar to'g'ri yangilanmagan!
 ```bash
 # Dropletda
 ssh root@your-droplet-ip
-cd ~/kinolarBot
+cd ~/aziz_botgrammy2
 git pull
 chmod +x droplet-fix.sh
 ./droplet-fix.sh
@@ -135,7 +135,7 @@ chmod +x droplet-fix.sh
 Yoki manual:
 
 ```bash
-ssh root@your-droplet-ip &&  cd ~/kinolarBot
+ssh root@your-droplet-ip &&  cd ~/aziz_botgrammy2
 git pull && chmod +x scripts/*.sh
 rm -f backups/aziz_db_backup_*.sql.gz
 ./scripts/manual-backup.sh
@@ -155,7 +155,7 @@ gunzip -c backups/aziz_db_backup_*.sql.gz | head -n 30
 ```bash
 # Bir necha soat keyin
 ssh root@your-droplet-ip
-cd ~/kinolarBot
+cd ~/aziz_botgrammy2
 ls -lht backups/ | head -5
 
 # 2 ta yoki ko'proq backup bo'lishi kerak (manual + avtomatik)
