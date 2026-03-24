@@ -1,4 +1,3 @@
-
 version: '3.8'
 
 services:
@@ -38,13 +37,13 @@ services:
     container_name: aziz_bot_postgres_exporter
     restart: unless-stopped
     environment:
-      DATA_SOURCE_NAME: "postgresql://${DB_USER:-azizbot}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-aziz_bot_db}?sslmode=disable"
+      DATA_SOURCE_NAME: "postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-12345}@${DB_HOST:-db}:5432/${DB_NAME:-aziz_db}?sslmode=disable"
     ports:
       - "9187:9187"
     networks:
       - bot-network
     depends_on:
-      - postgres
+      - db
 
 volumes:
   prometheus_data:

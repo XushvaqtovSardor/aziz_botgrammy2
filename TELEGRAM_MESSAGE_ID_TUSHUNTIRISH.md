@@ -167,11 +167,11 @@ User -> Video olmadi ❌
 #### 1. Database Backup
 ```bash
 # Eski serverda
-cd ~/aziz_botgrammy2
+cd ~/aziz_bot_grammy
 ./scripts/manual-backup.sh
 
 # Backup yuklab olish
-scp root@old-server:~/aziz_botgrammy2/backups/*.sql.gz ./
+scp root@old-server:~/aziz_bot_grammy/backups/*.sql.gz ./
 ```
 
 #### 2. Kanallar ro'yxatini olish
@@ -197,8 +197,8 @@ Bot yarating va tokenni oling: 987654:XYZ-newtoken
 #### 2. Loyihani o'rnatish
 ```bash
 # Yangi serverda
-git clone https://github.com/XushvaqtovSardor/aziz_botgrammy2.git
-cd aziz_botgrammy2
+git clone https://github.com/XushvaqtovSardor/aziz_bot_grammy.git
+cd aziz_bot_grammy
 
 # Database restore
 ./scripts/manual-restore.sh aziz_db_backup_20260223.sql.gz

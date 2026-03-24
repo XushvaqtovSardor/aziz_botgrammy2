@@ -1,6 +1,6 @@
 # 🎬 Aziz Kino Bot
 
-![Deploy Status](https://github.com/XushvaqtovSardor/aziz_botgrammy2/actions/workflows/deploy.yml/badge.svg)
+![Deploy Status](https://github.com/XushvaqtovSardor/aziz_bot_grammy/actions/workflows/deploy.yml/badge.svg)
 ![Node.js Version](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen)
 ![Docker](https://img.shields.io/badge/docker-enabled-blue)
 
@@ -35,8 +35,8 @@ Telegram bot for managing and sharing movies and TV series with premium subscrip
 
 ```bash
 # Clone repository
-git clone https://github.com/XushvaqtovSardor/aziz_botgrammy2.git
-cd aziz_botgrammy2
+git clone https://github.com/XushvaqtovSardor/aziz_bot_grammy.git
+cd aziz_bot_grammy
 
 # Install dependencies
 pnpm install
@@ -91,8 +91,8 @@ See [QUICK_DEPLOY.md](./QUICK_DEPLOY.md) for one-command deployment or [DIGITAL_
 **Quick Deploy:**
 ```bash
 # On your droplet
-git clone https://github.com/XushvaqtovSardor/aziz_botgrammy2.git
-cd aziz_botgrammy2
+git clone https://github.com/XushvaqtovSardor/aziz_bot_grammy.git
+cd aziz_bot_grammy
 cp .env.example .env
 nano .env  # Configure settings
 docker compose up -d
@@ -169,8 +169,8 @@ docker compose restart app
 ```bash
 ssh root@YOUR_DROPLET_IP
 cd /root
-git clone https://github.com/XushvaqtovSardor/aziz_botgrammy2.git
-cd aziz_botgrammy2
+git clone https://github.com/XushvaqtovSardor/aziz_bot_grammy.git
+cd aziz_bot_grammy
 cp .env.example .env
 nano .env  # Configure
 chmod +x deploy.sh

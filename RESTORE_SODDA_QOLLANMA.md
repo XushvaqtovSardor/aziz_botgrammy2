@@ -12,7 +12,7 @@ PostgreSQL ma'lumotlaringiz yo'qolgan yoki buzilgan. Backups papkasida saqlangan
 
 ```bash
 # Backuplar papkasiga o'tish
-cd ~/aziz_botgrammy2
+cd ~/aziz_bot_grammy
 ls -lht backups/
 
 # Natija ko'rinishi:
@@ -74,7 +74,7 @@ Telegram'da botga `/start` yuboring. Agar javob bersa - **muvaffaqiyatli!** ✅
 
 ```bash
 ssh root@your-server-ip
-cd ~/aziz_botgrammy2
+cd ~/aziz_bot_grammy
 ```
 
 #### 2. Backuplar mavjudligini tekshirish
@@ -347,10 +347,10 @@ docker compose restart app
 
 ```bash
 # 1. Backuplarni ko'chirish (agar boshqa serverdan)
-scp -r old-server:/root/aziz_botgrammy2/backups/* ~/aziz_botgrammy2/backups/
+scp -r old-server:/root/aziz_bot_grammy/backups/* ~/aziz_bot_grammy/backups/
 
 # 2. Eng so'nggi backupni tiklash
-cd ~/aziz_botgrammy2
+cd ~/aziz_bot_grammy
 LATEST=$(ls -t backups/*.sql.gz | head -1)
 ./scripts/manual-restore.sh $(basename "$LATEST")
 
@@ -392,20 +392,20 @@ docker compose restart app
 
 ```bash
 # ESKI SERVER:
-cd ~/aziz_botgrammy2
+cd ~/aziz_bot_grammy
 ./scripts/manual-backup.sh
 # Backup yaratiladi va backups/ papkasiga saqlanadi
 
 # Backupni yuklab olish (local kompyuter)
-scp root@old-server:~/aziz_botgrammy2/backups/aziz_db_backup_*.sql.gz ./
+scp root@old-server:~/aziz_bot_grammy/backups/aziz_db_backup_*.sql.gz ./
 
 # YANGI SERVER:
 # Backupni yuklash
-scp aziz_db_backup_*.sql.gz root@new-server:~/aziz_botgrammy2/backups/
+scp aziz_db_backup_*.sql.gz root@new-server:~/aziz_bot_grammy/backups/
 
 # Restore qilish
 ssh root@new-server
-cd ~/aziz_botgrammy2
+cd ~/aziz_bot_grammy
 ./scripts/manual-restore.sh aziz_db_backup_20260223_100000.sql.gz
 docker compose up -d
 ```
@@ -525,7 +525,7 @@ docker exec aziz_database psql -U postgres -d aziz_db -c "\dt"
 ### Oddiy restore (5 daqiqa):
 
 ```bash
-cd ~/aziz_botgrammy2
+cd ~/aziz_bot_grammy
 docker compose stop app
 ./scripts/manual-restore.sh aziz_db_backup_20260223_100000.sql.gz
 docker compose restart app

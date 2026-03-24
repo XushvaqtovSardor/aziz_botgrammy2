@@ -19,18 +19,23 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
+            PROJECT_DIR="aziz_botgrammy2"
+            REPO_URL="https://github.com/XushvaqtovSardor/aziz_botgrammy2.git"
+
             echo "Creating project folder if it doesn't exist!"
             mkdir -p /root
             cd /root
 
-            if [ ! -d "aziz_botgrammy2/.git" ]; then
+            if [ ! -d "$PROJECT_DIR/.git" ]; then
               echo "Cloning repository!" 
-              git clone https://github.com/XushvaqtovSardor/aziz_botgrammy2
+              git clone "$REPO_URL" "$PROJECT_DIR"
             else
               echo "Pulling latest changes!"
-              cd aziz_botgrammy2   
+              cd "$PROJECT_DIR"
               git pull origin main  
             fi
+
+            cd "$PROJECT_DIR"
 
             echo "Stopping containers"
             docker compose down
