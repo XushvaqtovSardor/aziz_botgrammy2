@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: 12345
       POSTGRES_DB: aziz_db
     ports:
-      - "5465:5432"
+      - "5432"
     volumes:
       - baza_data:/var/lib/postgresql/data
       - ./backups:/backups
@@ -27,7 +27,7 @@ services:
     env_file:
       - .env
     expose:
-      - "4043"
+      - "9463"
     depends_on:
       db:
         condition: service_healthy
